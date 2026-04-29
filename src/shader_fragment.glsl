@@ -12,6 +12,7 @@ in vec4 position_model;
 
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
+in float material_id;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
@@ -22,6 +23,7 @@ uniform mat4 projection;
 #define SPHERE 0
 #define BUNNY  1
 #define PLANE  2
+#define CHILL  3
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -32,6 +34,7 @@ uniform vec4 bbox_max;
 uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
+uniform sampler2D TextureImage3;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -69,7 +72,7 @@ void main()
     float V = 0.0;
 
 	// Coeficiente de refletância difusa
-	vec3 Kd0;
+	vec3 Kd0 = vec3(1.0, 0.0, 1.0);
 
     if ( object_id == SPHERE )
     {
@@ -134,6 +137,17 @@ void main()
 		// Obtemos a refletância difusa a partir da leitura da imagem TextureImage1
 		Kd0 = texture(TextureImage1, vec2(U,V)).rgb;
     }
+    else if ( object_id == CHILL )
+    {
+        // Coordenadas de textura do Big Chill, obtidas do arquivo OBJ.
+        U = texcoords.x;
+        V = texcoords.y;
+
+        // "material_id" aqui recebe diretamente a unidade de textura (2 ou 3).
+        Kd0 = (material_id > 2.5)
+            ? texture(TextureImage3, vec2(U,V)).rgb
+            : texture(TextureImage2, vec2(U,V)).rgb;
+    }
 
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
@@ -158,4 +172,3 @@ void main()
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas
     color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
 } 
-

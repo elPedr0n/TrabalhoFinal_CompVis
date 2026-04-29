@@ -56,6 +56,7 @@ struct ObjModel
     tinyobj::attrib_t                 attrib;
     std::vector<tinyobj::shape_t>     shapes;
     std::vector<tinyobj::material_t>  materials;
+    std::map<std::string, std::vector<float>> face_texture_selector_by_shape;
 
     // Este construtor lê o modelo de um arquivo utilizando a biblioteca tinyobjloader.
     // Veja: https://github.com/syoyo/tinyobjloader
@@ -103,7 +104,43 @@ struct ObjModel
             printf("- Objeto '%s'\n", shapes[shape].name.c_str());
         }
 
+        ParseFaceTextureSelectorsFromObj(filename);
         printf("OK.\n");
+    }
+
+    void ParseFaceTextureSelectorsFromObj(const char* filename)
+    {
+        std::ifstream file(filename);
+        if (!file.good())
+            return;
+
+        std::string line;
+        std::string current_shape;
+        float current_selector = 2.0f; // bcck1.png => TextureImage2
+
+        while (std::getline(file, line))
+        {
+            if (line.rfind("g ", 0) == 0 || line.rfind("o ", 0) == 0)
+            {
+                current_shape = line.substr(2);
+                continue;
+            }
+
+            if (line.rfind("usemtl ", 0) == 0)
+            {
+                std::string material_name = line.substr(7);
+                if (material_name.find("bcck2") != std::string::npos)
+                    current_selector = 3.0f; // bcck2.png => TextureImage3
+                else if (material_name.find("bcck1") != std::string::npos)
+                    current_selector = 2.0f;
+                continue;
+            }
+
+            if (line.rfind("f ", 0) == 0 && !current_shape.empty())
+            {
+                face_texture_selector_by_shape[current_shape].push_back(current_selector);
+            }
+        }
     }
 };
 
@@ -301,6 +338,8 @@ int main(int argc, char* argv[])
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
+    LoadTextureImage("../../data/bcck1.png"); // TextureImage2
+    LoadTextureImage("../../data/bcck2.png"); // TextureImage3
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -314,6 +353,10 @@ int main(int argc, char* argv[])
     ObjModel planemodel("../../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
+    ComputeNormals(&bigchillmodel);
+    BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
 
     if ( argc > 1 )
     {
@@ -413,22 +456,31 @@ int main(int argc, char* argv[])
         #define SPHERE 0
         #define BUNNY  1
         #define PLANE  2
+        #define CHILL  3
 
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f,0.0f,0.0f)
-              * Matrix_Rotate_Z(0.6f)
-              * Matrix_Rotate_X(0.2f)
-              * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
+        // model = Matrix_Translate(-1.0f,0.0f,0.0f)
+        //       * Matrix_Rotate_Z(0.6f)
+        //       * Matrix_Rotate_X(0.2f)
+        //       * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, SPHERE);
+        // DrawVirtualObject("the_sphere");
 
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f,0.0f,0.0f)
-              * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        // // Desenhamos o modelo do coelho
+        // model = Matrix_Translate(1.0f,0.0f,0.0f)
+        //       * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, BUNNY);
+        // DrawVirtualObject("the_bunny");
+
+        // Desenhamos o modelo do big chill
+        model = Matrix_Translate(0.0f,-1.0f,0.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
+        glUniform1i(g_object_id_uniform, CHILL);
+        glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
+        DrawVirtualObject("the_bigchill");
+        glEnable(GL_CULL_FACE);
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f,-1.1f,0.0f);
@@ -602,6 +654,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage0"), 0);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
     glUseProgram(0);
 }
 
@@ -754,6 +807,9 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     std::vector<float>  model_coefficients;
     std::vector<float>  normal_coefficients;
     std::vector<float>  texture_coefficients;
+    std::vector<float>  texture_selector_coefficients;
+    std::map<int, float> fallback_texture_unit_by_material_id;
+    float next_fallback_texture_unit = 2.0f;
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -769,6 +825,62 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         for (size_t triangle = 0; triangle < num_triangles; ++triangle)
         {
             assert(model->shapes[shape].mesh.num_face_vertices[triangle] == 3);
+            int material_id = -1;
+            if (triangle < model->shapes[shape].mesh.material_ids.size())
+            {
+                material_id = model->shapes[shape].mesh.material_ids[triangle];
+            }
+
+            float texture_selector = 2.0f; // bcck1.png => TextureImage2
+            auto face_selector_it = model->face_texture_selector_by_shape.find(model->shapes[shape].name);
+            if (face_selector_it != model->face_texture_selector_by_shape.end() &&
+                triangle < face_selector_it->second.size())
+            {
+                texture_selector = face_selector_it->second[triangle];
+            }
+            else if (material_id >= 0 && material_id < (int)model->materials.size())
+            {
+                const auto& material = model->materials[material_id];
+                const bool uses_bcck2 =
+                    material.name.find("bcck2") != std::string::npos ||
+                    material.diffuse_texname.find("bcck2") != std::string::npos;
+                const bool uses_bcck1 =
+                    material.name.find("bcck1") != std::string::npos ||
+                    material.diffuse_texname.find("bcck1") != std::string::npos;
+
+                if (uses_bcck2)
+                {
+                    texture_selector = 3.0f;
+                }
+                else if (!uses_bcck1)
+                {
+                    auto it = fallback_texture_unit_by_material_id.find(material_id);
+                    if (it == fallback_texture_unit_by_material_id.end())
+                    {
+                        fallback_texture_unit_by_material_id[material_id] = next_fallback_texture_unit;
+                        texture_selector = next_fallback_texture_unit;
+                        next_fallback_texture_unit = (next_fallback_texture_unit == 2.0f) ? 3.0f : 2.0f;
+                    }
+                    else
+                    {
+                        texture_selector = it->second;
+                    }
+                }
+            }
+            else if (material_id >= 0)
+            {
+                auto it = fallback_texture_unit_by_material_id.find(material_id);
+                if (it == fallback_texture_unit_by_material_id.end())
+                {
+                    fallback_texture_unit_by_material_id[material_id] = next_fallback_texture_unit;
+                    texture_selector = next_fallback_texture_unit;
+                    next_fallback_texture_unit = (next_fallback_texture_unit == 2.0f) ? 3.0f : 2.0f;
+                }
+                else
+                {
+                    texture_selector = it->second;
+                }
+            }
 
             for (size_t vertex = 0; vertex < 3; ++vertex)
             {
@@ -815,6 +927,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_coefficients.push_back( u );
                     texture_coefficients.push_back( v );
                 }
+
+                texture_selector_coefficients.push_back(texture_selector);
             }
         }
 
@@ -867,6 +981,20 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         glBufferSubData(GL_ARRAY_BUFFER, 0, texture_coefficients.size() * sizeof(float), texture_coefficients.data());
         location = 2; // "(location = 1)" em "shader_vertex.glsl"
         number_of_dimensions = 2; // vec2 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+
+    if ( !texture_selector_coefficients.empty() )
+    {
+        GLuint VBO_texture_selector_coefficients_id;
+        glGenBuffers(1, &VBO_texture_selector_coefficients_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_texture_selector_coefficients_id);
+        glBufferData(GL_ARRAY_BUFFER, texture_selector_coefficients.size() * sizeof(float), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, texture_selector_coefficients.size() * sizeof(float), texture_selector_coefficients.data());
+        location = 3; // "(location = 3)" em "shader_vertex.glsl"
+        number_of_dimensions = 1; // float em "shader_vertex.glsl"
         glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(location);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1585,4 +1713,3 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
