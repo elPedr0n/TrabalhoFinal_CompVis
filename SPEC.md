@@ -84,7 +84,7 @@ Usaremos vários modelos para povoar o cenário, muitos deles do mesmo objeto, c
 Teremos testes de intersecção entre objetos, principalmente na parte do combate. Temos habilidades especiais que criam *hit zones* diferentes do sprite do jogador, então implementaremos a lógica para calcular o *hit* desses ataques.
 
 ### Modelos de Iluminação em todos os objetos
-Teremos inicialmente um modelo de ilumincação global. Além disso, implementaremos uma iluminação com o jogador, dependendo do alien que está selecionado. Se Fogo Fátuo for o jogador atual, então um brilho amarelo semelhante a fogo ira ser aplicado em um raio próximo a sua posição. O mesmo se repetindo para Friagem, mudando apenas a cor para um azul claro, simulando um brilho mais gelado.
+Teremos inicialmente um modelo de iluminação global. Além disso, implementaremos uma iluminação com o jogador, dependendo do alien que está selecionado. Se Fogo Fátuo for o jogador atual, então um brilho amarelo semelhante a fogo ira ser aplicado em um raio próximo a sua posição. O mesmo se repetindo para Friagem, mudando apenas a cor para um azul claro, simulando um brilho mais gelado.
 
 ### Mapeamento de texturas em todos os objetos
 Iremos procurar os modelos originais do jogo, que possuem texturas em imagens. Caso isso não ocorra, procuraremos semelhantes para não perder a essência da jogabilidade e da ambientação. Para o *background* usaremos de uma textura fixa em repetição, caracterizando a iluminação global. 
@@ -105,7 +105,7 @@ Todas as nossas animações, junto do cálculo da posição do jogador e inimigo
 >   que será implementado parcialmente. -->
 
 Prevemos algumas limitações para este trabalho:
-- Quanto ao combate, o vídeo mostra diferentes *combos*. Iremos cortar essa parte para um combate masi simples com apenas um ataque normal e uma habilidade.
+- Quanto ao combate, o vídeo mostra diferentes *combos*. Iremos cortar essa parte para um combate mais simples com apenas um ataque normal e uma habilidade.
 - O jogo conta com diferentes menus, iremos apenas ter um menu inicial.
 - Na gameplay temos um medidor de especial, que limita o uso dos aliens. O jogador na nossa versão poderá usar qualquer um dos aliens a qualquer momento, trocando eles com uma tecla.
 - Temos também vários tipos de inimigos no jogo, usaremos apenas o mais simples.
