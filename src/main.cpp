@@ -190,6 +190,14 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
+
+// Mapping para detecção das teclas
+void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod);
+
+//Movimentação do player 
+void UpdatePosition(); 
+
+
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -262,6 +270,19 @@ GLint g_bbox_max_uniform;
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
+// Vetor global para movimentação
+bool keys[1024] = {false};
+bool jumping = false;
+
+// Variáveis do player
+float player_pos[3] = {0.0f,-1.0f,0.0f};
+float player_speed_h = 0.05f;
+float player_speed_v = 0;
+float jump_speed = 0.35f;
+
+float gravidade = -0.05f;
+float delta_t;
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -301,7 +322,7 @@ int main(int argc, char* argv[])
 
     // Definimos a função de callback que será chamada sempre que o usuário
     // pressionar alguma tecla do teclado ...
-    glfwSetKeyCallback(window, KeyCallback);
+    glfwSetKeyCallback(window, KeyMapping);
     // ... ou clicar os botões do mouse ...
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     // ... ou movimentar o cursor do mouse em cima da janela ...
@@ -378,6 +399,12 @@ int main(int argc, char* argv[])
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+        if (keys[GLFW_KEY_ESCAPE])
+            glfwSetWindowShouldClose(window, GL_TRUE);
+
+        delta_t = (float)glfwGetTime();
+        UpdatePosition();
+
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -475,7 +502,7 @@ int main(int argc, char* argv[])
         // DrawVirtualObject("the_bunny");
 
         // Desenhamos o modelo do big chill
-        model = Matrix_Translate(0.0f,-1.0f,0.0f);
+        model = Matrix_Translate(player_pos[0], player_pos[1], player_pos[2]);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, CHILL);
         glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
@@ -483,7 +510,7 @@ int main(int argc, char* argv[])
         glEnable(GL_CULL_FACE);
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f,-1.1f,0.0f);
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
@@ -1486,7 +1513,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
+    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player_pos[2], player_pos[1], player_pos[0]);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
@@ -1713,3 +1740,10 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
+
+void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod) {
+    if (action == GLFW_PRESS)
+        keys[key] = true;
+    else if (action == GLFW_RELEASE)
+        keys[key] = false;
+}

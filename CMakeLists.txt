@@ -6,6 +6,8 @@
 # Arquivos fonte C/C++. Inclua nesta lista todos os arquivos que devem
 # ser compilados.
 set(SOURCES
+  src/globals.h
+  src/player.cpp
   src/main.cpp
   src/correcao.cpp
   src/textrendering.cpp
