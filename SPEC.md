@@ -111,3 +111,5 @@ Prevemos algumas limitações para este trabalho:
 - Temos também vários tipos de inimigos no jogo, usaremos apenas o mais simples.
 - Dependendo da fluidez do desenvolvimento, planejamos fazer uma fase mais curta, a fim do jogador experenciar as duas câmeras.
 - Temos também a presença de vários coletáveis, planejamos deixar apenas os drops de vida dos inimigos. 
+
+> Comentário Professor: OK
