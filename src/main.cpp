@@ -276,8 +276,7 @@ bool jumping = false;
 
 // Variáveis do player
 float player_pos[3] = {0.0f,-1.0f,0.0f};
-float player_speed_h = 0.05f;
-float player_speed_v = 0;
+float player_speed[3] = {0.05f, 0, 0.05f};
 float jump_speed = 0.35f;
 
 float gravidade = -0.05f;
@@ -396,14 +395,15 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    float anterior = (float)glfwGetTime();
+
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
         if (keys[GLFW_KEY_ESCAPE])
             glfwSetWindowShouldClose(window, GL_TRUE);
 
-        delta_t = (float)glfwGetTime();
-        UpdatePosition();
+        delta_t = (float)glfwGetTime() - anterior;
 
         // Aqui executamos as operações de renderização
 
@@ -501,6 +501,9 @@ int main(int argc, char* argv[])
         // glUniform1i(g_object_id_uniform, BUNNY);
         // DrawVirtualObject("the_bunny");
 
+        
+        UpdatePosition();
+
         // Desenhamos o modelo do big chill
         model = Matrix_Translate(player_pos[0], player_pos[1], player_pos[2]);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -539,6 +542,8 @@ int main(int argc, char* argv[])
         // definidas anteriormente usando glfwSet*Callback() serão chamadas
         // pela biblioteca GLFW.
         glfwPollEvents();
+
+        anterior = delta_t;
     }
 
     // Finalizamos o uso dos recursos do sistema operacional
