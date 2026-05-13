@@ -276,10 +276,12 @@ bool jumping = false;
 
 // Variáveis do player
 float player_pos[3] = {0.0f,-1.0f,0.0f};
-float player_speed[3] = {2, 0, 2};
-float jump_speed = 0.35f;
+float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
+float player_rotate = 0;
+float player_scalling = 0.5f;
+float jump_speed = 4.3;
 
-float gravidade = -0.05f;
+float gravidade = -0.15f;
 float delta_t;
 
 int main(int argc, char* argv[])
@@ -507,7 +509,9 @@ int main(int argc, char* argv[])
         UpdatePosition();
 
         // Desenhamos o modelo do big chill
-        model = Matrix_Translate(player_pos[0], player_pos[1], player_pos[2]);
+        model = Matrix_Translate(player_pos[0], player_pos[1], player_pos[2])
+                * Matrix_Scale(player_scalling, player_scalling, player_scalling)
+                * Matrix_Rotate_Y(player_rotate);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, CHILL);
         glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
