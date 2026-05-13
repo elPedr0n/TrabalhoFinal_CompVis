@@ -276,7 +276,7 @@ bool jumping = false;
 
 // Variáveis do player
 float player_pos[3] = {0.0f,-1.0f,0.0f};
-float player_speed[3] = {0.05f, 0, 0.05f};
+float player_speed[3] = {2, 0, 2};
 float jump_speed = 0.35f;
 
 float gravidade = -0.05f;
@@ -403,7 +403,9 @@ int main(int argc, char* argv[])
         if (keys[GLFW_KEY_ESCAPE])
             glfwSetWindowShouldClose(window, GL_TRUE);
 
-        delta_t = (float)glfwGetTime() - anterior;
+        float agora = (float)glfwGetTime();
+        delta_t = agora - anterior;
+        anterior = agora;
 
         // Aqui executamos as operações de renderização
 
@@ -543,7 +545,6 @@ int main(int argc, char* argv[])
         // pela biblioteca GLFW.
         glfwPollEvents();
 
-        anterior = delta_t;
     }
 
     // Finalizamos o uso dos recursos do sistema operacional

@@ -27,7 +27,6 @@ void UpdatePosition() {
         jumping = true;
         player_speed[Y] = jump_speed;
     }
-    std::cout << delta_t << "\n";
 
     player_speed[Y] += gravidade;
     player_pos[Y] += player_speed[Y] * delta_t;
