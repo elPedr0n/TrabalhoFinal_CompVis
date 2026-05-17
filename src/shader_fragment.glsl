@@ -24,6 +24,7 @@ uniform mat4 projection;
 #define BUNNY  1
 #define PLANE  2
 #define CHILL  3
+#define SWAMPFIRE 4
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -35,6 +36,7 @@ uniform sampler2D TextureImage0;
 uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
+uniform sampler2D TextureImage4;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -147,6 +149,12 @@ void main()
         Kd0 = (material_id > 2.5)
             ? texture(TextureImage3, vec2(U,V)).rgb
             : texture(TextureImage2, vec2(U,V)).rgb;
+    }
+    else if ( object_id == SWAMPFIRE )
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y;  // flip V for glTF
+        Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
     }
 
     // Equação de Iluminação

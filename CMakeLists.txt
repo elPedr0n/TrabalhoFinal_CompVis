@@ -12,8 +12,9 @@ set(SOURCES
   src/correcao.cpp
   src/textrendering.cpp
   src/tiny_obj_loader.cpp
-  src/stb_image.cpp
+  src/tiny_gltf.cpp
   src/glad.c
+  src/gltf_utils.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)
