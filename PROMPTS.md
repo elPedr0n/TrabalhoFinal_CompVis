@@ -206,3 +206,16 @@ void UpdatePosition() {
     }
 } 
 ```
+
+### Commit com auxílio de IA: Adicionado modelo GLTF do Swampfire e adicionada capacidade de trocar entre modelos de jogadores
+PROMPT:
+Quero adicionar um modelo GLTF (Swampfire) ao projeto usando a biblioteca `tinygltf`. Siga os seguintes objetivos
+Objetivos:
+- Incluir `tinygltf` no build e todas as bibliotecas auxiliares necessárias
+- Carregar o arquivo .gltf, e extrair meshes, materiais e texturas.
+- Integrar ao código existente sem atrapalhar o suporte a OBJ.
+
+Now implement the next changes:
+- by starting the program, player will control big chill
+- whenever "z" is pressed, player changes between controlling big chill and swampfire, by replacing the controlled model and hiding the other. 
+- implementation should be open to addition of new transformations in the future
