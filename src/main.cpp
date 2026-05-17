@@ -42,13 +42,17 @@
 
 // Headers da biblioteca para carregar modelos obj
 #include <tiny_obj_loader.h>
-
 #include <stb_image.h>
+
+// Headers da biblioteca para carregar modelos glTF
+#include <tiny_gltf.h>
+#include <gltf_utils.h>
 
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
 #include "globals.h"
+#include "sceneobject.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -198,20 +202,6 @@ void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod);
 //Movimentação do player 
 void UpdatePosition(); 
 
-
-// Definimos uma estrutura que armazenará dados necessários para renderizar
-// cada objeto da cena virtual.
-struct SceneObject
-{
-    std::string  name;        // Nome do objeto
-    size_t       first_index; // Índice do primeiro vértice dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    size_t       num_indices; // Número de índices do objeto dentro do vetor indices[] definido em BuildTrianglesAndAddToVirtualScene()
-    GLenum       rendering_mode; // Modo de rasterização (GL_TRIANGLES, GL_TRIANGLE_STRIP, etc.)
-    GLuint       vertex_array_object_id; // ID do VAO onde estão armazenados os atributos do modelo
-    glm::vec3    bbox_min; // Axis-Aligned Bounding Box do objeto
-    glm::vec3    bbox_max;
-};
-
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
 // A cena virtual é uma lista de objetos nomeados, guardados em um dicionário
@@ -270,6 +260,9 @@ GLint g_bbox_max_uniform;
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
+// Store OpenGL texture and sampler IDs for binding at draw time
+std::vector<GLuint> g_LoadedTextureIDs;
+std::vector<GLuint> g_LoadedSamplerIDs;
 
 // Vetor global para movimentação
 bool keys[1024] = {false};
@@ -284,6 +277,13 @@ float jump_speed = 4.3;
 
 float gravidade = -0.15f;
 float delta_t;
+
+// Characters controlled by player
+Character g_characters[2] = {
+    Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true),
+    Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false),
+};
+int g_active_character = 0;
 
 int main(int argc, char* argv[])
 {
@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
 
     // Definimos a função de callback que será chamada sempre que o usuário
     // pressionar alguma tecla do teclado ...
-    glfwSetKeyCallback(window, KeyMapping);
+    glfwSetKeyCallback(window, KeyCallback);
     // ... ou clicar os botões do mouse ...
     glfwSetMouseButtonCallback(window, MouseButtonCallback);
     // ... ou movimentar o cursor do mouse em cima da janela ...
@@ -380,6 +380,23 @@ int main(int argc, char* argv[])
     ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
+
+    tinygltf::Model gltfmodel;
+    tinygltf::TinyGLTF gltfloader;
+    std::string err, warn;
+    bool ret = gltfloader.LoadASCIIFromFile(&gltfmodel, &err, &warn, "../../data/swampfire__ben_10_alien_force/scene.gltf");
+    printf("ret = %d\n", ret);
+    printf("err = %s\n", err.c_str());
+    printf("warn = %s\n", warn.c_str());
+    fflush(stdout);
+    if (!warn.empty())
+        fprintf(stderr, "\n%s\n", warn.c_str());
+    if (!err.empty())
+        fprintf(stderr, "\n%s\n", err.c_str());
+    if (!ret)
+        throw std::runtime_error("Erro ao carregar modelo glTF.");
+    computeNormalsForGLTF<uint16_t>(gltfmodel);
+    buildTrianglesAndAddToVirtualSceneFromGLTF(gltfmodel);
 
     if ( argc > 1 )
     {
@@ -441,7 +458,7 @@ int main(int argc, char* argv[])
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_lookat_l    = glm::vec4(player_pos[X], player_pos[Y] + height_offset, player_pos[Z], 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        glm::vec4 camera_lookat_l    = glm::vec4(player_pos[AXIS_X], player_pos[AXIS_Y] + height_offset, player_pos[AXIS_Z], 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f); // Ponto "c", centro da câmera
         glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
@@ -491,6 +508,7 @@ int main(int argc, char* argv[])
         #define BUNNY  1
         #define PLANE  2
         #define CHILL  3
+        #define SWAMPFIRE 4
 
         // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -511,15 +529,44 @@ int main(int argc, char* argv[])
         
         UpdatePosition();
 
-        // Desenhamos o modelo do big chill
-        model = Matrix_Translate(player_pos[X], player_pos[Y], player_pos[Z])
-                * Matrix_Scale(player_scalling, player_scalling, player_scalling)
-                * Matrix_Rotate_Y(player_rotate);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CHILL);
-        glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
-        DrawVirtualObject("the_bigchill");
-        glEnable(GL_CULL_FACE);
+        // Draw controlled BigChill if visible
+        if (g_characters[0].visible)
+        {
+            model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z])
+                    * Matrix_Scale(g_characters[0].scale, g_characters[0].scale, g_characters[0].scale)
+                    * Matrix_Rotate_Y(player_rotate);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, CHILL);
+            // Re-bind all previously loaded textures/samplers to their texture units
+            for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
+            {
+                glActiveTexture(GL_TEXTURE0 + tu);
+                glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
+                glBindSampler(tu, g_LoadedSamplerIDs[tu]);
+            }
+            glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
+            DrawVirtualObject("the_bigchill");
+            glEnable(GL_CULL_FACE);
+        }
+
+        // Draw Swampfire instances if visible
+        if (g_characters[1].visible)
+        {
+            for (int i = 0; i < 20; i++) {
+                std::string name = "the_swampfire_" + std::to_string(i);
+                if (g_VirtualScene.find(name) != g_VirtualScene.end()) {
+                    model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z])
+                          * Matrix_Scale(g_characters[1].scale, g_characters[1].scale, g_characters[1].scale)
+                          * Matrix_Rotate_Y(player_rotate + 3.14159265f);
+                    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+                    glActiveTexture(GL_TEXTURE4);
+                    glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+                    glUniform1i(g_object_id_uniform, SWAMPFIRE);
+                    DrawVirtualObject(name.c_str());
+                }
+            }
+        }
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f);
@@ -609,6 +656,10 @@ void LoadTextureImage(const char* filename)
     glBindSampler(textureunit, sampler_id);
 
     stbi_image_free(data);
+
+    // Save IDs so we can re-bind these textures reliably at draw time
+    g_LoadedTextureIDs.push_back(texture_id);
+    g_LoadedSamplerIDs.push_back(sampler_id);
 
     g_NumLoadedTextures += 1;
 }
@@ -1381,6 +1432,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     Correcao_KeyCallback(key, action, mod);
     // =======================
 
+    // Keep keys[] mapping for continuous input handling (was in KeyMapping)
+    if (action == GLFW_PRESS)
+        keys[key] = true;
+    else if (action == GLFW_RELEASE)
+        keys[key] = false;
+
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -1406,7 +1463,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     }
     if (key == GLFW_KEY_Z && action == GLFW_PRESS)
     {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+        if (mod & GLFW_MOD_SHIFT)
+            g_AngleZ -= delta;
+        else if (mod == 0 && !(mod & GLFW_MOD_SHIFT)) {
+            // Swap active character
+            g_characters[g_active_character].visible = false;
+            g_active_character = (g_active_character + 1) % 2;
+            g_characters[g_active_character].visible = true;
+            // Sync position to current player position
+            for (int i = 0; i < 3; ++i)
+                g_characters[g_active_character].pos[i] = player_pos[i];
+        }
     }
 
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
@@ -1526,7 +1593,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player_pos[2], player_pos[1], player_pos[0]);
+    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player_pos[AXIS_Z], player_pos[AXIS_Y], player_pos[AXIS_X]);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }

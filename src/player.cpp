@@ -25,18 +25,18 @@ void UpdatePosition() {
     if (keys[GLFW_KEY_SPACE] and !jumping){
         keys[GLFW_KEY_SPACE] = false;
         jumping = true;
-        player_speed[Y] = jump_speed;
+        player_speed[AXIS_Y] = jump_speed;
     }
-    
-    player_speed[Y] += gravidade;
-    player_pos[Y] += player_speed[Y] * delta_t;
-    
-    player_pos[X] += move_x * player_speed[X] * delta_t;
-    player_pos[Z] += move_z * player_speed[Z] * delta_t;
 
-    if (player_pos[Y] < -1) { //Aqui defini o chao como -1
-        player_pos[Y] = -1;
-        player_speed[Y] = 0;
+    player_speed[AXIS_Y] += gravidade;
+    player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
+
+    player_pos[AXIS_X] += move_x * player_speed[AXIS_X] * delta_t;
+    player_pos[AXIS_Z] += move_z * player_speed[AXIS_Z] * delta_t;
+
+    if (player_pos[AXIS_Y] < -1) { //Aqui defini o chao como -1
+        player_pos[AXIS_Y] = -1;
+        player_speed[AXIS_Y] = 0;
         jumping = false;
     }
     
