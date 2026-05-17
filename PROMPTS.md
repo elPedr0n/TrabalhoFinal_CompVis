@@ -266,3 +266,12 @@ void UpdatePosition() {
 
 PROMPT 2:
 Agora ajeite a rotação do modelo, esta muito dura e incorreta, não está apontando a frente do modelo para o local correto em relação ao vetor de deslocamento.
+GL_CLAMP_TO_EDGE
+
+
+
+### Commit com IA: Desenho de um chão infinito para ficar mais legal a gameplay
+
+PROMPT:
+Quero que me de alternativas de como posso implementar uma textura "infinita" para o jogador, atualmente ele ta so flutuando em um pequeno plano.
+Preferencialemnte, seria interessante manipular o modelo obj e a textura que já está presente na cena atual.
