@@ -266,3 +266,21 @@ void UpdatePosition() {
 
 PROMPT 2:
 Agora ajeite a rotação do modelo, esta muito dura e incorreta, não está apontando a frente do modelo para o local correto em relação ao vetor de deslocamento.
+GL_CLAMP_TO_EDGE
+
+
+
+### Commit com IA: Desenho de um chão infinito para ficar mais legal a gameplay
+
+PROMPT:
+Quero que me de alternativas de como posso implementar uma textura "infinita" para o jogador, atualmente ele ta so flutuando em um pequeno plano.
+Preferencialemnte, seria interessante manipular o modelo obj e a textura que já está presente na cena atual.
+
+### Commit com IA: Colocar um novo modelo no mapa para futuramente testar tanto colisão como modelos de iluminação e double jump
+
+PROMPT 1:
+Qual seria o passo a passo para eu poder adicionar um novo modelo obj e poder colocar ele na cena, semelhante ao plano em @src/main.cpp.
+Considerando que seria possível ter um .mtl vindo junto do .obj e textura
+
+PROMPT 2: 
+Ent, esse meu obj, toda vez q mudo pra usar o modelo do swampfire, ele usa a textura dele no bloco, pq usa a textureImage4, tem como eu colocar a 5 direto? O swampfire usa gltf pra carregar o modelo, q eh diferente do carregamento dos modelos obj  

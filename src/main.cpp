@@ -314,7 +314,7 @@ int main(int argc, char* argv[])
     // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
     // de pixels, e com título "INF01047 ...".
     GLFWwindow* window;
-    window = glfwCreateWindow(800, 600, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
+    window = glfwCreateWindow(800, 600, "INF01047 - Ben 10 Força Alienígena Ultra Remaster (OpenGL version)", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
@@ -363,6 +363,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
+    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -380,6 +381,10 @@ int main(int argc, char* argv[])
     ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
+
+    ObjModel blockmodel("../../data/TNT/TNT.obj");
+    ComputeNormals(&blockmodel);
+    BuildTrianglesAndAddToVirtualScene(&blockmodel);
 
     tinygltf::Model gltfmodel;
     tinygltf::TinyGLTF gltfloader;
@@ -509,6 +514,7 @@ int main(int argc, char* argv[])
         #define PLANE  2
         #define CHILL  3
         #define SWAMPFIRE 4
+        #define BLOCO 5
 
         // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -568,11 +574,29 @@ int main(int argc, char* argv[])
             }
         }
 
+
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f)
+                *Matrix_Scale(0.1f, 0.1f, 0.1f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
+        if (g_LoadedTextureIDs.size() > 4 && g_LoadedSamplerIDs.size() > 4)
+        {
+            glActiveTexture(GL_TEXTURE5);
+            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[4]);  // TNT.png
+            glBindSampler(5, g_LoadedSamplerIDs[4]);
+        }
+        glUniform1i(g_object_id_uniform, BLOCO);
+        DrawVirtualObject("TNT");
+
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f);
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f)
+                * Matrix_Scale(20.0f, 1.0f, 20.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+        
+
+        
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -635,8 +659,8 @@ void LoadTextureImage(const char* filename)
     glGenSamplers(1, &sampler_id);
 
     // Veja slides 95-96 do documento Aula_20_Mapeamento_de_Texturas.pdf
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
     // Parâmetros de amostragem da textura.
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -746,6 +770,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage1"), 1);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
     glUseProgram(0);
 }
 
