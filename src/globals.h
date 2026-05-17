@@ -2,6 +2,10 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
+#define X 0
+#define Y 1
+#define Z 2
+
 extern bool keys[1024];
 extern bool jumping;
 
