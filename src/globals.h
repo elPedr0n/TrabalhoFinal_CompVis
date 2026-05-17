@@ -18,4 +18,8 @@ extern float gravidade;
 
 extern float delta_t;
 
+extern float g_CameraTheta; 
+extern float g_CameraPhi;   
+extern float g_CameraDistance; 
+
 #endif
