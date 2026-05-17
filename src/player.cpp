@@ -3,10 +3,6 @@
 #include "globals.h"
 #include <bits/stdc++.h>
 
-#define X 0
-#define Y 1
-#define Z 2
-
 void UpdatePosition() {
 
     float move_x = 0.0f;
