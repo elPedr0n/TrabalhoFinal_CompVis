@@ -26,6 +26,7 @@ uniform mat4 projection;
 #define PLANE  2
 #define CHILL  3
 #define SWAMPFIRE 4
+#define BLOCO 5
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -38,6 +39,7 @@ uniform sampler2D TextureImage1;
 uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
+uniform sampler2D TextureImage5;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -134,8 +136,8 @@ void main()
     else if ( object_id == PLANE )
     {
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
-        U = texcoords.x;
-        V = texcoords.y;
+        U = texcoords.x * 20;
+        V = texcoords.y * 20;
 
 		// Obtemos a refletância difusa a partir da leitura da imagem TextureImage1
 		Kd0 = texture(TextureImage1, vec2(U,V)).rgb;
@@ -156,6 +158,11 @@ void main()
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
+    } else if (object_id == BLOCO) 
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        Kd0 = texture(TextureImage5, vec2(U,V)).rgb; 
     }
 
     // Debug axes rendering: when object_id==100, use per-vertex color directly

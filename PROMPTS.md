@@ -377,3 +377,21 @@ Como isso funciona na prática
     O Tempo (agora): O cálculo da interpolação de frames que você já programou (anim_time = fmod(agora, max_time)) continuará funcionando perfeitamente! Como a animação 8 e a 6 têm durações (max_time) diferentes, o fmod fará o loop se adaptar dinamicamente ao tamanho da animação atual em milissegundos.
 
 Basta compilar o código novamente. Agora, toda vez que você pressionar uma tecla de andar, o modelo assumirá a postura de corrida, e ao soltar, ele voltará para o ciclo de respiração idle.
+GL_CLAMP_TO_EDGE
+
+
+
+### Commit com IA: Desenho de um chão infinito para ficar mais legal a gameplay
+
+PROMPT:
+Quero que me de alternativas de como posso implementar uma textura "infinita" para o jogador, atualmente ele ta so flutuando em um pequeno plano.
+Preferencialemnte, seria interessante manipular o modelo obj e a textura que já está presente na cena atual.
+
+### Commit com IA: Colocar um novo modelo no mapa para futuramente testar tanto colisão como modelos de iluminação e double jump
+
+PROMPT 1:
+Qual seria o passo a passo para eu poder adicionar um novo modelo obj e poder colocar ele na cena, semelhante ao plano em @src/main.cpp.
+Considerando que seria possível ter um .mtl vindo junto do .obj e textura
+
+PROMPT 2: 
+Ent, esse meu obj, toda vez q mudo pra usar o modelo do swampfire, ele usa a textura dele no bloco, pq usa a textureImage4, tem como eu colocar a 5 direto? O swampfire usa gltf pra carregar o modelo, q eh diferente do carregamento dos modelos obj  
