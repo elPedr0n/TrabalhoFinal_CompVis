@@ -3,6 +3,8 @@
 #include "globals.h"
 #include <bits/stdc++.h>
 
+bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
+
 void UpdatePosition() {
 
     float input_x = 0.0f;
@@ -60,9 +62,9 @@ void UpdatePosition() {
     }
     
     
-    if (keys[GLFW_KEY_SPACE] and jumping and g_active_character == 0) { // Aq q entra o double jump
+    if (keys[GLFW_KEY_SPACE] and jumping and g_active_character == 0 and double_jump_available) { // Aq q entra o double jump
         keys[GLFW_KEY_SPACE] = false;
-        jumping = false;
+        double_jump_available = false;
         player_speed[AXIS_Y] = jump_speed;
 
     }
@@ -71,20 +73,61 @@ void UpdatePosition() {
         keys[GLFW_KEY_SPACE] = false;
         jumping = true;
         player_speed[AXIS_Y] = jump_speed;
+        double_jump_available = true;
     }
 
 
+    if (jumping) player_speed[AXIS_Y] += gravidade;
 
-    player_speed[AXIS_Y] += gravidade;
     player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
-
     player_pos[AXIS_X] += move_x * player_speed[AXIS_X] * delta_t;
     player_pos[AXIS_Z] += move_z * player_speed[AXIS_Z] * delta_t;
 
-    if (player_pos[AXIS_Y] < -1) { //Aqui defini o chao como -1
-        player_pos[AXIS_Y] = -1;
-        player_speed[AXIS_Y] = 0;
+    // === INÍCIO DO SISTEMA DE COLISÃO ===
+    
+    bool colidiu_com_chao = false; // Flag para saber se podemos pular
+
+    // 1. Checagem do "Chão de Segurança" (O que você já tinha)
+    if (player_pos[AXIS_Y] <= -1.0f) {
+        player_pos[AXIS_Y] = -1.0f;
+        player_speed[AXIS_Y] = 0.0f;
+        colidiu_com_chao = true;
+    }
+
+    // 2. Checagem das Plataformas
+    // Crie as caixas para o teste (substitua p_scale pelos valores da bbox do seu modelo)
+    glm::vec3 p_pos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
+    glm::vec3 p_scale(g_characters[g_active_character].bbox[0], g_characters[g_active_character].bbox[1], g_characters[g_active_character].bbox[2]);
+
+    p_pos.y -= 0.9;
+    // Supondo que você tem um vetor global std::vector<Platform> level_platforms;
+    for (const auto& plat : g_platforms) {
+        if (CheckCollisionAABB(p_pos, p_scale, plat.position, plat.scale)) {
+            
+            // std::cout << "Colidiu com a plataforma!" << std::endl;
+            // O jogador só "pisa" na plataforma se ele estiver CAINDO.
+            // Se ele estiver subindo (speed > 0), ele passa direto (ajuda na fluidez do pulo)
+            if (player_speed[AXIS_Y] <= 0.0f) {
+                
+                // std::cout << player_speed[AXIS_Y] <<" Colidiu com a plataforma e esta descendo!" << std::endl;
+                // Trava o Y do jogador EXATAMENTE no topo da plataforma
+                // Topo da plataforma = Centro Y dela + Metade da Altura dela
+                player_pos[AXIS_Y] = plat.position.y + (plat.scale.y) + (p_scale.y / 2.0f); // Ajusta para o topo da plataforma
+                
+                player_speed[AXIS_Y] = 0.0f; // Zera a velocidade de queda
+                colidiu_com_chao = true;     // Avisa que o jogador está pisando em algo
+            }
+        }
+    }
+
+    // 3. Atualiza as suas variáveis de estado baseadas na colisão
+    if (colidiu_com_chao) {
         jumping = false;
+        double_jump_available = true; // Recarrega o pulo duplo
+    } else {
+        // Se ele não colidiu com o chão nem com plataforma, ele está caindo
+        // (por exemplo, se ele andou pra fora da borda de uma plataforma sem pular)
+        jumping = true; 
     }
     
 }

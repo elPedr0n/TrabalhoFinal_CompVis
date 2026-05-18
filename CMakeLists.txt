@@ -16,6 +16,7 @@ set(SOURCES
   src/tiny_gltf.cpp
   src/glad.c
   src/gltf_utils.cpp
+  src/platforms.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)
