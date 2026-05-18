@@ -55,6 +55,7 @@
 #include "matrices.h"
 #include "globals.h"
 #include "sceneobject.h"
+#include "animation.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -369,7 +370,7 @@ float player_pos[3] = {0.0f,-1.0f,0.0f};
 float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
 float player_rotate = 0;
 float player_scalling = 0.5f;
-float jump_speed = 6;
+float jump_speed = 8.0f;
 
 float gravidade = -0.1f;
 float delta_t;
@@ -505,34 +506,7 @@ int main(int argc, char* argv[])
     computeNormalsForGLTF<uint16_t>(gltfmodel);
     buildTrianglesAndAddToVirtualSceneFromGLTF(gltfmodel);
 
-    // --- Prepare inverse bind matrices per skin ---
-    std::vector<std::vector<glm::mat4>> inverse_bind_matrices_by_skin;
-    inverse_bind_matrices_by_skin.resize(gltfmodel.skins.size());
-    for (size_t s = 0; s < gltfmodel.skins.size(); ++s) {
-        const tinygltf::Skin &skin = gltfmodel.skins[s];
-        if (skin.inverseBindMatrices >= 0) {
-            const tinygltf::Accessor &acc = gltfmodel.accessors[skin.inverseBindMatrices];
-            const tinygltf::BufferView &bv = gltfmodel.bufferViews[acc.bufferView];
-            const tinygltf::Buffer &buf = gltfmodel.buffers[bv.buffer];
-            const float *mats = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
-            size_t count = acc.count;
-            inverse_bind_matrices_by_skin[s].reserve(count);
-            for (size_t i = 0; i < count; ++i) {
-                const float *m = &mats[16*i];
-                glm::mat4 M = glm::make_mat4(m);
-                inverse_bind_matrices_by_skin[s].push_back(M);
-            }
-        }
-    }
-
-    // Build parent map for nodes to compute hierarchy quickly
-    std::vector<int> node_parent(gltfmodel.nodes.size(), -1);
-    for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
-        const tinygltf::Node &n = gltfmodel.nodes[ni];
-        for (int c : n.children) {
-            if (c >= 0 && c < (int)gltfmodel.nodes.size()) node_parent[c] = (int)ni;
-        }
-    }
+    
 
     if ( argc > 1 )
     {
@@ -552,6 +526,18 @@ int main(int argc, char* argv[])
     glFrontFace(GL_CCW);
 
     float anterior = (float)glfwGetTime();
+
+    // Variáveis de estado da máquina de animação
+    int q_state = 0; // 0=livre, 1=segurando Q, 2=soltou Q (anim 2 rodando)
+    float q_release_time = 0.0f;
+    float jump_timer = 0.0f;
+    bool is_attacking = false;
+
+    // NOVOS CONTROLES: Cronômetros locais para resetar animações
+    int last_applied_anim_index = -1;
+    float anim_start_time = 0.0f;
+
+    GltfAnimator swampfireAnimator(gltfmodel);
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -664,7 +650,10 @@ int main(int argc, char* argv[])
         // DrawVirtualObject("the_bunny");
 
         
-        UpdatePosition();
+        // O personagem só pode se mover se não estiver no meio de um ataque
+        if (!is_attacking) {
+            UpdatePosition();
+        }
 
         // Draw controlled BigChill if visible
         if (g_characters[0].visible)
@@ -689,176 +678,126 @@ int main(int argc, char* argv[])
         // Draw Swampfire instances if visible
         if (g_characters[1].visible)
         {
-            int current_anim_index = 0; // selected animation index (made visible to model placement)
-            // Compute and upload bone matrices for skinning (if model has skins)
-            if (!gltfmodel.skins.empty()) {
-                const tinygltf::Skin &skin = gltfmodel.skins[0];
+            bool is_moving = keys[GLFW_KEY_W] || keys[GLFW_KEY_A] ||
+                             keys[GLFW_KEY_S] || keys[GLFW_KEY_D] ||
+                             keys[GLFW_KEY_UP] || keys[GLFW_KEY_DOWN] ||
+                             keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_RIGHT];
 
-                // 1) Compute local matrices for all nodes (apply animation if present)
-                std::vector<glm::mat4> local_matrix(gltfmodel.nodes.size(), glm::mat4(1.0f));
-                for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
-                    const tinygltf::Node &n = gltfmodel.nodes[ni];
-                    if (n.matrix.size() == 16) {
-                        local_matrix[ni] = glm::make_mat4(n.matrix.data());
-                    } else {
-                        glm::vec3 T(0.0f);
-                        glm::quat R(1.0f,0.0f,0.0f,0.0f);
-                        glm::vec3 S(1.0f);
-                        if (n.translation.size() == 3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
-                        if (n.rotation.size() == 4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
-                        if (n.scale.size() == 3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
-                        glm::mat4 M = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), S);
-                        local_matrix[ni] = M;
-                    }
+            int current_anim_index = 6; // Padrão: Idle
+            is_attacking = false;
+            float anim_time_to_pass = agora; // Inicialização única
+
+            // --- MÁQUINA DE ESTADOS AVANÇADA ---
+
+            // 1. Ataque com E (Animação 1)
+            if (keys[GLFW_KEY_E]) {
+                current_anim_index = 1;
+                is_attacking = true;
+            }
+            // 2. Ataque com Q (Segurar = 3, Soltar = 2)
+            else if (keys[GLFW_KEY_Q]) {
+                current_anim_index = 3;
+                q_state = 1;
+                is_attacking = true;
+            } else if (q_state == 1) {
+                q_state = 2; 
+                q_release_time = agora;
+                current_anim_index = 2;
+                is_attacking = true;
+            } else if (q_state == 2) {
+                if (agora - q_release_time < 0.8f) {
+                    current_anim_index = 2;
+                    is_attacking = true;
+                } else {
+                    q_state = 0; 
                 }
+            }
 
-                // 2) Apply animations (if any)
-                if (!gltfmodel.animations.empty()) {
-                    // 1. Avalia o estado atual do input (WASD ou Setas)
-                    bool is_moving = keys[GLFW_KEY_W] || keys[GLFW_KEY_A] ||
-                                     keys[GLFW_KEY_S] || keys[GLFW_KEY_D] ||
-                                     keys[GLFW_KEY_UP] || keys[GLFW_KEY_DOWN] ||
-                                     keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_RIGHT];
+            // 3. Pulo (Animação 0)
+            if (!is_attacking && jumping) {
+                current_anim_index = 0;
+            }
 
-                    // 2. Máquina de estados:
-                    current_anim_index = is_moving ? 8 : 6;
+            // 4. Corrida / Idle
+            if (!is_attacking && !jumping) {
+                if (is_moving) {
+                    current_anim_index = 8;
+                } else {
+                    current_anim_index = 6;
+                }
+            }
 
-                    // TEMP DEBUG OVERRIDE: Pressione tecla numérica para forçar animação
-                    // (teclas 0-9). Esta é uma correção temporária para debugging.
-                    if (keys[GLFW_KEY_0]) current_anim_index = 0;
-                    else if (keys[GLFW_KEY_1]) current_anim_index = 1;
-                    else if (keys[GLFW_KEY_2]) current_anim_index = 2;
-                    else if (keys[GLFW_KEY_3]) current_anim_index = 3;
-                    else if (keys[GLFW_KEY_4]) current_anim_index = 4;
-                    else if (keys[GLFW_KEY_5]) current_anim_index = 5;
-                    else if (keys[GLFW_KEY_6]) current_anim_index = 6;
-                    else if (keys[GLFW_KEY_7]) current_anim_index = 7;
-                    else if (keys[GLFW_KEY_8]) current_anim_index = 8;
-                    else if (keys[GLFW_KEY_9]) current_anim_index = 9;
+            // DEBUG OVERRIDE: Pressione tecla numérica para forçar animação (0-9)
+            if (keys[GLFW_KEY_0]) current_anim_index = 0;
+            else if (keys[GLFW_KEY_1]) current_anim_index = 1;
+            else if (keys[GLFW_KEY_2]) current_anim_index = 2;
+            else if (keys[GLFW_KEY_3]) current_anim_index = 3;
+            else if (keys[GLFW_KEY_4]) current_anim_index = 4;
+            else if (keys[GLFW_KEY_5]) current_anim_index = 5;
+            else if (keys[GLFW_KEY_6]) current_anim_index = 6;
+            else if (keys[GLFW_KEY_7]) current_anim_index = 7;
+            else if (keys[GLFW_KEY_8]) current_anim_index = 8;
+            else if (keys[GLFW_KEY_9]) current_anim_index = 9;
 
-                    // Garante que o índice não vai estourar o limite de animações carregadas
-                    if (current_anim_index >= (int)gltfmodel.animations.size()) {
-                        current_anim_index = 0;
-                    }
+            // Garante que o índice não ultrapasse o número de animações carregadas
+            if (gltfmodel.animations.size() > 0 && current_anim_index >= (int)gltfmodel.animations.size()) {
+                current_anim_index = 0;
+            }
 
-                    float anim_time = fmod(agora, 1000.0f);
+            // --- GERENCIAMENTO DE TEMPO LOCAL (RESET DE ANIMAÇÃO) ---
+            if (current_anim_index != last_applied_anim_index) {
+                anim_start_time = agora;
+                last_applied_anim_index = current_anim_index;
+                if (current_anim_index == 0) {
+                    jump_timer = 0.0f; 
+                }
+            }
 
-                    // 3. Carrega a animação selecionada pelo estado
+            // Atribuição correta sem re-declaração
+            anim_time_to_pass = agora - anim_start_time;
+
+            // Tratamento do Pulo com efeito Ping-Pong (Toca normal e depois em reverso)
+            if (current_anim_index == 0) {
+                jump_timer += delta_t;
+                float speed_multiplier = 2.0f; // Aumentei para 2.0f pro ping-pong caber no tempo do pulo!
+                anim_time_to_pass = jump_timer * speed_multiplier;
+
+                // Calcula duração máxima da animação atual (índice 0) de forma segura
+                if (gltfmodel.animations.size() > (size_t)current_anim_index) {
                     const tinygltf::Animation &anim = gltfmodel.animations[current_anim_index];
                     float max_time = 0.0f;
-                    std::vector<std::vector<float>> sampler_inputs(anim.samplers.size());
-                    std::vector<int> sampler_output_accessor(anim.samplers.size(), -1);
-                    for (size_t si = 0; si < anim.samplers.size(); ++si) {
-                        const auto &samp = anim.samplers[si];
+                    for (const auto &samp : anim.samplers) {
                         if (samp.input >= 0) {
                             const tinygltf::Accessor &acc = gltfmodel.accessors[samp.input];
                             const tinygltf::BufferView &bv = gltfmodel.bufferViews[acc.bufferView];
                             const tinygltf::Buffer &buf = gltfmodel.buffers[bv.buffer];
-                            const float *times = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
-                            sampler_inputs[si].assign(times, times + acc.count);
-                            if (!sampler_inputs[si].empty()) max_time = std::max(max_time, sampler_inputs[si].back());
-                        }
-                        sampler_output_accessor[si] = anim.samplers[si].output;
-                    }
-                    if (max_time > 0.0f) anim_time = fmod(agora, max_time);
-
-                    for (const auto &ch : anim.channels) {
-                        int samp_idx = ch.sampler;
-                        if (samp_idx < 0 || samp_idx >= (int)anim.samplers.size()) continue;
-                        const auto &inputs = sampler_inputs[samp_idx];
-                        if (inputs.empty()) continue;
-                        size_t k = 0; while (k + 1 < inputs.size() && anim_time > inputs[k+1]) ++k;
-                        size_t k1 = std::min(k + 1, inputs.size()-1);
-                        float t0 = inputs[k]; float t1 = inputs[k1];
-                        float local_t = (t1 - t0) > 0.0f ? (anim_time - t0) / (t1 - t0) : 0.0f;
-
-                        int outAccIdx = sampler_output_accessor[samp_idx];
-                        if (outAccIdx < 0) continue;
-                        const tinygltf::Accessor &outAcc = gltfmodel.accessors[outAccIdx];
-                        const tinygltf::BufferView &outBV = gltfmodel.bufferViews[outAcc.bufferView];
-                        const tinygltf::Buffer &outBuf = gltfmodel.buffers[outBV.buffer];
-                        const float *outData = reinterpret_cast<const float*>(&outBuf.data[outBV.byteOffset + outAcc.byteOffset]);
-
-                        size_t compCount = 1;
-                        if (outAcc.type == TINYGLTF_TYPE_VEC3) compCount = 3; else if (outAcc.type == TINYGLTF_TYPE_VEC4) compCount = 4;
-                        const float *v0 = &outData[k * compCount];
-                        const float *v1 = &outData[k1 * compCount];
-
-                        int nodeIdx = ch.target_node;
-                        if (nodeIdx < 0 || nodeIdx >= (int)gltfmodel.nodes.size()) continue;
-
-                        if (ch.target_path == "translation") {
-                            glm::vec3 t0v(0.0f), t1v(0.0f);
-                            for (size_t c = 0; c < compCount && c < 3; ++c) { t0v[c] = v0[c]; t1v[c] = v1[c]; }
-                            glm::vec3 tt = glm::mix(t0v, t1v, local_t);
-                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
-                            glm::quat R = glm::quat(1.0f,0.0f,0.0f,0.0f); glm::vec3 S(1.0f);
-                            if (n.rotation.size()==4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
-                            if (n.scale.size()==3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
-                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), tt) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), S);
-                        } else if (ch.target_path == "scale") {
-                            glm::vec3 s0v(1.0f), s1v(1.0f);
-                            for (size_t c = 0; c < compCount && c < 3; ++c) { s0v[c] = v0[c]; s1v[c] = v1[c]; }
-                            glm::vec3 ss = glm::mix(s0v, s1v, local_t);
-                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
-                            glm::quat R = glm::quat(1.0f,0.0f,0.0f,0.0f); glm::vec3 T(0.0f);
-                            if (n.rotation.size()==4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
-                            if (n.translation.size()==3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
-                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), ss);
-                        } else if (ch.target_path == "rotation") {
-                            glm::quat q0(1.0f,0.0f,0.0f,0.0f), q1(1.0f,0.0f,0.0f,0.0f);
-                            if (compCount >= 4) { q0 = glm::quat(v0[3], v0[0], v0[1], v0[2]); q1 = glm::quat(v1[3], v1[0], v1[1], v1[2]); }
-                            glm::quat qr = glm::slerp(q0, q1, local_t);
-                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
-                            glm::vec3 T(0.0f); glm::vec3 S(1.0f);
-                            if (n.translation.size()==3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
-                            if (n.scale.size()==3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
-                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(qr) * glm::scale(glm::mat4(1.0f), S);
+                            const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
+                            if (acc.count > 0) {
+                                float last_t = times[acc.count - 1];
+                                if (last_t > max_time) max_time = last_t;
+                            }
                         }
                     }
-                }
 
-                // 3) Compute global matrices by hierarchy (RESOLVIDO: Ordem Topológica)
-                std::vector<glm::mat4> global_matrix(gltfmodel.nodes.size(), glm::mat4(1.0f));
-                std::vector<bool> matrix_computed(gltfmodel.nodes.size(), false);
-
-                for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
-                    if (matrix_computed[ni]) continue;
-
-                    // Guarda o caminho do nó atual até a raiz do esqueleto
-                    std::vector<int> path;
-                    int curr = ni;
-                    while (curr != -1 && !matrix_computed[curr]) {
-                        path.push_back(curr);
-                        curr = node_parent[curr];
-                    }
-
-                    // Calcula a matriz do pai mais distante até chegar no filho atual
-                    for (int i = (int)path.size() - 1; i >= 0; --i) {
-                        int node = path[i];
-                        int p = node_parent[node];
-                        if (p == -1) {
-                            global_matrix[node] = local_matrix[node];
-                        } else {
-                            global_matrix[node] = global_matrix[p] * local_matrix[node];
-                        }
-                        matrix_computed[node] = true;
+                    // Se passou da duração, aplica ping-pong (vai e volta)
+                    if (max_time > 0.0f && anim_time_to_pass > max_time) {
+                        float time_after_max = anim_time_to_pass - max_time;
+                        anim_time_to_pass = max_time - time_after_max; // Reverte
+                        if (anim_time_to_pass < 0.0f) anim_time_to_pass = 0.0f; // Clamp
                     }
                 }
+            }
 
-                // 4) Build final bone matrices and upload
-                size_t jointCount = skin.joints.size();
-                size_t uploadCount = std::min<size_t>(jointCount, 100);
-                std::vector<glm::mat4> boneMatrices(uploadCount, glm::mat4(1.0f));
-                for (size_t j = 0; j < uploadCount; ++j) {
-                    int nodeIdx = skin.joints[j];
-                    glm::mat4 invBind(1.0f);
-                    if (j < inverse_bind_matrices_by_skin[0].size()) invBind = inverse_bind_matrices_by_skin[0][j];
-                    boneMatrices[j] = global_matrix[nodeIdx] * invBind;
-                }
-                if (g_bone_matrices_uniform >= 0) {
-                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)uploadCount, GL_FALSE, (const GLfloat*)glm::value_ptr(boneMatrices[0]));
-                }
+            // Atualiza o animador modular
+            swampfireAnimator.update(gltfmodel, current_anim_index, anim_time_to_pass);
+
+            // Envia para a placa de vídeo
+            const auto& boneMatrices = swampfireAnimator.getBoneMatrices();
+            if (g_bone_matrices_uniform >= 0 && !boneMatrices.empty()) {
+                glUniformMatrix4fv(g_bone_matrices_uniform, 
+                                   (GLsizei)boneMatrices.size(), 
+                                   GL_FALSE, 
+                                   (const GLfloat*)boneMatrices.data());
             }
 
             for (int i = 0; i < 20; i++) {
@@ -894,7 +833,6 @@ int main(int argc, char* argv[])
                 }
             }
         }
-
 
         // Desenhar as plataformas
         constexpr size_t TNT_TEXTURE_INDEX = 4;
