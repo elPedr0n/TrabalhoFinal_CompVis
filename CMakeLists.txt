@@ -9,6 +9,7 @@ set(SOURCES
   src/globals.h
   src/player.cpp
   src/main.cpp
+  src/animation.cpp
   src/correcao.cpp
   src/textrendering.cpp
   src/tiny_obj_loader.cpp
