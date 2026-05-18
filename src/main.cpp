@@ -685,7 +685,7 @@ int main(int argc, char* argv[])
 
             int current_anim_index = 6; // Padrão: Idle
             is_attacking = false;
-            float anim_time_to_pass = agora; // Valor padrão, pode ser recalculado abaixo
+            float anim_time_to_pass = 0.0f;
 
             // --- MÁQUINA DE ESTADOS AVANÇADA ---
 
@@ -727,7 +727,7 @@ int main(int argc, char* argv[])
                 }
             }
 
-            // DEBUG OVERRIDE: Pressione tecla numérica para forçar animação (0-9)
+            // DEBUG OVERRIDE: Press numeric key to force animation (0-9)
             if (keys[GLFW_KEY_0]) current_anim_index = 0;
             else if (keys[GLFW_KEY_1]) current_anim_index = 1;
             else if (keys[GLFW_KEY_2]) current_anim_index = 2;
