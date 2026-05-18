@@ -269,6 +269,9 @@ void UpdatePosition();
 // Colisao superior das caixas
 bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
 
+// função de update dos inimigos
+void UpdateEnemies();
+
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
 // A cena virtual é uma lista de objetos nomeados, guardados em um dicionário
@@ -423,6 +426,10 @@ Character g_characters[2] = {
     Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
 };
 int g_active_character = 0;
+
+Enemie g_enemies[MAX_ENEMIES] = {
+    Enemie(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
+};
 
 
 int main(int argc, char* argv[])
@@ -700,6 +707,8 @@ int main(int argc, char* argv[])
             UpdatePosition();
         }
 
+        UpdateEnemies();
+
         // Draw controlled BigChill if visible
         if (g_characters[0].visible)
         {
@@ -894,38 +903,49 @@ int main(int argc, char* argv[])
         constexpr size_t TNT_TEXTURE_INDEX = 4;
         constexpr GLint TNT_TEXTURE_UNIT = 5;
 
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
             
-            model = Matrix_Translate(g_platforms[i].position[AXIS_X], g_platforms[i].position[AXIS_Y], g_platforms[i].position[AXIS_Z])
-                *Matrix_Scale(0.1f, 0.1f, 0.1f);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
-            if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
-            {
-                glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
-                glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
-                glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
-            }
-            glUniform1i(g_object_id_uniform, BLOCO);
-            DrawVirtualObject("TNT");
-            // DrawBoundingBox("TNT", BLOCO);
-            // // Draw axes at TNT local origin; enlarged and depth-free for visibility.
-            // if (g_AxesVAO != 0) {
-            //     glm::mat4 tnt_axes_model = model * Matrix_Scale(6.0f, 6.0f, 6.0f);
-            //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(tnt_axes_model));
-            //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
-            //     glDisable(GL_DEPTH_TEST);
-            //     glBindVertexArray(g_AxesVAO);
-            //     glLineWidth(2.0f);
-            //     glDrawArrays(GL_LINES, 0, 6);
-            //     glBindVertexArray(0);
-            //     glEnable(GL_DEPTH_TEST);
-            //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            //     glUniform1i(g_object_id_uniform, BLOCO);
-            // }
+        //     model = Matrix_Translate(g_platforms[i].position[AXIS_X], g_platforms[i].position[AXIS_Y], g_platforms[i].position[AXIS_Z])
+        //         *Matrix_Scale(0.1f, 0.1f, 0.1f);
+        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        //     // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
+        //     if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
+        //     {
+        //         glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
+        //         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
+        //         glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
+        //     }
+        //     glUniform1i(g_object_id_uniform, BLOCO);
+        //     DrawVirtualObject("TNT");
+        //     // DrawBoundingBox("TNT", BLOCO);
+        //     // // Draw axes at TNT local origin; enlarged and depth-free for visibility.
+        //     // if (g_AxesVAO != 0) {
+        //     //     glm::mat4 tnt_axes_model = model * Matrix_Scale(6.0f, 6.0f, 6.0f);
+        //     //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(tnt_axes_model));
+        //     //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
+        //     //     glDisable(GL_DEPTH_TEST);
+        //     //     glBindVertexArray(g_AxesVAO);
+        //     //     glLineWidth(2.0f);
+        //     //     glDrawArrays(GL_LINES, 0, 6);
+        //     //     glBindVertexArray(0);
+        //     //     glEnable(GL_DEPTH_TEST);
+        //     //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        //     //     glUniform1i(g_object_id_uniform, BLOCO);
+        //     // }
             
-        }
+        // }
+
         
+        // Desenhar o inimigo
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
+                  * Matrix_Scale(0.5f, 0.5f, 0.5f);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            DrawVirtualObject("the_bunny");        
+        }
+
+
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
                 * Matrix_Scale(20.0f, 1.0f, 20.0f);
