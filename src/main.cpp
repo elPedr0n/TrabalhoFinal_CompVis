@@ -685,7 +685,7 @@ int main(int argc, char* argv[])
 
             int current_anim_index = 6; // Padrão: Idle
             is_attacking = false;
-            float anim_time_to_pass = agora; // Inicialização única
+            float anim_time_to_pass = agora; // Valor padrão, pode ser recalculado abaixo
 
             // --- MÁQUINA DE ESTADOS AVANÇADA ---
 
