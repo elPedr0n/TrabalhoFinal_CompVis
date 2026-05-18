@@ -149,6 +149,54 @@ struct ObjModel
             }
         }
     }
+
+    // Variáveis para guardar as dimensões do modelo
+    glm::vec3 bbox_min;
+    glm::vec3 bbox_max;
+    glm::vec3 bbox_dimensions; // x = Largura, y = Altura, z = Profundidade
+
+    // Função que calcula tudo isso
+    void ComputeBoundingBox() {
+        // Verifica se os vértices foram carregados com sucesso pelo tinyobj
+        if (attrib.vertices.empty()) return;
+
+        float min_x = std::numeric_limits<float>::max();
+        float min_y = std::numeric_limits<float>::max();
+        float min_z = std::numeric_limits<float>::max();
+
+        float max_x = std::numeric_limits<float>::lowest();
+        float max_y = std::numeric_limits<float>::lowest();
+        float max_z = std::numeric_limits<float>::lowest();
+
+        // Acessamos o vetor gigante de vértices do tinyobjloader
+        size_t num_vertices = attrib.vertices.size() / 3;
+
+        for (size_t v = 0; v < num_vertices; v++) 
+        {
+            float vx = attrib.vertices[3 * v + 0];
+            float vy = attrib.vertices[3 * v + 1];
+            float vz = attrib.vertices[3 * v + 2];
+
+            min_x = std::min(min_x, vx);
+            min_y = std::min(min_y, vy);
+            min_z = std::min(min_z, vz);
+
+            max_x = std::max(max_x, vx);
+            max_y = std::max(max_y, vy);
+            max_z = std::max(max_z, vz);
+        }
+
+        // Salva os valores calculados nas variáveis que criamos no Passo 1
+        this->bbox_min = glm::vec3(min_x, min_y, min_z);
+        this->bbox_max = glm::vec3(max_x, max_y, max_z);
+        
+        // As dimensões finais são a diferença entre o máximo e o mínimo
+        this->bbox_dimensions = this->bbox_max - this->bbox_min;
+
+        // Imprime no console para você ler facilmente quando rodar o jogo
+        printf("Dimensoes -> Largura(X): %.2f, Altura(Y): %.2f, Profund(Z): %.2f\n", 
+            this->bbox_dimensions.x, this->bbox_dimensions.y, this->bbox_dimensions.z);
+        }
 };
 
 
@@ -203,6 +251,9 @@ void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod);
 
 //Movimentação do player 
 void UpdatePosition(); 
+
+// Colisao superior das caixas
+bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
@@ -311,6 +362,7 @@ std::vector<GLuint> g_LoadedSamplerIDs;
 // Vetor global para movimentação
 bool keys[1024] = {false};
 bool jumping = false;
+bool double_jump_available = false;
 
 // Variáveis do player
 float player_pos[3] = {0.0f,-1.0f,0.0f};
@@ -324,10 +376,11 @@ float delta_t;
 
 // Characters controlled by player
 Character g_characters[2] = {
-    Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true),
-    Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false),
+    Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
+    Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
 };
 int g_active_character = 0;
+
 
 int main(int argc, char* argv[])
 {
@@ -432,6 +485,8 @@ int main(int argc, char* argv[])
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
+
+    blockmodel.ComputeBoundingBox();
 
     tinygltf::Model gltfmodel;
     tinygltf::TinyGLTF gltfloader;
@@ -554,7 +609,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -10.0f; // Posição do "far plane"
+        float farplane  = -15.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -841,21 +896,27 @@ int main(int argc, char* argv[])
         }
 
 
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f)
-                *Matrix_Scale(0.1f, 0.1f, 0.1f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
+        // Desenhar as plataformas
         constexpr size_t TNT_TEXTURE_INDEX = 4;
         constexpr GLint TNT_TEXTURE_UNIT = 5;
-        if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
-        {
-            glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
-            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
-            glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
-        }
-        glUniform1i(g_object_id_uniform, BLOCO);
-        DrawVirtualObject("TNT");
 
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            
+            model = Matrix_Translate(g_platforms[i].position[AXIS_X], g_platforms[i].position[AXIS_Y], g_platforms[i].position[AXIS_Z])
+                *Matrix_Scale(0.1, 0.1, 0.1);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
+            if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
+            {
+                glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
+                glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
+                glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
+            }
+            glUniform1i(g_object_id_uniform, BLOCO);
+            DrawVirtualObject("TNT");
+            
+        }
+        
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
                 * Matrix_Scale(20.0f, 1.0f, 20.0f);

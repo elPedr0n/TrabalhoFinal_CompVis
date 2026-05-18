@@ -395,3 +395,19 @@ Considerando que seria possível ter um .mtl vindo junto do .obj e textura
 
 PROMPT 2: 
 Ent, esse meu obj, toda vez q mudo pra usar o modelo do swampfire, ele usa a textura dele no bloco, pq usa a textureImage4, tem como eu colocar a 5 direto? O swampfire usa gltf pra carregar o modelo, q eh diferente do carregamento dos modelos obj  
+
+
+### Commit com IA: Implementando colisão superior com as caixas  a fim de implementar um plataforming
+
+PROMPT 1: 
+Nessa minha aplicação em opengl eu tenho q montar parkour em plataforma, qual seria a melhor forma de implementar isso? Tendo em mente verificação de colisao e tals.
+
+PROMPT 2:
+seguinte, to tendando implementar colisoes, pĺataformas pro jogador poder pular e fazer parkour, so q n ta funcionando, olhe as funcoes em @src/player.cpp 
+@src/platforms.cpp e na @src/main.cpp
+
+PROMPT 3:
+To usando a biblioteca tinyobj, me defina uma função que me de as dimensões de cada modelo, para que eu possa montar uma hitbox.
+
+PROMPT 4:
+Acredito que a lógica de colisão não está muito certa pois o centro do personagem não parece estar no pé do personagem, me de formas que eu possa solucionar esse problema.
