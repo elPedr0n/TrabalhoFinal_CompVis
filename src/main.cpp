@@ -410,7 +410,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
-    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
+    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4 (bound to TextureImage5)
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -845,11 +845,13 @@ int main(int argc, char* argv[])
                 *Matrix_Scale(0.1f, 0.1f, 0.1f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
-        if (g_LoadedTextureIDs.size() > 4 && g_LoadedSamplerIDs.size() > 4)
+        constexpr size_t TNT_TEXTURE_INDEX = 4;
+        constexpr GLint TNT_TEXTURE_UNIT = 5;
+        if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
         {
-            glActiveTexture(GL_TEXTURE5);
-            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[4]);  // TNT.png
-            glBindSampler(5, g_LoadedSamplerIDs[4]);
+            glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
+            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
+            glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
         }
         glUniform1i(g_object_id_uniform, BLOCO);
         DrawVirtualObject("TNT");
@@ -860,10 +862,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
-        
-
-        
-
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
         TextRendering_ShowEulerAngles(window);
