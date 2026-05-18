@@ -39,6 +39,8 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+// Quaternion helpers for slerp
+#include <glm/gtc/quaternion.hpp>
 
 // Headers da biblioteca para carregar modelos obj
 #include <tiny_obj_loader.h>
@@ -257,6 +259,48 @@ GLint g_projection_uniform;
 GLint g_object_id_uniform;
 GLint g_bbox_min_uniform;
 GLint g_bbox_max_uniform;
+GLint g_bone_matrices_uniform;
+// Axes debug VAO/VBO
+GLuint g_AxesVAO = 0;
+GLuint g_AxesVBO = 0;
+GLuint g_AxesColorVBO = 0;
+
+void InitAxes()
+{
+    if (g_AxesVAO != 0) return;
+
+    // 3 axes lines: X (blue), Y (green), Z (red) - each line = 2 vertices
+    GLfloat positions[] = {
+        0.0f, 0.0f, 0.0f, 1.0f,  0.5f, 0.0f, 0.0f, 1.0f, // X
+        0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 0.5f, 0.0f, 1.0f, // Y
+        0.0f, 0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 0.5f, 1.0f  // Z
+    };
+
+    GLfloat colors[] = {
+        0.0f, 0.0f, 1.0f,  0.0f, 0.0f, 1.0f, // X vertices - blue
+        0.0f, 1.0f, 0.0f,  0.0f, 1.0f, 0.0f, // Y vertices - green
+        1.0f, 0.0f, 0.0f,  1.0f, 0.0f, 0.0f  // Z vertices - red
+    };
+
+    glGenVertexArrays(1, &g_AxesVAO);
+    glBindVertexArray(g_AxesVAO);
+
+    glGenBuffers(1, &g_AxesVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_AxesVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW);
+    // position at location 0 (vec4)
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    glGenBuffers(1, &g_AxesColorVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_AxesColorVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(colors), colors, GL_STATIC_DRAW);
+    // color at location 6 (vec3)
+    glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(6);
+
+    glBindVertexArray(0);
+}
 
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
@@ -273,7 +317,7 @@ float player_pos[3] = {0.0f,-1.0f,0.0f};
 float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
 float player_rotate = 0;
 float player_scalling = 0.5f;
-float jump_speed = 4.3;
+float jump_speed = 10;
 
 float gravidade = -0.15f;
 float delta_t;
@@ -358,12 +402,15 @@ int main(int argc, char* argv[])
     //
     LoadShadersFromFiles();
 
+    // Initialize debug axes VAO
+    InitAxes();
+
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
-    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
+    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4 (bound to TextureImage5)
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -402,6 +449,35 @@ int main(int argc, char* argv[])
         throw std::runtime_error("Erro ao carregar modelo glTF.");
     computeNormalsForGLTF<uint16_t>(gltfmodel);
     buildTrianglesAndAddToVirtualSceneFromGLTF(gltfmodel);
+
+    // --- Prepare inverse bind matrices per skin ---
+    std::vector<std::vector<glm::mat4>> inverse_bind_matrices_by_skin;
+    inverse_bind_matrices_by_skin.resize(gltfmodel.skins.size());
+    for (size_t s = 0; s < gltfmodel.skins.size(); ++s) {
+        const tinygltf::Skin &skin = gltfmodel.skins[s];
+        if (skin.inverseBindMatrices >= 0) {
+            const tinygltf::Accessor &acc = gltfmodel.accessors[skin.inverseBindMatrices];
+            const tinygltf::BufferView &bv = gltfmodel.bufferViews[acc.bufferView];
+            const tinygltf::Buffer &buf = gltfmodel.buffers[bv.buffer];
+            const float *mats = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
+            size_t count = acc.count;
+            inverse_bind_matrices_by_skin[s].reserve(count);
+            for (size_t i = 0; i < count; ++i) {
+                const float *m = &mats[16*i];
+                glm::mat4 M = glm::make_mat4(m);
+                inverse_bind_matrices_by_skin[s].push_back(M);
+            }
+        }
+    }
+
+    // Build parent map for nodes to compute hierarchy quickly
+    std::vector<int> node_parent(gltfmodel.nodes.size(), -1);
+    for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
+        const tinygltf::Node &n = gltfmodel.nodes[ni];
+        for (int c : n.children) {
+            if (c >= 0 && c < (int)gltfmodel.nodes.size()) node_parent[c] = (int)ni;
+        }
+    }
 
     if ( argc > 1 )
     {
@@ -558,17 +634,207 @@ int main(int argc, char* argv[])
         // Draw Swampfire instances if visible
         if (g_characters[1].visible)
         {
+            int current_anim_index = 0; // selected animation index (made visible to model placement)
+            // Compute and upload bone matrices for skinning (if model has skins)
+            if (!gltfmodel.skins.empty()) {
+                const tinygltf::Skin &skin = gltfmodel.skins[0];
+
+                // 1) Compute local matrices for all nodes (apply animation if present)
+                std::vector<glm::mat4> local_matrix(gltfmodel.nodes.size(), glm::mat4(1.0f));
+                for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
+                    const tinygltf::Node &n = gltfmodel.nodes[ni];
+                    if (n.matrix.size() == 16) {
+                        local_matrix[ni] = glm::make_mat4(n.matrix.data());
+                    } else {
+                        glm::vec3 T(0.0f);
+                        glm::quat R(1.0f,0.0f,0.0f,0.0f);
+                        glm::vec3 S(1.0f);
+                        if (n.translation.size() == 3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
+                        if (n.rotation.size() == 4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
+                        if (n.scale.size() == 3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
+                        glm::mat4 M = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), S);
+                        local_matrix[ni] = M;
+                    }
+                }
+
+                // 2) Apply animations (if any)
+                if (!gltfmodel.animations.empty()) {
+                    // 1. Avalia o estado atual do input (WASD ou Setas)
+                    bool is_moving = keys[GLFW_KEY_W] || keys[GLFW_KEY_A] ||
+                                     keys[GLFW_KEY_S] || keys[GLFW_KEY_D] ||
+                                     keys[GLFW_KEY_UP] || keys[GLFW_KEY_DOWN] ||
+                                     keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_RIGHT];
+
+                    // 2. Máquina de estados:
+                    current_anim_index = is_moving ? 8 : 6;
+
+                    // TEMP DEBUG OVERRIDE: Pressione tecla numérica para forçar animação
+                    // (teclas 0-9). Esta é uma correção temporária para debugging.
+                    if (keys[GLFW_KEY_0]) current_anim_index = 0;
+                    else if (keys[GLFW_KEY_1]) current_anim_index = 1;
+                    else if (keys[GLFW_KEY_2]) current_anim_index = 2;
+                    else if (keys[GLFW_KEY_3]) current_anim_index = 3;
+                    else if (keys[GLFW_KEY_4]) current_anim_index = 4;
+                    else if (keys[GLFW_KEY_5]) current_anim_index = 5;
+                    else if (keys[GLFW_KEY_6]) current_anim_index = 6;
+                    else if (keys[GLFW_KEY_7]) current_anim_index = 7;
+                    else if (keys[GLFW_KEY_8]) current_anim_index = 8;
+                    else if (keys[GLFW_KEY_9]) current_anim_index = 9;
+
+                    // Garante que o índice não vai estourar o limite de animações carregadas
+                    if (current_anim_index >= (int)gltfmodel.animations.size()) {
+                        current_anim_index = 0;
+                    }
+
+                    float anim_time = fmod(agora, 1000.0f);
+
+                    // 3. Carrega a animação selecionada pelo estado
+                    const tinygltf::Animation &anim = gltfmodel.animations[current_anim_index];
+                    float max_time = 0.0f;
+                    std::vector<std::vector<float>> sampler_inputs(anim.samplers.size());
+                    std::vector<int> sampler_output_accessor(anim.samplers.size(), -1);
+                    for (size_t si = 0; si < anim.samplers.size(); ++si) {
+                        const auto &samp = anim.samplers[si];
+                        if (samp.input >= 0) {
+                            const tinygltf::Accessor &acc = gltfmodel.accessors[samp.input];
+                            const tinygltf::BufferView &bv = gltfmodel.bufferViews[acc.bufferView];
+                            const tinygltf::Buffer &buf = gltfmodel.buffers[bv.buffer];
+                            const float *times = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
+                            sampler_inputs[si].assign(times, times + acc.count);
+                            if (!sampler_inputs[si].empty()) max_time = std::max(max_time, sampler_inputs[si].back());
+                        }
+                        sampler_output_accessor[si] = anim.samplers[si].output;
+                    }
+                    if (max_time > 0.0f) anim_time = fmod(agora, max_time);
+
+                    for (const auto &ch : anim.channels) {
+                        int samp_idx = ch.sampler;
+                        if (samp_idx < 0 || samp_idx >= (int)anim.samplers.size()) continue;
+                        const auto &inputs = sampler_inputs[samp_idx];
+                        if (inputs.empty()) continue;
+                        size_t k = 0; while (k + 1 < inputs.size() && anim_time > inputs[k+1]) ++k;
+                        size_t k1 = std::min(k + 1, inputs.size()-1);
+                        float t0 = inputs[k]; float t1 = inputs[k1];
+                        float local_t = (t1 - t0) > 0.0f ? (anim_time - t0) / (t1 - t0) : 0.0f;
+
+                        int outAccIdx = sampler_output_accessor[samp_idx];
+                        if (outAccIdx < 0) continue;
+                        const tinygltf::Accessor &outAcc = gltfmodel.accessors[outAccIdx];
+                        const tinygltf::BufferView &outBV = gltfmodel.bufferViews[outAcc.bufferView];
+                        const tinygltf::Buffer &outBuf = gltfmodel.buffers[outBV.buffer];
+                        const float *outData = reinterpret_cast<const float*>(&outBuf.data[outBV.byteOffset + outAcc.byteOffset]);
+
+                        size_t compCount = 1;
+                        if (outAcc.type == TINYGLTF_TYPE_VEC3) compCount = 3; else if (outAcc.type == TINYGLTF_TYPE_VEC4) compCount = 4;
+                        const float *v0 = &outData[k * compCount];
+                        const float *v1 = &outData[k1 * compCount];
+
+                        int nodeIdx = ch.target_node;
+                        if (nodeIdx < 0 || nodeIdx >= (int)gltfmodel.nodes.size()) continue;
+
+                        if (ch.target_path == "translation") {
+                            glm::vec3 t0v(0.0f), t1v(0.0f);
+                            for (size_t c = 0; c < compCount && c < 3; ++c) { t0v[c] = v0[c]; t1v[c] = v1[c]; }
+                            glm::vec3 tt = glm::mix(t0v, t1v, local_t);
+                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
+                            glm::quat R = glm::quat(1.0f,0.0f,0.0f,0.0f); glm::vec3 S(1.0f);
+                            if (n.rotation.size()==4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
+                            if (n.scale.size()==3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
+                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), tt) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), S);
+                        } else if (ch.target_path == "scale") {
+                            glm::vec3 s0v(1.0f), s1v(1.0f);
+                            for (size_t c = 0; c < compCount && c < 3; ++c) { s0v[c] = v0[c]; s1v[c] = v1[c]; }
+                            glm::vec3 ss = glm::mix(s0v, s1v, local_t);
+                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
+                            glm::quat R = glm::quat(1.0f,0.0f,0.0f,0.0f); glm::vec3 T(0.0f);
+                            if (n.rotation.size()==4) R = glm::quat(n.rotation[3], n.rotation[0], n.rotation[1], n.rotation[2]);
+                            if (n.translation.size()==3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
+                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(R) * glm::scale(glm::mat4(1.0f), ss);
+                        } else if (ch.target_path == "rotation") {
+                            glm::quat q0(1.0f,0.0f,0.0f,0.0f), q1(1.0f,0.0f,0.0f,0.0f);
+                            if (compCount >= 4) { q0 = glm::quat(v0[3], v0[0], v0[1], v0[2]); q1 = glm::quat(v1[3], v1[0], v1[1], v1[2]); }
+                            glm::quat qr = glm::slerp(q0, q1, local_t);
+                            const tinygltf::Node &n = gltfmodel.nodes[nodeIdx];
+                            glm::vec3 T(0.0f); glm::vec3 S(1.0f);
+                            if (n.translation.size()==3) T = glm::vec3(n.translation[0], n.translation[1], n.translation[2]);
+                            if (n.scale.size()==3) S = glm::vec3(n.scale[0], n.scale[1], n.scale[2]);
+                            local_matrix[nodeIdx] = glm::translate(glm::mat4(1.0f), T) * glm::mat4_cast(qr) * glm::scale(glm::mat4(1.0f), S);
+                        }
+                    }
+                }
+
+                // 3) Compute global matrices by hierarchy (RESOLVIDO: Ordem Topológica)
+                std::vector<glm::mat4> global_matrix(gltfmodel.nodes.size(), glm::mat4(1.0f));
+                std::vector<bool> matrix_computed(gltfmodel.nodes.size(), false);
+
+                for (size_t ni = 0; ni < gltfmodel.nodes.size(); ++ni) {
+                    if (matrix_computed[ni]) continue;
+
+                    // Guarda o caminho do nó atual até a raiz do esqueleto
+                    std::vector<int> path;
+                    int curr = ni;
+                    while (curr != -1 && !matrix_computed[curr]) {
+                        path.push_back(curr);
+                        curr = node_parent[curr];
+                    }
+
+                    // Calcula a matriz do pai mais distante até chegar no filho atual
+                    for (int i = (int)path.size() - 1; i >= 0; --i) {
+                        int node = path[i];
+                        int p = node_parent[node];
+                        if (p == -1) {
+                            global_matrix[node] = local_matrix[node];
+                        } else {
+                            global_matrix[node] = global_matrix[p] * local_matrix[node];
+                        }
+                        matrix_computed[node] = true;
+                    }
+                }
+
+                // 4) Build final bone matrices and upload
+                size_t jointCount = skin.joints.size();
+                size_t uploadCount = std::min<size_t>(jointCount, 100);
+                std::vector<glm::mat4> boneMatrices(uploadCount, glm::mat4(1.0f));
+                for (size_t j = 0; j < uploadCount; ++j) {
+                    int nodeIdx = skin.joints[j];
+                    glm::mat4 invBind(1.0f);
+                    if (j < inverse_bind_matrices_by_skin[0].size()) invBind = inverse_bind_matrices_by_skin[0][j];
+                    boneMatrices[j] = global_matrix[nodeIdx] * invBind;
+                }
+                if (g_bone_matrices_uniform >= 0) {
+                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)uploadCount, GL_FALSE, (const GLfloat*)glm::value_ptr(boneMatrices[0]));
+                }
+            }
+
             for (int i = 0; i < 20; i++) {
                 std::string name = "the_swampfire_" + std::to_string(i);
                 if (g_VirtualScene.find(name) != g_VirtualScene.end()) {
-                    model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z])
+                    // ----- CORREÇÃO DE DESNÍVEL DO IDLE -----
+                    float anim_y_offset = 0.0f;
+                    // Se for a animação Idle (6), aplicamos a compensação.
+                    if (current_anim_index == 6) {
+                        anim_y_offset = 0.085f; 
+                    }
+
+                    // A matriz model agora soma o offset no eixo Y
+                    model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y] + anim_y_offset, player_pos[AXIS_Z])
                           * Matrix_Scale(g_characters[1].scale, g_characters[1].scale, g_characters[1].scale)
-                          * Matrix_Rotate_Y(player_rotate + 3.14159265f);
+                          * Matrix_Rotate_Y(player_rotate - (3.14159265f / 6))
+                          * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                     glActiveTexture(GL_TEXTURE4);
                     glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
                     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
+                    // Draw axes in model space (debug)
+                    if (g_AxesVAO != 0) {
+                        glUniform1i(g_object_id_uniform, 100); // axes id -> handled in fragment shader
+                        glBindVertexArray(g_AxesVAO);
+                        glLineWidth(2.0f);
+                        glDrawArrays(GL_LINES, 0, 6);
+                        glBindVertexArray(0);
+                        glUniform1i(g_object_id_uniform, SWAMPFIRE);
+                    }
                     DrawVirtualObject(name.c_str());
                 }
             }
@@ -579,11 +845,13 @@ int main(int argc, char* argv[])
                 *Matrix_Scale(0.1f, 0.1f, 0.1f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
-        if (g_LoadedTextureIDs.size() > 4 && g_LoadedSamplerIDs.size() > 4)
+        constexpr size_t TNT_TEXTURE_INDEX = 4;
+        constexpr GLint TNT_TEXTURE_UNIT = 5;
+        if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
         {
-            glActiveTexture(GL_TEXTURE5);
-            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[4]);  // TNT.png
-            glBindSampler(5, g_LoadedSamplerIDs[4]);
+            glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
+            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
+            glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
         }
         glUniform1i(g_object_id_uniform, BLOCO);
         DrawVirtualObject("TNT");
@@ -594,10 +862,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
-        
-
-        
-
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
         TextRendering_ShowEulerAngles(window);
@@ -763,6 +1027,7 @@ void LoadShadersFromFiles()
     g_object_id_uniform  = glGetUniformLocation(g_GpuProgramID, "object_id"); // Variável "object_id" em shader_fragment.glsl
     g_bbox_min_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_min");
     g_bbox_max_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_max");
+    g_bone_matrices_uniform = glGetUniformLocation(g_GpuProgramID, "boneMatrices[0]");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);

@@ -266,6 +266,117 @@ void UpdatePosition() {
 
 PROMPT 2:
 Agora ajeite a rotação do modelo, esta muito dura e incorreta, não está apontando a frente do modelo para o local correto em relação ao vetor de deslocamento.
+
+### Commit com auxílio de IA: Adicionadas animações idle e de movimentação funcionais, demais em DEBUG
+1. Atualizar a Leitura do GLTF (gltf_utils.h)
+
+Atualmente, sua função buildTrianglesAndAddToVirtualSceneFromGLTF(gltfmodel) (que não está na main, mas é chamada por ela) provavelmente lê apenas posições (X,Y,Z), normais e texturas (U,V).
+Para animações, cada vértice do Ben 10 precisa saber a quais "ossos" ele está grudado e com qual força. Você precisará extrair dois novos atributos dos accessors do GLTF e enviá-los para a GPU via VBOs:
+
+    JOINTS_0: Um vec4 de inteiros indicando os IDs dos 4 ossos que afetam aquele vértice.
+
+    WEIGHTS_0: Um vec4 de floats indicando o "peso" (influência) de cada osso no vértice.
+A Solução Ideal:
+Remova a parte do stbi_load fixa do Swampfire de dentro dessa função. Deixe a função buildTrianglesAndAddToVirtualSceneFromGLTF ser genérica, usando apenas o texture_id que ela já leu do próprio GLTF. Se a textura do modelo não estiver carregando pelo GLTF automaticamente, é melhor arrumar o path das imagens no arquivo .gltf (que é um JSON e pode ser editado no bloco de notas) do que fazer hardcode no parser.
+2. Modificar o Vertex Shader (shader_vertex.glsl)
+
+O seu shader precisará receber os dados dos ossos e calcular a posição final do vértice deformado antes de multiplicar pelas matrizes de projeção e câmera. A lógica básica fica assim:
+OpenGL Shading Language
+
+#version 330 core
+
+layout (location = 0) in vec4 model_coefficients; // Posição
+layout (location = 1) in vec4 normal_coefficients;
+layout (location = 2) in vec2 texture_coefficients;
+// Novos atributos lidos do VAO:
+layout (location = 4) in uvec4 jointIds; 
+layout (location = 5) in vec4 weights;
+
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
+
+// Array com as matrizes de transformação de todos os ossos do modelo
+const int MAX_BONES = 100;
+uniform mat4 boneMatrices[MAX_BONES];
+
+void main()
+{
+    // Calcula a deformação do esqueleto somando a influência dos 4 ossos
+    mat4 boneTransform = boneMatrices[jointIds[0]] * weights[0];
+    boneTransform     += boneMatrices[jointIds[1]] * weights[1];
+    boneTransform     += boneMatrices[jointIds[2]] * weights[2];
+    boneTransform     += boneMatrices[jointIds[3]] * weights[3];
+
+    // Aplica a deformação na posição original
+    vec4 skinnedPosition = boneTransform * model_coefficients;
+
+    // Transforma para as coordenadas do mundo e da tela
+    gl_Position = projection * view * model * skinnedPosition;
+}
+3. A Lógica Matemática na main.cpp
+
+Dentro do seu while (!glfwWindowShouldClose(window)), utilizando a variável delta_t que você já calcula, você terá que:
+
+    Encontrar os Keyframes: Usar o tempo atual da aplicação para buscar nos dados brutos do tinygltf qual é a translação, rotação (quaternions) e escala de cada "Node" (osso) no momento exato.
+
+    Interpolar: Interpolar esfericamente (Slerp) os quaternions entre o frame passado e o próximo frame para o movimento ser fluido.
+
+    Calcular a Hierarquia: Percorrer a árvore de nós do GLTF multiplicando a matriz local do osso "filho" pela do "pai" (ex: a matriz da mão multiplica pela do antebraço, que multiplica pela do braço).
+
+    Matriz Inversa de Repouso (Inverse Bind Matrix): Multiplicar o resultado final pela matriz de repouso do modelo.
+
+    Enviar para a GPU: Pegar o array de matrizes resultantes e passar para o uniform mat4 boneMatrices via glUniformMatrix4fv antes de chamar o DrawVirtualObject("the_swampfire_0").
+Perfeito! Implementar uma máquina de estados baseada nas teclas de movimentação é exatamente o que vai dar "vida" ao seu Swampfire.
+
+No momento, o seu código pega o tempo global (agora) e lê a animação 0 fixamente. Para criar essa máquina de estados, vamos verificar o vetor global de teclado (keys) que você já mapeou na KeyCallback, determinando se o jogador está com o dedo em alguma tecla de movimento (WASD ou setas). Dependendo do resultado, escolhemos a animação 8 (Run) ou 6 (Idle).
+O que modificar na sua main.cpp
+
+Vá até a etapa 2 da montagem dos ossos, localizada dentro do if (g_characters[1].visible).
+
+Você vai substituir este trecho antigo:
+
+ANTES:
+C++
+
+// 2) Apply animations (if any)
+if (!gltfmodel.animations.empty()) {
+    float anim_time = fmod(agora, 1000.0f);
+    const tinygltf::Animation &anim = gltfmodel.animations[0];
+    float max_time = 0.0f;
+
+DEPOIS (Cole este código):
+C++
+
+// 2) Apply animations (if any)
+if (!gltfmodel.animations.empty()) {
+    // 1. Avalia o estado atual do input (WASD ou Setas)
+    bool is_moving = keys[GLFW_KEY_W] || keys[GLFW_KEY_A] || 
+                     keys[GLFW_KEY_S] || keys[GLFW_KEY_D] ||
+                     keys[GLFW_KEY_UP] || keys[GLFW_KEY_DOWN] || 
+                     keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_RIGHT];
+
+    // 2. Máquina de estados: Se estiver movendo, corre (8). Se não, fica parado (6).
+    int current_anim_index = is_moving ? 8 : 6;
+
+    // Garante que o índice não vai estourar o limite de animações carregadas
+    if (current_anim_index >= gltfmodel.animations.size()) {
+        current_anim_index = 0; 
+    }
+
+    float anim_time = fmod(agora, 1000.0f);
+    
+    // 3. Carrega a animação selecionada pelo estado
+    const tinygltf::Animation &anim = gltfmodel.animations[current_anim_index];
+    float max_time = 0.0f;
+
+Como isso funciona na prática
+
+    A Leitura: A cada frame gerado no while, o programa olha para o array keys. Como a sua função KeyCallback preenche esse array instantaneamente com true no pressionamento e false ao soltar a tecla, o is_moving vira um gatilho muito preciso.
+
+    O Tempo (agora): O cálculo da interpolação de frames que você já programou (anim_time = fmod(agora, max_time)) continuará funcionando perfeitamente! Como a animação 8 e a 6 têm durações (max_time) diferentes, o fmod fará o loop se adaptar dinamicamente ao tamanho da animação atual em milissegundos.
+
+Basta compilar o código novamente. Agora, toda vez que você pressionar uma tecla de andar, o modelo assumirá a postura de corrida, e ao soltar, ele voltará para o ciclo de respiração idle.
 GL_CLAMP_TO_EDGE
 
 
