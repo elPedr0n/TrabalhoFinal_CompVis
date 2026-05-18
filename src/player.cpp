@@ -94,31 +94,31 @@ void UpdatePosition() {
         colidiu_com_chao = true;
     }
 
-    // 2. Checagem das Plataformas
-    // Crie as caixas para o teste (substitua p_scale pelos valores da bbox do seu modelo)
-    glm::vec3 p_pos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
-    glm::vec3 p_scale(g_characters[g_active_character].bbox[0], g_characters[g_active_character].bbox[1], g_characters[g_active_character].bbox[2]);
+    // // 2. Checagem das Plataformas
+    // // Crie as caixas para o teste (substitua p_scale pelos valores da bbox do seu modelo)
+    // glm::vec3 p_pos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
+    // glm::vec3 p_scale(g_characters[g_active_character].bbox[0], g_characters[g_active_character].bbox[1], g_characters[g_active_character].bbox[2]);
 
-    // p_pos.y -= 0.9;
-    // Supondo que você tem um vetor global std::vector<Platform> level_platforms;
-    for (const auto& plat : g_platforms) {
-        if (CheckCollisionAABB(p_pos, p_scale, plat.position, plat.scale)) {
+    // // p_pos.y -= 0.9;
+    // // Supondo que você tem um vetor global std::vector<Platform> level_platforms;
+    // for (const auto& plat : g_platforms) {
+    //     if (CheckCollisionAABB(p_pos, p_scale, plat.position, plat.scale)) {
             
-            // std::cout << "Colidiu com a plataforma!" << std::endl;
-            // O jogador só "pisa" na plataforma se ele estiver CAINDO.
-            // Se ele estiver subindo (speed > 0), ele passa direto (ajuda na fluidez do pulo)
-            if (player_speed[AXIS_Y] <= 0.0f) {
+    //         // std::cout << "Colidiu com a plataforma!" << std::endl;
+    //         // O jogador só "pisa" na plataforma se ele estiver CAINDO.
+    //         // Se ele estiver subindo (speed > 0), ele passa direto (ajuda na fluidez do pulo)
+    //         if (player_speed[AXIS_Y] <= 0.0f) {
                 
-                // std::cout << player_speed[AXIS_Y] <<" Colidiu com a plataforma e esta descendo!" << std::endl;
-                // Trava o Y do jogador EXATAMENTE no topo da plataforma
-                // Topo da plataforma = Centro Y dela + Metade da Altura dela
-                player_pos[AXIS_Y] = plat.position.y + (plat.scale.y); // Ajusta para o topo da plataforma
+    //             // std::cout << player_speed[AXIS_Y] <<" Colidiu com a plataforma e esta descendo!" << std::endl;
+    //             // Trava o Y do jogador EXATAMENTE no topo da plataforma
+    //             // Topo da plataforma = Centro Y dela + Metade da Altura dela
+    //             player_pos[AXIS_Y] = plat.position.y + (plat.scale.y); // Ajusta para o topo da plataforma
                 
-                player_speed[AXIS_Y] = 0.0f; // Zera a velocidade de queda
-                colidiu_com_chao = true;     // Avisa que o jogador está pisando em algo
-            }
-        }
-    }
+    //             player_speed[AXIS_Y] = 0.0f; // Zera a velocidade de queda
+    //             colidiu_com_chao = true;     // Avisa que o jogador está pisando em algo
+    //         }
+    //     }
+    // }
 
     // 3. Atualiza as suas variáveis de estado baseadas na colisão
     if (colidiu_com_chao) {

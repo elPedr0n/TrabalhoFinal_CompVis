@@ -11,6 +11,8 @@
 
 #define MAX_PLATFORMS 3
 
+#define MAX_ENEMIES 1
+
 // Character struct — extend this for new properties
 struct Character {
 	std::string model_name;
@@ -42,6 +44,26 @@ struct Platform {
 
 extern Platform g_platforms[MAX_PLATFORMS]; // Array com as plataformas atuais 
 
+
+struct Enemie {
+	glm::vec3 position;
+	float rotate;
+	float scale;
+	bool visible;
+	float bbox[3]; // Bounding box dimensions (width, height, depth)
+	float speed; // Velocidade de movimento do inimigo
+
+	Enemie(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
+		: rotate(rot), scale(sc), visible(vis), speed(0.8f)
+	{
+		position.x = px; position.y = py; position.z = pz;
+		bbox[0] = bbox_w;
+		bbox[1] = bbox_h;
+		bbox[2] = bbox_d;
+	}
+};
+
+extern Enemie g_enemies[MAX_ENEMIES]; // Array with the current enemies
 
 extern bool keys[1024];
 extern bool jumping;
