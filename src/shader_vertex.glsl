@@ -1,69 +1,73 @@
 #version 330 core
 
-// Atributos de vértice recebidos como entrada ("in") pelo Vertex Shader.
-// Veja a função BuildTrianglesAndAddToVirtualScene() em "main.cpp".
+// Atributos
 layout (location = 0) in vec4 model_coefficients;
 layout (location = 1) in vec4 normal_coefficients;
 layout (location = 2) in vec2 texture_coefficients;
 layout (location = 3) in float material_coefficients;
+// Skinning attributes
+layout (location = 4) in uvec4 jointIds;
+layout (location = 5) in vec4 weights;
+// Per-vertex color (used for debug axes)
+layout (location = 6) in vec3 vertex_color;
 
-// Matrizes computadas no código C++ e enviadas para a GPU
+// Matrizes uniformes
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-// Atributos de vértice que serão gerados como saída ("out") pelo Vertex Shader.
-// ** Estes serão interpolados pelo rasterizador! ** gerando, assim, valores
-// para cada fragmento, os quais serão recebidos como entrada pelo Fragment
-// Shader. Veja o arquivo "shader_fragment.glsl".
+// Uniforme para identificar qual objeto estamos desenhando
+// (Como o OpenGL compartilha uniformes, ele vai pegar o valor que você já envia na main.cpp!)
+uniform int object_id; 
+
+// Array de ossos
+const int MAX_BONES = 100;
+uniform mat4 boneMatrices[MAX_BONES];
+
+// Saídas para o Fragment Shader
 out vec4 position_world;
 out vec4 position_model;
 out vec4 normal;
 out vec2 texcoords;
 out float material_id;
+out vec3 vert_color;
 
 void main()
 {
-    // A variável gl_Position define a posição final de cada vértice
-    // OBRIGATORIAMENTE em "normalized device coordinates" (NDC), onde cada
-    // coeficiente estará entre -1 e 1 após divisão por w.
-    // Veja {+NDC2+}.
-    //
-    // O código em "main.cpp" define os vértices dos modelos em coordenadas
-    // locais de cada modelo (array model_coefficients). Abaixo, utilizamos
-    // operações de modelagem, definição da câmera, e projeção, para computar
-    // as coordenadas finais em NDC (variável gl_Position). Após a execução
-    // deste Vertex Shader, a placa de vídeo (GPU) fará a divisão por W. Veja
-    // slides 41-67 e 69-86 do documento Aula_09_Projecoes.pdf.
+    // Por padrão, usamos a posição e normal originais do modelo estático
+    vec4 local_position = model_coefficients;
+    vec4 local_normal = normal_coefficients;
 
-    gl_Position = projection * view * model * model_coefficients;
+    // Se o objeto for o Swampfire (ID 4 definido no seu #define SWAMPFIRE 4), aplicamos os ossos!
+    if (object_id == 4) 
+    {
+        mat4 boneTransform = mat4(0.0);
+        boneTransform += boneMatrices[jointIds[0]] * weights[0];
+        boneTransform += boneMatrices[jointIds[1]] * weights[1];
+        boneTransform += boneMatrices[jointIds[2]] * weights[2];
+        boneTransform += boneMatrices[jointIds[3]] * weights[3];
 
-    // Como as variáveis acima  (tipo vec4) são vetores com 4 coeficientes,
-    // também é possível acessar e modificar cada coeficiente de maneira
-    // independente. Esses são indexados pelos nomes x, y, z, e w (nessa
-    // ordem, isto é, 'x' é o primeiro coeficiente, 'y' é o segundo, ...):
-    //
-    //     gl_Position.x = model_coefficients.x;
-    //     gl_Position.y = model_coefficients.y;
-    //     gl_Position.z = model_coefficients.z;
-    //     gl_Position.w = model_coefficients.w;
-    //
+        // Entorta o vértice
+        local_position = boneTransform * model_coefficients;
+        
+        // Entorta a normal para a luz acompanhar a malha (matemática de normais)
+        mat3 boneNormalTransform = mat3(inverse(transpose(boneTransform)));
+        local_normal = vec4(boneNormalTransform * normal_coefficients.xyz, 0.0);
+    }
 
-    // Agora definimos outros atributos dos vértices que serão interpolados pelo
-    // rasterizador para gerar atributos únicos para cada fragmento gerado.
+    // Projeta na tela
+    gl_Position = projection * view * model * local_position;
 
-    // Posição do vértice atual no sistema de coordenadas global (World).
-    position_world = model * model_coefficients;
-
-    // Posição do vértice atual no sistema de coordenadas local do modelo.
-    position_model = model_coefficients;
-
-    // Normal do vértice atual no sistema de coordenadas global (World).
-    // Veja slides 123-151 do documento Aula_07_Transformacoes_Geometricas_3D.pdf.
-    normal = inverse(transpose(model)) * normal_coefficients;
+    // Calcula variáveis para a iluminação no Fragment Shader
+    position_world = model * local_position;
+    position_model = local_position;
+    
+    // Calcula a normal final global
+    normal = inverse(transpose(model)) * local_normal;
     normal.w = 0.0;
 
-    // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
+    // Passa adiante texturas e materiais
     texcoords = texture_coefficients;
     material_id = material_coefficients;
+    vert_color = vertex_color;
 }

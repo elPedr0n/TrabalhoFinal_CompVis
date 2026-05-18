@@ -12,7 +12,7 @@
 
 #include "sceneobject.h"
 
-#include "stb_image.h"
+// texture loading should come from GLTF images; do not hardcode stbi_load here
 
 void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
     int mesh_count = 0;
@@ -73,6 +73,58 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
                 }
             }
 
+            // JOINTS_0 (vec4 of unsigned ints) & WEIGHTS_0 (vec4 of floats)
+            std::vector<glm::uvec4> joints; // will store as uvec4 (uint32) for GPU upload
+            std::vector<glm::vec4> weights;
+
+            if (primitive.attributes.find("JOINTS_0") != primitive.attributes.end()) {
+                int accessorIdx = primitive.attributes.at("JOINTS_0");
+                const auto &accessor = model.accessors[accessorIdx];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto &buffer = model.buffers[bufferView.buffer];
+                const unsigned char *dataPtr = &buffer.data[bufferView.byteOffset + accessor.byteOffset];
+
+                joints.reserve(accessor.count);
+                for (size_t i = 0; i < accessor.count; ++i) {
+                    glm::uvec4 j(0);
+                    switch (accessor.componentType) {
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE: {
+                            const uint8_t *src = reinterpret_cast<const uint8_t*>(dataPtr);
+                            j.x = src[4 * i + 0]; j.y = src[4 * i + 1]; j.z = src[4 * i + 2]; j.w = src[4 * i + 3];
+                        } break;
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
+                            const uint16_t *src = reinterpret_cast<const uint16_t*>(dataPtr);
+                            j.x = src[4 * i + 0]; j.y = src[4 * i + 1]; j.z = src[4 * i + 2]; j.w = src[4 * i + 3];
+                        } break;
+                        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
+                            const uint32_t *src = reinterpret_cast<const uint32_t*>(dataPtr);
+                            j.x = src[4 * i + 0]; j.y = src[4 * i + 1]; j.z = src[4 * i + 2]; j.w = src[4 * i + 3];
+                        } break;
+                        default:
+                            break;
+                    }
+                    joints.push_back(j);
+                }
+            }
+
+            if (primitive.attributes.find("WEIGHTS_0") != primitive.attributes.end()) {
+                int accessorIdx = primitive.attributes.at("WEIGHTS_0");
+                const auto &accessor = model.accessors[accessorIdx];
+                const auto &bufferView = model.bufferViews[accessor.bufferView];
+                const auto &buffer = model.buffers[bufferView.buffer];
+                const float *weights_ptr = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+
+                weights.reserve(accessor.count);
+                for (size_t i = 0; i < accessor.count; ++i) {
+                    weights.emplace_back(
+                        weights_ptr[4 * i + 0],
+                        weights_ptr[4 * i + 1],
+                        weights_ptr[4 * i + 2],
+                        weights_ptr[4 * i + 3]
+                    );
+                }
+            }
+
             // INDICES
             if (primitive.indices >= 0) {
                 const auto &accessor = model.accessors[primitive.indices];
@@ -95,7 +147,7 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
             }
 
             // OpenGL: Create VAO, VBOs, EBO
-            GLuint vao, vbo_pos, vbo_norm, vbo_tex, vbo_mat, ebo;
+            GLuint vao, vbo_pos, vbo_norm, vbo_tex, vbo_mat, vbo_joints, vbo_weights, ebo;
             glGenVertexArrays(1, &vao);
             glBindVertexArray(vao);
 
@@ -146,6 +198,25 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
                 glEnableVertexAttribArray(3);
             }
 
+            // Joints (location 4) — upload as unsigned ints (vec4)
+            if (!joints.empty()) {
+                glGenBuffers(1, &vbo_joints);
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_joints);
+                glBufferData(GL_ARRAY_BUFFER, joints.size() * sizeof(glm::uvec4), joints.data(), GL_STATIC_DRAW);
+                // integer attribute requires glVertexAttribIPointer
+                glVertexAttribIPointer(4, 4, GL_UNSIGNED_INT, 0, 0);
+                glEnableVertexAttribArray(4);
+            }
+
+            // Weights (location 5) — upload as vec4 floats
+            if (!weights.empty()) {
+                glGenBuffers(1, &vbo_weights);
+                glBindBuffer(GL_ARRAY_BUFFER, vbo_weights);
+                glBufferData(GL_ARRAY_BUFFER, weights.size() * sizeof(glm::vec4), weights.data(), GL_STATIC_DRAW);
+                glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, 0, 0);
+                glEnableVertexAttribArray(5);
+            }
+
             // Indices
             glGenBuffers(1, &ebo);
             glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -191,24 +262,9 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
             obj.rendering_mode = GL_TRIANGLES;
             obj.vertex_array_object_id = vao;
 
-            int width, height, channels;
-            unsigned char* img_data = stbi_load("../../data/swampfire__ben_10_alien_force/textures/SwampFire_baseColor.png", &width, &height, &channels, 4);
-            if (img_data) {
-                GLuint swampfire_tex_id;
-                glGenTextures(1, &swampfire_tex_id);
-                glBindTexture(GL_TEXTURE_2D, swampfire_tex_id);
-                glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, img_data);
-                glGenerateMipmap(GL_TEXTURE_2D);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glBindTexture(GL_TEXTURE_2D, 0);
-                obj.texture_id = swampfire_tex_id;
-                stbi_image_free(img_data);
-            } else {
-                obj.texture_id = texture_id;
-            }
+            // Use texture_id loaded from the GLTF material (if any).
+            // Do not hardcode loading from the repository; fix GLTF image paths instead.
+            obj.texture_id = texture_id;
 
             // Compute bbox
             if (!positions.empty()) {

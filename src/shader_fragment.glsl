@@ -13,6 +13,7 @@ in vec4 position_model;
 // Coordenadas de textura obtidas do arquivo OBJ (se existirem!)
 in vec2 texcoords;
 in float material_id;
+in vec3 vert_color;
 
 // Matrizes computadas no código C++ e enviadas para a GPU
 uniform mat4 model;
@@ -155,6 +156,12 @@ void main()
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
+    }
+
+    // Debug axes rendering: when object_id==100, use per-vertex color directly
+    if (object_id == 100) {
+        color = vec4(vert_color, 1.0);
+        return;
     }
 
     // Equação de Iluminação
