@@ -675,6 +675,7 @@ int main(int argc, char* argv[])
         #define CHILL  3
         #define SWAMPFIRE 4
         #define BLOCO 5
+        #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
 
         // Desenhamos o modelo da esfera
@@ -714,9 +715,18 @@ int main(int argc, char* argv[])
                 glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
                 glBindSampler(tu, g_LoadedSamplerIDs[tu]);
             }
+            // // Draw axes in BigChill model space (origin-centered debug)
+            // if (g_AxesVAO != 0) {
+            //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
+            //     glBindVertexArray(g_AxesVAO);
+            //     glLineWidth(2.0f);
+            //     glDrawArrays(GL_LINES, 0, 6);
+            //     glBindVertexArray(0);
+            //     glUniform1i(g_object_id_uniform, CHILL);
+            // }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
             DrawVirtualObject("the_bigchill");
-            DrawBoundingBox("the_bigchill", CHILL);
+            // DrawBoundingBox("the_bigchill", CHILL);
             glEnable(GL_CULL_FACE);
         }
 
@@ -867,7 +877,7 @@ int main(int argc, char* argv[])
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     // Draw axes in model space (debug)
                     if (g_AxesVAO != 0) {
-                        glUniform1i(g_object_id_uniform, 100); // axes id -> handled in fragment shader
+                        glUniform1i(g_object_id_uniform, AXES_DEBUG); // axes id -> handled in fragment shader
                         glBindVertexArray(g_AxesVAO);
                         glLineWidth(2.0f);
                         glDrawArrays(GL_LINES, 0, 6);
@@ -875,7 +885,7 @@ int main(int argc, char* argv[])
                         glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     }
                     DrawVirtualObject(name.c_str());
-                    DrawBoundingBox(name.c_str(), SWAMPFIRE);
+                    // DrawBoundingBox(name.c_str(), SWAMPFIRE);
                 }
             }
         }
@@ -887,7 +897,7 @@ int main(int argc, char* argv[])
         for (int i = 0; i < MAX_PLATFORMS; i++) {
             
             model = Matrix_Translate(g_platforms[i].position[AXIS_X], g_platforms[i].position[AXIS_Y], g_platforms[i].position[AXIS_Z])
-                *Matrix_Scale(0.1, 0.1, 0.1);
+                *Matrix_Scale(0.1f, 0.1f, 0.1f);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
             if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
@@ -898,7 +908,21 @@ int main(int argc, char* argv[])
             }
             glUniform1i(g_object_id_uniform, BLOCO);
             DrawVirtualObject("TNT");
-            DrawBoundingBox("TNT", BLOCO);
+            // DrawBoundingBox("TNT", BLOCO);
+            // // Draw axes at TNT local origin; enlarged and depth-free for visibility.
+            // if (g_AxesVAO != 0) {
+            //     glm::mat4 tnt_axes_model = model * Matrix_Scale(6.0f, 6.0f, 6.0f);
+            //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(tnt_axes_model));
+            //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
+            //     glDisable(GL_DEPTH_TEST);
+            //     glBindVertexArray(g_AxesVAO);
+            //     glLineWidth(2.0f);
+            //     glDrawArrays(GL_LINES, 0, 6);
+            //     glBindVertexArray(0);
+            //     glEnable(GL_DEPTH_TEST);
+            //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            //     glUniform1i(g_object_id_uniform, BLOCO);
+            // }
             
         }
         
@@ -1278,7 +1302,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         size_t first_index = indices.size();
         size_t num_triangles = model->shapes[shape].mesh.num_face_vertices.size();
 
-        const float minval = std::numeric_limits<float>::min();
+        const float minval = std::numeric_limits<float>::lowest();
         const float maxval = std::numeric_limits<float>::max();
 
         glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);

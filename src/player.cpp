@@ -99,7 +99,7 @@ void UpdatePosition() {
     glm::vec3 p_pos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
     glm::vec3 p_scale(g_characters[g_active_character].bbox[0], g_characters[g_active_character].bbox[1], g_characters[g_active_character].bbox[2]);
 
-    p_pos.y -= 0.9;
+    // p_pos.y -= 0.9;
     // Supondo que você tem um vetor global std::vector<Platform> level_platforms;
     for (const auto& plat : g_platforms) {
         if (CheckCollisionAABB(p_pos, p_scale, plat.position, plat.scale)) {
@@ -112,7 +112,7 @@ void UpdatePosition() {
                 // std::cout << player_speed[AXIS_Y] <<" Colidiu com a plataforma e esta descendo!" << std::endl;
                 // Trava o Y do jogador EXATAMENTE no topo da plataforma
                 // Topo da plataforma = Centro Y dela + Metade da Altura dela
-                player_pos[AXIS_Y] = plat.position.y + (plat.scale.y) + (p_scale.y / 2.0f); // Ajusta para o topo da plataforma
+                player_pos[AXIS_Y] = plat.position.y + (plat.scale.y); // Ajusta para o topo da plataforma
                 
                 player_speed[AXIS_Y] = 0.0f; // Zera a velocidade de queda
                 colidiu_com_chao = true;     // Avisa que o jogador está pisando em algo
