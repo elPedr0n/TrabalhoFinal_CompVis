@@ -2,9 +2,9 @@
 
 // Inicialização das plataformas
 Platform g_platforms[MAX_PLATFORMS] = {
-    { glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(1.8f, 1.8f, 1.8f) }, 
-    { glm::vec3(2.0f, -1.0f, 2.0f), glm::vec3(1.8f, 1.8f, 1.8f) }, 
-    { glm::vec3(4.0f, -1.0f, 4.0f), glm::vec3(1.8f, 1.8f, 1.8f) }  
+    { glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(1.8f, 1.7f, 1.8f) }, 
+    { glm::vec3(2.0f, -1.0f, 2.0f), glm::vec3(1.8f, 1.7f, 1.8f) }, 
+    { glm::vec3(4.0f, -1.0f, 4.0f), glm::vec3(1.8f, 1.7f, 1.8f) }  
 };
 
 bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB) {
