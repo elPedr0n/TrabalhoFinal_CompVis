@@ -317,9 +317,9 @@ float player_pos[3] = {0.0f,-1.0f,0.0f};
 float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
 float player_rotate = 0;
 float player_scalling = 0.5f;
-float jump_speed = 10;
+float jump_speed = 6;
 
-float gravidade = -0.15f;
+float gravidade = -0.1f;
 float delta_t;
 
 // Characters controlled by player

@@ -60,11 +60,20 @@ void UpdatePosition() {
     }
     
     
+    if (keys[GLFW_KEY_SPACE] and jumping and g_active_character == 0) { // Aq q entra o double jump
+        keys[GLFW_KEY_SPACE] = false;
+        jumping = false;
+        player_speed[AXIS_Y] = jump_speed;
+
+    }
+
     if (keys[GLFW_KEY_SPACE] and !jumping){
         keys[GLFW_KEY_SPACE] = false;
         jumping = true;
         player_speed[AXIS_Y] = jump_speed;
     }
+
+
 
     player_speed[AXIS_Y] += gravidade;
     player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
