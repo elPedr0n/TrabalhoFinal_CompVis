@@ -862,3 +862,9 @@ C++
 
             // Atualiza o esqueleto com o tempo local e corrigido
             swampfireAnimator.update(gltfmodel, current_anim_index, anim_time_to_pass);
+
+
+### Commit com IA: Bounding boxes para melhor entendimento das colisões
+
+PPROMPT 1:
+Na @src/main.cpp a sttruct objmodel tem a definição dos vertices de uma bounding box, quero desenha-las ao redor de cada modelo, como faço?

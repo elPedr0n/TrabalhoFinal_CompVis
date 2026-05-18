@@ -156,6 +156,9 @@ struct ObjModel
     glm::vec3 bbox_max;
     glm::vec3 bbox_dimensions; // x = Largura, y = Altura, z = Profundidade
 
+    //Variáveis pra desenhar as bounding boxes
+    glm::vec3 bbox_vertices[8];
+
     // Função que calcula tudo isso
     void ComputeBoundingBox() {
         // Verifica se os vértices foram carregados com sucesso pelo tinyobj
@@ -197,6 +200,15 @@ struct ObjModel
         // Imprime no console para você ler facilmente quando rodar o jogo
         printf("Dimensoes -> Largura(X): %.2f, Altura(Y): %.2f, Profund(Z): %.2f\n", 
             this->bbox_dimensions.x, this->bbox_dimensions.y, this->bbox_dimensions.z);
+            
+            this->bbox_vertices[0] = glm::vec3(this->bbox_min.x, this->bbox_min.y, this->bbox_min.z); // V0
+            this->bbox_vertices[1] = glm::vec3(this->bbox_max.x, this->bbox_min.y, this->bbox_min.z); // V1
+            this->bbox_vertices[2] = glm::vec3(this->bbox_max.x, this->bbox_max.y, this->bbox_min.z); // V2
+            this->bbox_vertices[3] = glm::vec3(this->bbox_min.x, this->bbox_max.y, this->bbox_min.z); // V3
+            this->bbox_vertices[4] = glm::vec3(this->bbox_min.x, this->bbox_min.y, this->bbox_max.z); // V4
+            this->bbox_vertices[5] = glm::vec3(this->bbox_max.x, this->bbox_min.y, this->bbox_max.z); // V5
+            this->bbox_vertices[6] = glm::vec3(this->bbox_max.x, this->bbox_max.y, this->bbox_max.z); // V6
+            this->bbox_vertices[7] = glm::vec3(this->bbox_min.x, this->bbox_max.y, this->bbox_max.z); // V7
         }
 };
 
@@ -212,6 +224,7 @@ void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso n�
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
+void DrawBoundingBox(const char* object_name, int restore_object_id); // Desenha AABB em wireframe
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
@@ -316,6 +329,9 @@ GLint g_bone_matrices_uniform;
 GLuint g_AxesVAO = 0;
 GLuint g_AxesVBO = 0;
 GLuint g_AxesColorVBO = 0;
+GLuint g_BBoxVAO = 0;
+GLuint g_BBoxVBO = 0;
+GLuint g_BBoxEBO = 0;
 
 void InitAxes()
 {
@@ -354,6 +370,32 @@ void InitAxes()
     glBindVertexArray(0);
 }
 
+void InitBoundingBox()
+{
+    if (g_BBoxVAO != 0) return;
+
+    const GLuint bbox_indices[] = {
+        0,1, 1,2, 2,3, 3,0, // base
+        4,5, 5,6, 6,7, 7,4, // topo
+        0,4, 1,5, 2,6, 3,7  // conexões
+    };
+
+    glGenVertexArrays(1, &g_BBoxVAO);
+    glBindVertexArray(g_BBoxVAO);
+
+    glGenBuffers(1, &g_BBoxVBO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_BBoxVBO);
+    glBufferData(GL_ARRAY_BUFFER, 8 * 4 * sizeof(GLfloat), nullptr, GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    glGenBuffers(1, &g_BBoxEBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_BBoxEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(bbox_indices), bbox_indices, GL_STATIC_DRAW);
+
+    glBindVertexArray(0);
+}
+
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 // Store OpenGL texture and sampler IDs for binding at draw time
@@ -370,7 +412,7 @@ float player_pos[3] = {0.0f,-1.0f,0.0f};
 float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
 float player_rotate = 0;
 float player_scalling = 0.5f;
-float jump_speed = 8.0f;
+float jump_speed = 4.0f;
 
 float gravidade = -0.1f;
 float delta_t;
@@ -458,6 +500,7 @@ int main(int argc, char* argv[])
 
     // Initialize debug axes VAO
     InitAxes();
+    InitBoundingBox();
 
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
@@ -632,6 +675,7 @@ int main(int argc, char* argv[])
         #define CHILL  3
         #define SWAMPFIRE 4
         #define BLOCO 5
+        #define BBOX_DEBUG 101
 
         // Desenhamos o modelo da esfera
         // model = Matrix_Translate(-1.0f,0.0f,0.0f)
@@ -672,6 +716,7 @@ int main(int argc, char* argv[])
             }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
             DrawVirtualObject("the_bigchill");
+            DrawBoundingBox("the_bigchill", CHILL);
             glEnable(GL_CULL_FACE);
         }
 
@@ -830,6 +875,7 @@ int main(int argc, char* argv[])
                         glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     }
                     DrawVirtualObject(name.c_str());
+                    DrawBoundingBox(name.c_str(), SWAMPFIRE);
                 }
             }
         }
@@ -852,6 +898,7 @@ int main(int argc, char* argv[])
             }
             glUniform1i(g_object_id_uniform, BLOCO);
             DrawVirtualObject("TNT");
+            DrawBoundingBox("TNT", BLOCO);
             
         }
         
@@ -861,6 +908,7 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+        DrawBoundingBox("the_plane", PLANE);
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
         TextRendering_ShowEulerAngles(window);
@@ -893,6 +941,39 @@ int main(int argc, char* argv[])
 
     // Fim do programa
     return 0;
+}
+
+void DrawBoundingBox(const char* object_name, int restore_object_id)
+{
+    if (g_BBoxVAO == 0) return;
+
+    const auto object_it = g_VirtualScene.find(object_name);
+    if (object_it == g_VirtualScene.end()) return;
+
+    const glm::vec3 bbox_min = object_it->second.bbox_min;
+    const glm::vec3 bbox_max = object_it->second.bbox_max;
+
+    const GLfloat bbox_vertices[8 * 4] = {
+        bbox_min.x, bbox_min.y, bbox_min.z, 1.0f, // V0
+        bbox_max.x, bbox_min.y, bbox_min.z, 1.0f, // V1
+        bbox_max.x, bbox_max.y, bbox_min.z, 1.0f, // V2
+        bbox_min.x, bbox_max.y, bbox_min.z, 1.0f, // V3
+        bbox_min.x, bbox_min.y, bbox_max.z, 1.0f, // V4
+        bbox_max.x, bbox_min.y, bbox_max.z, 1.0f, // V5
+        bbox_max.x, bbox_max.y, bbox_max.z, 1.0f, // V6
+        bbox_min.x, bbox_max.y, bbox_max.z, 1.0f  // V7
+    };
+
+    glBindVertexArray(g_BBoxVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_BBoxVBO);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bbox_vertices), bbox_vertices);
+
+    glUniform1i(g_object_id_uniform, 101);
+    glLineWidth(2.0f);
+    glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
+
+    glBindVertexArray(0);
+    glUniform1i(g_object_id_uniform, restore_object_id);
 }
 
 // Função que carrega uma imagem para ser utilizada como textura

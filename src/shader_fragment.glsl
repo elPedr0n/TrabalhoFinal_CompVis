@@ -171,6 +171,12 @@ void main()
         return;
     }
 
+    // Debug bounding boxes rendering: when object_id==101, draw solid yellow lines
+    if (object_id == 101) {
+        color = vec4(1.0, 1.0, 0.0, 1.0);
+        return;
+    }
+
     // Equação de Iluminação
     float lambert = max(0,dot(n,l));
 
