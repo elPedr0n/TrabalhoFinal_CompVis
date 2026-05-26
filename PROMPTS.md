@@ -868,3 +868,23 @@ C++
 
 PPROMPT 1:
 Na @src/main.cpp a sttruct objmodel tem a definição dos vertices de uma bounding box, quero desenha-las ao redor de cada modelo, como faço?
+
+
+### Commit com IA: Modularização das funções de carregamento de modelos GLTF, adição de projectiles.cpp e particles.cpp, além de refatoração geral
+
+PROMPT 1:
+make the animation used by swampfire be a modular function call from animation.cpp
+also make this gltf loading function a function call, modularizing it so I can add the fireball later
+
+PROMPT 2:
+add the fireball with its animation, animate the fireball, make so the fireball only appears when "q" is released, and its size is proportional to the amout of time that the player has held it, up to a limit
+
+PROMPT 3:
+add the fireball stuff into projectiles.cpp, making it as modularized as possible
+
+PROMPT 4:
+erase all references to a fireball gltf. make it a solid orange sphere instead, but keep all handling of projectiles to its module
+add a particles.cpp where particles will be handled. make the sphere be yellow and emit fire-like particles
+
+PROMPT 5:
+make the whole particle system more modularized, function calling including parameters for the particles (color, life, age, etc.). change particle color to use hex strings

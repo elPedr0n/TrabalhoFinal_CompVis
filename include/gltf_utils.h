@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <cstdint>
+#include <string>
 
 #include <glm/glm.hpp>
 
@@ -178,7 +179,20 @@ void computeNormalsForGLTF(tinygltf::Model &model)
 // ============================================================
 
 void buildTrianglesAndAddToVirtualSceneFromGLTF(
-    const tinygltf::Model &model
+    const tinygltf::Model &model,
+    const std::string &base_name
 );
+
+// Load a glTF file from `path`, compute normals and add the model to the
+// virtual scene. On success returns the loaded `tinygltf::Model`.
+// On failure, this function will print diagnostics and throw a
+// `std::runtime_error` describing the problem.
+// Load a glTF file from `path`, compute normals and add the model to the
+// virtual scene. `base_name` is used as a prefix for created SceneObject
+// names (e.g. "the_swampfire"). If empty, a name is derived from the
+// filename. On success returns the loaded `tinygltf::Model`.
+// On failure, this function will print diagnostics and throw a
+// `std::runtime_error` describing the problem.
+tinygltf::Model loadGltfModelAndBuildScene(const std::string &path, const std::string &base_name = "");
 
 #endif // GLTF_UTILS_H

@@ -9,12 +9,13 @@
 #include <glad/glad.h>
 #include <map>
 #include <string>
+#include <cctype>
 
 #include "sceneobject.h"
 
 // texture loading should come from GLTF images; do not hardcode stbi_load here
 
-void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
+void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model, const std::string &base_name) {
     int mesh_count = 0;
     for (const auto &mesh : model.meshes) {
         for (const auto &primitive : mesh.primitives) {
@@ -256,7 +257,8 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
 
             // SceneObject
             SceneObject obj;
-            obj.name = "the_swampfire_" + std::to_string(mesh_count);
+            // Use provided base_name so multiple models don't clobber each other
+            obj.name = base_name + "_" + std::to_string(mesh_count);
             obj.first_index = 0;
             obj.num_indices = indices.size();
             obj.rendering_mode = GL_TRIANGLES;
@@ -279,4 +281,42 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model) {
             mesh_count++;
         }
     }
+}
+
+tinygltf::Model loadGltfModelAndBuildScene(const std::string &path, const std::string &base_name)
+{
+    tinygltf::TinyGLTF loader;
+    tinygltf::Model model;
+    std::string err;
+    std::string warn;
+
+    bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+
+    if (!warn.empty())
+        fprintf(stderr, "glTF warning: %s\n", warn.c_str());
+
+    if (!err.empty())
+        fprintf(stderr, "glTF error: %s\n", err.c_str());
+
+    if (!ret) {
+        std::string msg = "Failed to load glTF file '" + path + "'";
+        if (!err.empty()) msg += std::string(": ") + err;
+        if (!warn.empty()) msg += std::string("\nWarnings: ") + warn;
+        throw std::runtime_error(msg);
+    }
+
+    // Compute normals if missing and build GPU resources
+    computeNormalsForGLTF<uint16_t>(model);
+    // If caller did not provide a base_name, derive one from the filename.
+    std::string final_base = base_name;
+    if (final_base.empty()) {
+        size_t slash = path.find_last_of("/\\");
+        std::string fname = (slash == std::string::npos) ? path : path.substr(slash + 1);
+        size_t dot = fname.find_last_of('.');
+        final_base = (dot == std::string::npos) ? fname : fname.substr(0, dot);
+        for (auto &c : final_base) if (!isalnum((unsigned char)c)) c = '_';
+    }
+    buildTrianglesAndAddToVirtualSceneFromGLTF(model, final_base);
+
+    return model;
 }
