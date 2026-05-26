@@ -40,6 +40,9 @@ uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
+    // Optional override color for procedural particles
+    uniform vec3 OverrideKd;
+    uniform int UseOverrideKd;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -158,12 +161,25 @@ void main()
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
+    } else if ( object_id == 6 ) // FIREBALL
+    {
+        // Solid yellow/orange for the fireball and its particles (emissive)
+        Kd0 = vec3(1.0, 0.75, 0.12) * 2.0;
+    } else if ( object_id == 7 ) // GREEN TRANSFORM PARTICLES
+    {
+        // Bright green emissive for transform particles
+        Kd0 = vec3(0.25, 1.0, 0.35) * 1.8;
     } else if (object_id == BLOCO) 
     {
         U = texcoords.x;
         V = texcoords.y;
         Kd0 = texture(TextureImage5, vec2(U,V)).rgb; 
     }
+    
+        // Override color when requested (per-particle color via uniform)
+        if (UseOverrideKd == 1) {
+            Kd0 = OverrideKd;
+        }
 
     // Debug axes rendering: when object_id==100, use per-vertex color directly
     if (object_id == 100) {
@@ -193,8 +209,12 @@ void main()
     // 3) Realizar o desenho de objetos transparentes ordenados de acordo com
     //    suas distâncias para a câmera (desenhando primeiro objetos
     //    transparentes que estão mais longe da câmera).
-    // Alpha default = 1 = 100% opaco = 0% transparente
-    color.a = 1;
+    // Use lower alpha for additive particles so blending uses source alpha
+    if (object_id == 6) {
+        color.a = 0.85;
+    } else {
+        color.a = 1.0;
+    }
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

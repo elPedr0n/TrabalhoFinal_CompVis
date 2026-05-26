@@ -16,6 +16,8 @@ set(SOURCES
   src/tiny_gltf.cpp
   src/glad.c
   src/gltf_utils.cpp
+  src/projectiles.cpp
+  src/particles.cpp
   src/platforms.cpp
   src/enemies.cpp
 )

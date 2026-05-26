@@ -1,6 +1,8 @@
 #include "animation.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+// Need GLFW key definitions for the Swampfire state machine
+#include <GLFW/glfw3.h>
 
 GltfAnimator::GltfAnimator(const tinygltf::Model& model) {
     // 1. Extrair hierarquia de pais (node_parent)
@@ -29,6 +31,157 @@ GltfAnimator::GltfAnimator(const tinygltf::Model& model) {
             }
         }
     }
+}
+
+SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
+                                             const bool keys[1024],
+                                             bool jumping,
+                                             float delta_t,
+                                             float agora,
+                                             SwampfireAnimState& state,
+                                             bool active)
+{
+    SwampfireAnimResult res;
+
+    auto key_down = [&](int k){ return k >= 0 && k < 1024 ? keys[k] : false; };
+    bool is_moving = key_down(GLFW_KEY_W) || key_down(GLFW_KEY_A) ||
+                     key_down(GLFW_KEY_S) || key_down(GLFW_KEY_D) ||
+                     key_down(GLFW_KEY_UP) || key_down(GLFW_KEY_DOWN) ||
+                     key_down(GLFW_KEY_LEFT) || key_down(GLFW_KEY_RIGHT);
+
+    int current_anim_index = 6; // Idle by default
+    bool is_attacking = false;
+    float anim_time_to_pass = 0.0f;
+
+    // 1/2. Attack handling (E and Q). Disabled while jumping.
+    if (jumping) {
+        // Cancel any ongoing Q hold when jumping
+        state.q_state = 0;
+        // If jumping, we skip attack handling and keep pending fireball (it should not fire while jumping)
+    } else {
+        // Attack with E
+        if (active && key_down(GLFW_KEY_E)) {
+            current_anim_index = 1;
+            is_attacking = true;
+        }
+        // Attack with Q (hold = 3, release = 2) - support charging
+        else {
+            if (active && key_down(GLFW_KEY_Q)) {
+                // start holding
+                if (state.q_state != 1) {
+                    state.q_state = 1;
+                    state.q_press_time = agora;
+                }
+                current_anim_index = 3; // hold animation
+                is_attacking = true;
+            } else if (state.q_state == 1) {
+                // release: transition to release animation and report spawn strength
+                state.q_state = 2;
+                state.q_release_time = agora;
+                current_anim_index = 2; // release animation
+                is_attacking = true;
+
+                // compute hold duration and normalized strength
+                const float max_hold = 1.5f; // seconds
+                float hold_time = agora - state.q_press_time;
+                float strength = hold_time > 0.0f ? std::min(1.0f, hold_time / max_hold) : 0.0f;
+                // store pending strength; actual spawn will be emitted when release animation finishes
+                state.pending_fireball_strength = strength;
+            } else if (state.q_state == 2) {
+                const float release_duration = 0.8f; // total release anim length
+                const float lead_time = 0.5f; // spawn this many seconds before animation end
+                float since_release = agora - state.q_release_time;
+
+                if (since_release < release_duration) {
+                    current_anim_index = 2;
+                    is_attacking = true;
+
+                    // If we're within the lead window and haven't emitted yet, emit now
+                    if (since_release >= (release_duration - lead_time) && state.pending_fireball_strength > 0.0f) {
+                        res.spawn_fireball_strength = state.pending_fireball_strength;
+                        state.pending_fireball_strength = 0.0f;
+                    }
+                } else {
+                    state.q_state = 0;
+                    // If for some reason pending remained, emit now as fallback
+                    if (state.pending_fireball_strength > 0.0f) {
+                        res.spawn_fireball_strength = state.pending_fireball_strength;
+                        state.pending_fireball_strength = 0.0f;
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Jump (animation 0) - jumping animation allowed even if not active
+    if (!is_attacking && jumping) {
+        current_anim_index = 0;
+    }
+
+    // 4. Run / Idle - only start these animations when Swampfire is active
+    if (!is_attacking && !jumping) {
+        if (active) {
+            if (is_moving) current_anim_index = 8;
+            else current_anim_index = 6;
+        } else {
+            // Not active -> keep default_idle
+            current_anim_index = 6;
+        }
+    }
+
+    // Debug override: numeric keys 0-9
+    for (int num = 0; num <= 9; ++num) {
+        if (key_down(GLFW_KEY_0 + num)) { current_anim_index = num; break; }
+    }
+
+    // Clamp to available animations (use last defined animation if index too large)
+    if (!model.animations.empty()) {
+        current_anim_index = std::min(current_anim_index, (int)model.animations.size() - 1);
+    }
+
+    // Local time management (reset when animation changes)
+    if (current_anim_index != state.last_applied_anim_index) {
+        state.anim_start_time = agora;
+        state.last_applied_anim_index = current_anim_index;
+        if (current_anim_index == 0) state.jump_timer = 0.0f;
+    }
+
+    anim_time_to_pass = agora - state.anim_start_time;
+
+    // Jump ping-pong handling
+    if (current_anim_index == 0) {
+        state.jump_timer += delta_t;
+        float speed_multiplier = 2.0f;
+        anim_time_to_pass = state.jump_timer * speed_multiplier;
+
+        if (model.animations.size() > (size_t)current_anim_index) {
+            const tinygltf::Animation &anim = model.animations[current_anim_index];
+            auto get_max_time = [&](const tinygltf::Animation &a)->float{
+                float max_t = 0.0f;
+                for (const auto &samp : a.samplers) {
+                    if (samp.input < 0) continue;
+                    const tinygltf::Accessor &acc = model.accessors[samp.input];
+                    const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+                    const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+                    const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
+                    if (acc.count > 0) max_t = std::max(max_t, times[acc.count - 1]);
+                }
+                return max_t;
+            };
+
+            float max_time = get_max_time(anim);
+            if (max_time > 0.0f && anim_time_to_pass > max_time) {
+                float time_after_max = anim_time_to_pass - max_time;
+                anim_time_to_pass = max_time - time_after_max;
+                if (anim_time_to_pass < 0.0f) anim_time_to_pass = 0.0f;
+            }
+        }
+    }
+
+    res.current_anim_index = current_anim_index;
+    res.anim_time_to_pass = anim_time_to_pass;
+    res.is_attacking = is_attacking;
+    return res;
 }
 
 void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float current_time) {

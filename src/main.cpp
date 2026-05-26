@@ -56,6 +56,9 @@
 #include "globals.h"
 #include "sceneobject.h"
 #include "animation.h"
+// Projectiles and particles
+#include "projectiles.h"
+#include "particles.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -431,6 +434,8 @@ Enemie g_enemies[MAX_ENEMIES] = {
     Enemie(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
+#include "projectiles.h"
+
 
 int main(int argc, char* argv[])
 {
@@ -539,24 +544,10 @@ int main(int argc, char* argv[])
 
     blockmodel.ComputeBoundingBox();
 
-    tinygltf::Model gltfmodel;
-    tinygltf::TinyGLTF gltfloader;
-    std::string err, warn;
-    bool ret = gltfloader.LoadASCIIFromFile(&gltfmodel, &err, &warn, "../../data/swampfire__ben_10_alien_force/scene.gltf");
-    printf("ret = %d\n", ret);
-    printf("err = %s\n", err.c_str());
-    printf("warn = %s\n", warn.c_str());
-    fflush(stdout);
-    if (!warn.empty())
-        fprintf(stderr, "\n%s\n", warn.c_str());
-    if (!err.empty())
-        fprintf(stderr, "\n%s\n", err.c_str());
-    if (!ret)
-        throw std::runtime_error("Erro ao carregar modelo glTF.");
-    computeNormalsForGLTF<uint16_t>(gltfmodel);
-    buildTrianglesAndAddToVirtualSceneFromGLTF(gltfmodel);
-
-    
+    // Load swampfire glTF and build GPU resources; loader prints diagnostics
+    tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
+    // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
+    tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
 
     if ( argc > 1 )
     {
@@ -578,16 +569,15 @@ int main(int argc, char* argv[])
     float anterior = (float)glfwGetTime();
 
     // Variáveis de estado da máquina de animação
-    int q_state = 0; // 0=livre, 1=segurando Q, 2=soltou Q (anim 2 rodando)
-    float q_release_time = 0.0f;
-    float jump_timer = 0.0f;
     bool is_attacking = false;
 
-    // NOVOS CONTROLES: Cronômetros locais para resetar animações
-    int last_applied_anim_index = -1;
-    float anim_start_time = 0.0f;
+    // Swampfire animation local state (preserves timers and flags)
+    SwampfireAnimState swampfire_state;
 
     GltfAnimator swampfireAnimator(gltfmodel);
+    // Animator placeholder for projectiles (no GLTF for projectiles)
+    GltfAnimator fireballAnimator(emptyModel);
+    // keep swampfire_state alive for the main loop (defined above)
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
@@ -682,24 +672,9 @@ int main(int argc, char* argv[])
         #define CHILL  3
         #define SWAMPFIRE 4
         #define BLOCO 5
+        #define FIREBALL 6
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
-
-        // Desenhamos o modelo da esfera
-        // model = Matrix_Translate(-1.0f,0.0f,0.0f)
-        //       * Matrix_Rotate_Z(0.6f)
-        //       * Matrix_Rotate_X(0.2f)
-        //       * Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, SPHERE);
-        // DrawVirtualObject("the_sphere");
-
-        // // Desenhamos o modelo do coelho
-        // model = Matrix_Translate(1.0f,0.0f,0.0f)
-        //       * Matrix_Rotate_X(g_AngleX + (float)glfwGetTime() * 0.1f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, BUNNY);
-        // DrawVirtualObject("the_bunny");
 
         
         // O personagem só pode se mover se não estiver no meio de um ataque
@@ -739,118 +714,15 @@ int main(int argc, char* argv[])
             glEnable(GL_CULL_FACE);
         }
 
+        // Compute swampfire animation via modular function (keeps local state in swampfire_state)
+        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, jumping, delta_t, agora, swampfire_state, g_characters[1].visible);
+
         // Draw Swampfire instances if visible
         if (g_characters[1].visible)
         {
-            bool is_moving = keys[GLFW_KEY_W] || keys[GLFW_KEY_A] ||
-                             keys[GLFW_KEY_S] || keys[GLFW_KEY_D] ||
-                             keys[GLFW_KEY_UP] || keys[GLFW_KEY_DOWN] ||
-                             keys[GLFW_KEY_LEFT] || keys[GLFW_KEY_RIGHT];
-
-            int current_anim_index = 6; // Padrão: Idle
-            is_attacking = false;
-            float anim_time_to_pass = 0.0f;
-
-            // --- MÁQUINA DE ESTADOS AVANÇADA ---
-
-            // 1. Ataque com E (Animação 1)
-            if (keys[GLFW_KEY_E]) {
-                current_anim_index = 1;
-                is_attacking = true;
-            }
-            // 2. Ataque com Q (Segurar = 3, Soltar = 2)
-            else if (keys[GLFW_KEY_Q]) {
-                current_anim_index = 3;
-                q_state = 1;
-                is_attacking = true;
-            } else if (q_state == 1) {
-                q_state = 2; 
-                q_release_time = agora;
-                current_anim_index = 2;
-                is_attacking = true;
-            } else if (q_state == 2) {
-                if (agora - q_release_time < 0.8f) {
-                    current_anim_index = 2;
-                    is_attacking = true;
-                } else {
-                    q_state = 0; 
-                }
-            }
-
-            // 3. Pulo (Animação 0)
-            if (!is_attacking && jumping) {
-                current_anim_index = 0;
-            }
-
-            // 4. Corrida / Idle
-            if (!is_attacking && !jumping) {
-                if (is_moving) {
-                    current_anim_index = 8;
-                } else {
-                    current_anim_index = 6;
-                }
-            }
-
-            // DEBUG OVERRIDE: Press numeric key to force animation (0-9)
-            if (keys[GLFW_KEY_0]) current_anim_index = 0;
-            else if (keys[GLFW_KEY_1]) current_anim_index = 1;
-            else if (keys[GLFW_KEY_2]) current_anim_index = 2;
-            else if (keys[GLFW_KEY_3]) current_anim_index = 3;
-            else if (keys[GLFW_KEY_4]) current_anim_index = 4;
-            else if (keys[GLFW_KEY_5]) current_anim_index = 5;
-            else if (keys[GLFW_KEY_6]) current_anim_index = 6;
-            else if (keys[GLFW_KEY_7]) current_anim_index = 7;
-            else if (keys[GLFW_KEY_8]) current_anim_index = 8;
-            else if (keys[GLFW_KEY_9]) current_anim_index = 9;
-
-            // Garante que o índice não ultrapasse o número de animações carregadas
-            if (gltfmodel.animations.size() > 0 && current_anim_index >= (int)gltfmodel.animations.size()) {
-                current_anim_index = 0;
-            }
-
-            // --- GERENCIAMENTO DE TEMPO LOCAL (RESET DE ANIMAÇÃO) ---
-            if (current_anim_index != last_applied_anim_index) {
-                anim_start_time = agora;
-                last_applied_anim_index = current_anim_index;
-                if (current_anim_index == 0) {
-                    jump_timer = 0.0f; 
-                }
-            }
-
-            // Atribuição correta sem re-declaração
-            anim_time_to_pass = agora - anim_start_time;
-
-            // Tratamento do Pulo com efeito Ping-Pong (Toca normal e depois em reverso)
-            if (current_anim_index == 0) {
-                jump_timer += delta_t;
-                float speed_multiplier = 2.0f; // Aumentei para 2.0f pro ping-pong caber no tempo do pulo!
-                anim_time_to_pass = jump_timer * speed_multiplier;
-
-                // Calcula duração máxima da animação atual (índice 0) de forma segura
-                if (gltfmodel.animations.size() > (size_t)current_anim_index) {
-                    const tinygltf::Animation &anim = gltfmodel.animations[current_anim_index];
-                    float max_time = 0.0f;
-                    for (const auto &samp : anim.samplers) {
-                        if (samp.input >= 0) {
-                            const tinygltf::Accessor &acc = gltfmodel.accessors[samp.input];
-                            const tinygltf::BufferView &bv = gltfmodel.bufferViews[acc.bufferView];
-                            const tinygltf::Buffer &buf = gltfmodel.buffers[bv.buffer];
-                            const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
-                            if (acc.count > 0) {
-                                float last_t = times[acc.count - 1];
-                                if (last_t > max_time) max_time = last_t;
-                            }
-                        }
-                    }
-
-                    // Se passou da duração, aplica ping-pong (vai e volta)
-                    if (max_time > 0.0f && anim_time_to_pass > max_time) {
-                        float time_after_max = anim_time_to_pass - max_time;
-                        anim_time_to_pass = max_time - time_after_max; // Reverte
-                        if (anim_time_to_pass < 0.0f) anim_time_to_pass = 0.0f; // Clamp
-                    }
-                }
-            }
+            int current_anim_index = animRes.current_anim_index;
+            is_attacking = animRes.is_attacking;
+            float anim_time_to_pass = animRes.anim_time_to_pass;
 
             // Atualiza o animador modular
             swampfireAnimator.update(gltfmodel, current_anim_index, anim_time_to_pass);
@@ -898,6 +770,23 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
+            // Fireball projectiles: spawn on Q-release (strength provided by animRes), update and draw via modular API
+            if (g_VirtualScene.find("the_sphere") != g_VirtualScene.end()) {
+                // Only spawn fireballs when the Swampfire character is active/visible
+                if (g_characters[1].visible && animRes.spawn_fireball_strength > 0.0f) {
+                    glm::vec3 ppos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
+                    // spawn a sphere projectile (model base name "the_sphere")
+                    Projectiles_Spawn(std::string("the_sphere"), animRes.spawn_fireball_strength, ppos, player_rotate);
+                }
+                Projectiles_Update(delta_t);
+                // Update particles (projectiles emit particles each update)
+                Particles_Update(delta_t);
+                // Draw projectiles using the static sphere model from the virtual scene
+                Projectiles_Draw(emptyModel, fireballAnimator, g_GpuProgramID, g_model_uniform, g_bone_matrices_uniform, g_object_id_uniform, g_VirtualScene, std::string("the_sphere"), g_characters[1].scale, FIREBALL);
+
+                // (TEST SPHERE REMOVED)
+            }
 
         // Desenhar as plataformas
         constexpr size_t TNT_TEXTURE_INDEX = 4;
@@ -953,6 +842,8 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
         DrawBoundingBox("the_plane", PLANE);
+        // Draw particles (after opaque geometry)
+        Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
         TextRendering_ShowEulerAngles(window);
@@ -1888,6 +1779,16 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // Sync position to current player position
             for (int i = 0; i < 3; ++i)
                 g_characters[g_active_character].pos[i] = player_pos[i];
+                    // Spawn green transform particles at player position (use ParticleOptions)
+                    {
+                        ParticleOptions popts;
+                        popts.color = HexToRgb("#06b800");
+                        popts.life = 0.25f + 0.15f * 1.0f;
+                        popts.scale = 0.15f + 0.01f * 6.0f;
+                        popts.speed = 0.1f + 0.8f * 3.0f;
+                        popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                        Particles_Spawn(glm::vec3(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]), popts);
+                    }
         }
     }
 
