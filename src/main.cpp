@@ -487,6 +487,10 @@ int main(int argc, char* argv[])
     // Indicamos que as chamadas OpenGL deverão renderizar nesta janela
     glfwMakeContextCurrent(window);
 
+    // Papo do windows pra poder rodar mais de boa
+    // Limit FPS to the monitor refresh rate (VSync)
+    glfwSwapInterval(1);
+
     // Carregamento de todas funções definidas por OpenGL 3.3, utilizando a
     // biblioteca GLAD.
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);

@@ -1,7 +1,12 @@
 #include <glad/glad.h>  
 #include <GLFW/glfw3.h>
 #include "globals.h"
-#include <bits/stdc++.h>
+#include <cmath>
+#include <algorithm>
+
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
 
