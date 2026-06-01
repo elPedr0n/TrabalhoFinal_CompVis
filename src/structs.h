@@ -4,45 +4,6 @@
 #include <glm/glm.hpp>
 #include <string>
 
-
-// Character struct — extend this for new properties
-struct Character {
-	std::string model_name;
-	float pos[3];
-	float rotate;
-	float scale;
-	bool  visible;
-    float bbox[3]; // Bounding box dimensions (width, height, depth)
-
-	Character(const char* name, float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: model_name(name), rotate(rot), scale(sc), visible(vis)
-	{
-		pos[0] = px; pos[1] = py; pos[2] = pz;
-		bbox[0] = bbox_w;
-		bbox[1] = bbox_h;
-		bbox[2] = bbox_d;
-	}
-};
-
-
-struct Enemy {
-	glm::vec3 position;
-	float rotate;
-	float scale;
-	bool visible;
-	float bbox[3]; // Bounding box dimensions (width, height, depth)
-	float speed; // Velocidade de movimento do inimigo
-
-	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: rotate(rot), scale(sc), visible(vis), speed(0.8f)
-	{
-		position.x = px; position.y = py; position.z = pz;
-		bbox[0] = bbox_w;
-		bbox[1] = bbox_h;
-		bbox[2] = bbox_d;
-	}
-};
-
 // FONTE: https://medium.com/@andrebluntindie/3d-aabb-collision-detection-and-resolution-for-voxel-games-5fcbfdb8cdb4
 struct AABB {
 	glm::vec3 min; // Vértice mínimo (canto inferior esquerdo)
@@ -52,6 +13,9 @@ struct AABB {
 	AABB(const glm::vec3& min_point, const glm::vec3& max_point)
 		: min(min_point), max(max_point) {}
 
+	// Criar uma regiao de colisao a partir dos pontos min e max e uma translacao
+	AABB(const glm::vec3& position, const glm::vec3& min_point, const glm::vec3& max_point)
+		: min(position + min_point), max(position + max_point) {}
 
 	public:
 	bool IntersectsX(AABB other) {
@@ -138,5 +102,44 @@ inline AABB MakeAABBFromCenterSize(const glm::vec3& center, const glm::vec3& siz
 	return AABB(center - half, center + half);
 }
 
+
+// Character struct — extend this for new properties
+struct Character {
+	std::string model_name;
+	float pos[3];
+	float rotate;
+	float scale;
+	bool  visible;
+    AABB bbox;
+
+	Character(const char* name, float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
+		: model_name(name), rotate(rot), scale(sc), visible(vis)
+	{
+		pos[0] = px; pos[1] = py; pos[2] = pz;
+		bbox = MakeAABBFromCenterSize(glm::vec3(px, py, pz), glm::vec3(bbox_w, bbox_h, bbox_d));
+	}
+};
+
+struct Enemy {
+	glm::vec3 position;
+	float rotate;
+	float scale;
+	bool visible;
+	AABB bbox;
+	float speed; // Velocidade de movimento do inimigo
+
+	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
+		: rotate(rot), scale(sc), visible(vis), speed(0.8f)
+	{
+		position.x = px; position.y = py; position.z = pz;
+		bbox = MakeAABBFromCenterSize(position, glm::vec3(bbox_w, bbox_h, bbox_d));
+	}
+};
+	
+
+struct MapItem {
+	AABB bbox;
+	glm::vec3 position;
+};
 
 #endif

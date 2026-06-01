@@ -173,7 +173,7 @@ void main()
     {
         U = texcoords.x;
         V = texcoords.y;
-        Kd0 = texture(TextureImage5, vec2(U,V)).rgb; 
+        Kd0 = texture(TextureImage4, vec2(U,V)).rgb; 
     }
     
         // Override color when requested (per-particle color via uniform)

@@ -199,8 +199,8 @@ struct ObjModel
         this->aabb_dimensions = this->aabb.max - this->aabb.min;
 
         // Imprime no console para você ler facilmente quando rodar o jogo
-        // printf("Dimensoes -> Largura(X): %.2f, Altura(Y): %.2f, Profund(Z): %.2f\n", 
-        //     this->aabb_dimensions.x, this->aabb_dimensions.y, this->aabb_dimensions.z);
+        printf("Dimensoes -> Largura(X): %.2f, Altura(Y): %.2f, Profund(Z): %.2f\n", 
+            this->aabb_dimensions.x, this->aabb_dimensions.y, this->aabb_dimensions.z);
             
             this->aabb_vertices[0] = glm::vec3(this->aabb.min.x, this->aabb.min.y, this->aabb.min.z); // V0
             this->aabb_vertices[1] = glm::vec3(this->aabb.max.x, this->aabb.min.y, this->aabb.min.z); // V1
@@ -259,10 +259,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-
-// Mapping para detecção das teclas
-void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod);
 
 //Movimentação do player 
 void UpdatePosition(); 
@@ -434,6 +430,8 @@ Enemy g_enemies[MAX_ENEMIES] = {
 
 #include "projectiles.h"
 
+MapItem map[MAX_PLATFORMS];
+
 
 int main(int argc, char* argv[])
 {
@@ -521,7 +519,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
-    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4 (bound to TextureImage5)
+    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -539,18 +537,24 @@ int main(int argc, char* argv[])
     ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
+    bigchillmodel.ComputeBoundingBox();
+    g_characters[0].bbox = bigchillmodel.aabb;
 
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
-
     blockmodel.ComputeBoundingBox();
+    for (int i = 0; i < MAX_PLATFORMS; i++) {
+        glm::vec3 pos = {i * 4.0f, -1.0f, i * 2.0f}; // Example positions for platforms
+        map[i].bbox = AABB(pos, blockmodel.aabb.min, blockmodel.aabb.max);
+        map[i].position = pos;
+    }
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
-
+    
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -701,18 +705,18 @@ int main(int argc, char* argv[])
                 glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
                 glBindSampler(tu, g_LoadedSamplerIDs[tu]);
             }
-            // // Draw axes in BigChill model space (origin-centered debug)
-            // if (g_AxesVAO != 0) {
-            //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
-            //     glBindVertexArray(g_AxesVAO);
-            //     glLineWidth(2.0f);
-            //     glDrawArrays(GL_LINES, 0, 6);
-            //     glBindVertexArray(0);
-            //     glUniform1i(g_object_id_uniform, CHILL);
-            // }
+            // Draw axes in BigChill model space (origin-centered debug)
+            if (g_AxesVAO != 0) {
+                glUniform1i(g_object_id_uniform, AXES_DEBUG);
+                glBindVertexArray(g_AxesVAO);
+                glLineWidth(2.0f);
+                glDrawArrays(GL_LINES, 0, 6);
+                glBindVertexArray(0);
+                glUniform1i(g_object_id_uniform, CHILL);
+            }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
             DrawVirtualObject("the_bigchill");
-            // DrawBoundingBox("the_bigchill", CHILL);
+            DrawBoundingBox("the_bigchill", CHILL);
             glEnable(GL_CULL_FACE);
         }
 
@@ -792,14 +796,13 @@ int main(int argc, char* argv[])
 
 
         // Desenhar o inimigo
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
-                  * Matrix_Scale(0.5f, 0.5f, 0.5f);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            DrawVirtualObject("the_bunny");        
-        }
-
+        // for (int i = 0; i < MAX_ENEMIES; i++) {
+        //     model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
+        //           * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        //     glUniform1i(g_object_id_uniform, BUNNY);
+        //     DrawVirtualObject("the_bunny");        
+        // }
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
@@ -808,6 +811,19 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
         DrawBoundingBox("the_plane", PLANE);
+
+
+        // Desenhamos os blocos do mapa
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
+                  * Matrix_Scale(0.1f, 0.1f, 0.1f);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BLOCO);
+            DrawVirtualObject("TNT");
+            DrawBoundingBox("TNT", BLOCO);
+        }
+
+
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
@@ -2098,10 +2114,3 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
-void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod) {
-    if (action == GLFW_PRESS)
-        keys[key] = true;
-    else if (action == GLFW_RELEASE)
-        keys[key] = false;
-}

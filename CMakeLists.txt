@@ -20,6 +20,7 @@ set(SOURCES
   src/projectiles.cpp
   src/particles.cpp
   src/enemies.cpp
+  src/map.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)

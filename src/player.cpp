@@ -80,14 +80,15 @@ void UpdatePosition() {
         player_speed[AXIS_Y] = jump_speed;
         double_jump_available = true;
     }
-
-
+    
+    
     if (jumping) player_speed[AXIS_Y] += gravidade;
-
+    
     player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
     player_pos[AXIS_X] += move_x * player_speed[AXIS_X] * delta_t;
     player_pos[AXIS_Z] += move_z * player_speed[AXIS_Z] * delta_t;
-
+    
+    
     // === INÍCIO DO SISTEMA DE COLISÃO ===
     
     bool colidiu_com_chao = false; // Flag para saber se podemos pular
@@ -98,6 +99,12 @@ void UpdatePosition() {
         player_speed[AXIS_Y] = 0.0f;
         colidiu_com_chao = true;
     }
+
+    for (auto item : map) {
+
+    }
+
+
 
     // 3. Atualiza as suas variáveis de estado baseadas na colisão
     if (colidiu_com_chao) {
