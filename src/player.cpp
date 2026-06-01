@@ -40,7 +40,7 @@ void UpdatePosition() {
         float target_angle = atan2(move_x, move_z);
         
         // Calcula a diferença entre o ângulo alvo e o ângulo atual
-        float diff = target_angle - player_rotate;
+        float diff = target_angle - player.rotate;
 
         // Normaliza a diferença para ficar no intervalo de -π a π.
         // Isso impede que o personagem dê "uma volta completa" ao passar do ângulo -π para π.
@@ -55,38 +55,38 @@ void UpdatePosition() {
 
         if (std::abs(step) >= std::abs(diff)) {
             // Se o passo for maior que a distância que falta, crava no alvo
-            player_rotate = target_angle;
+            player.rotate = target_angle;
         } else {
             // Caso contrário, gira suavemente
-            player_rotate += step;
+            player.rotate += step;
         }
 
         // Mantém o ângulo final dentro de -π a π para evitar estourar o limite numérico do float com o tempo
-        while (player_rotate <= -M_PI) player_rotate += (2.0f * M_PI);
-        while (player_rotate >  M_PI) player_rotate -= (2.0f * M_PI);
+        while (player.rotate <= -M_PI) player.rotate += (2.0f * M_PI);
+        while (player.rotate >  M_PI) player.rotate -= (2.0f * M_PI);
     }
     
     
-    if (keys[GLFW_KEY_SPACE] and jumping and g_active_character == 0 and double_jump_available) { // Aq q entra o double jump
+    if (keys[GLFW_KEY_SPACE] and player.jumping and player.active_character == 0 and player.double_jump_available) { // Aq q entra o double jump
         keys[GLFW_KEY_SPACE] = false;
-        double_jump_available = false;
-        player_speed[AXIS_Y] = jump_speed;
+        player.double_jump_available = false;
+        player.speed.y = player.jump_speed;
 
     }
 
-    if (keys[GLFW_KEY_SPACE] and !jumping){
+    if (keys[GLFW_KEY_SPACE] and !player.jumping){
         keys[GLFW_KEY_SPACE] = false;
-        jumping = true;
-        player_speed[AXIS_Y] = jump_speed;
-        double_jump_available = true;
+        player.jumping = true;
+        player.speed.y = player.jump_speed;
+        player.double_jump_available = true;
     }
     
     
-    if (jumping) player_speed[AXIS_Y] += gravidade;
+    if (player.jumping) player.speed.y += gravidade;
     
-    player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
-    player_pos[AXIS_X] += move_x * player_speed[AXIS_X] * delta_t;
-    player_pos[AXIS_Z] += move_z * player_speed[AXIS_Z] * delta_t;
+    player.position.y += player.speed.y * delta_t;
+    player.position.x += move_x * player.speed.x * delta_t;
+    player.position.z += move_z * player.speed.z * delta_t;
     
     
     // === INÍCIO DO SISTEMA DE COLISÃO ===
@@ -94,9 +94,9 @@ void UpdatePosition() {
     bool colidiu_com_chao = false; // Flag para saber se podemos pular
 
     // 1. Checagem do "Chão de Segurança" (O que você já tinha)
-    if (player_pos[AXIS_Y] <= -1.0f) {
-        player_pos[AXIS_Y] = -1.0f;
-        player_speed[AXIS_Y] = 0.0f;
+    if (player.position.y <= -1.0f) {
+        player.position.y = -1.0f;
+        player.speed.y = 0.0f;
         colidiu_com_chao = true;
     }
 
@@ -108,12 +108,12 @@ void UpdatePosition() {
 
     // 3. Atualiza as suas variáveis de estado baseadas na colisão
     if (colidiu_com_chao) {
-        jumping = false;
-        double_jump_available = true; // Recarrega o pulo duplo
+        player.jumping = false;
+        player.double_jump_available = true; // Recarrega o pulo duplo
     } else {
         // Se ele não colidiu com o chão nem com plataforma, ele está caindo
         // (por exemplo, se ele andou pra fora da borda de uma plataforma sem pular)
-        jumping = true; 
+        player.jumping = true; 
     }
     
 }

@@ -6,8 +6,8 @@
 # Arquivos fonte C/C++. Inclua nesta lista todos os arquivos que devem
 # ser compilados.
 set(SOURCES
-  src/structs.h
   src/globals.h
+  src/structs.h
   src/player.cpp
   src/main.cpp
   src/animation.cpp

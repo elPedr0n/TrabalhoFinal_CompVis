@@ -54,5 +54,4 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                                              bool jumping,
                                              float delta_t,
                                              float agora,
-                                             SwampfireAnimState& state,
-                                             bool active);
+                                             SwampfireAnimState& state);

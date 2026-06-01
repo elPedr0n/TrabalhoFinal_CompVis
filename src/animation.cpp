@@ -4,6 +4,8 @@
 // Need GLFW key definitions for the Swampfire state machine
 #include <GLFW/glfw3.h>
 
+#include "globals.h"
+
 GltfAnimator::GltfAnimator(const tinygltf::Model& model) {
     // 1. Extrair hierarquia de pais (node_parent)
     node_parent.assign(model.nodes.size(), -1);
@@ -38,8 +40,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                                              bool jumping,
                                              float delta_t,
                                              float agora,
-                                             SwampfireAnimState& state,
-                                             bool active)
+                                             SwampfireAnimState& state)
 {
     SwampfireAnimResult res;
 
@@ -60,13 +61,13 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
         // If jumping, we skip attack handling and keep pending fireball (it should not fire while jumping)
     } else {
         // Attack with E
-        if (active && key_down(GLFW_KEY_E)) {
+        if (player.active_character == 1 && key_down(GLFW_KEY_E)) {
             current_anim_index = 1;
             is_attacking = true;
         }
         // Attack with Q (hold = 3, release = 2) - support charging
         else {
-            if (active && key_down(GLFW_KEY_Q)) {
+            if (player.active_character == 1 && key_down(GLFW_KEY_Q)) {
                 // start holding
                 if (state.q_state != 1) {
                     state.q_state = 1;
@@ -120,7 +121,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
 
     // 4. Run / Idle - only start these animations when Swampfire is active
     if (!is_attacking && !jumping) {
-        if (active) {
+        if (player.active_character == 1) {
             if (is_moving) current_anim_index = 8;
             else current_anim_index = 6;
         } else {

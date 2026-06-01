@@ -1,8 +1,7 @@
 #ifndef STRUCTS_H
 #define STRUCTS_H
 
-#include <glm/glm.hpp>
-#include <string>
+#include "globals.h"
 
 // FONTE: https://medium.com/@andrebluntindie/3d-aabb-collision-detection-and-resolution-for-voxel-games-5fcbfdb8cdb4
 struct AABB {
@@ -106,17 +105,34 @@ inline AABB MakeAABBFromCenterSize(const glm::vec3& center, const glm::vec3& siz
 // Character struct — extend this for new properties
 struct Character {
 	std::string model_name;
-	float pos[3];
-	float rotate;
 	float scale;
-	bool  visible;
     AABB bbox;
 
-	Character(const char* name, float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: model_name(name), rotate(rot), scale(sc), visible(vis)
+	Character() : model_name(""), scale(0.5f), bbox() {} 
+
+	Character(const char* name, glm::vec3 pos, float bbox_w, float bbox_h, float bbox_d, float scale)
+		: model_name(name), scale(scale), bbox(MakeAABBFromCenterSize(pos, glm::vec3(bbox_w, bbox_h, bbox_d))) {}
+};
+
+struct Player {
+	int active_character; // 0 = BigChill, 1 = Swampfire
+	Character characters[MAX_CHARACTERS];
+
+	glm::vec3 position;
+	glm::vec3 speed;
+	
+	float rotate;
+	float scale;
+	float jump_speed;
+
+	bool jumping;
+	bool double_jump_available;
+
+	Player()
+		: active_character(0), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(4.0f), jumping(false), double_jump_available(false)
 	{
-		pos[0] = px; pos[1] = py; pos[2] = pz;
-		bbox = MakeAABBFromCenterSize(glm::vec3(px, py, pz), glm::vec3(bbox_w, bbox_h, bbox_d));
+		characters[0] = Character("the_bigchill", position, 0.695f, 0.985f, 0.225f, 0.5f);
+		characters[1] = Character("the_swampfire", position, 0.695f, 0.985f, 0.225f, 0.3f);
 	}
 };
 

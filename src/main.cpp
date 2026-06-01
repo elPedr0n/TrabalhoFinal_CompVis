@@ -404,25 +404,18 @@ std::vector<GLuint> g_LoadedSamplerIDs;
 
 // Vetor global para movimentação
 bool keys[1024] = {false};
-bool jumping = false;
-bool double_jump_available = false;
 
-// Variáveis do player
-float player_pos[3] = {0.0f,-1.0f,0.0f};
-float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
-float player_rotate = 0;
-float player_scalling = 0.5f;
-float jump_speed = 4.0f;
+Player player;
 
 float gravidade = -0.1f;
 float delta_t;
 
 // Characters controlled by player
-Character g_characters[2] = {
-    Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
-    Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
-};
-int g_active_character = 0;
+// Character g_characters[MAX_CHARACTERS] = {
+//     Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
+//     Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
+// };
+// int g_active_character = 0;
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -538,7 +531,7 @@ int main(int argc, char* argv[])
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
     bigchillmodel.ComputeBoundingBox();
-    g_characters[0].bbox = bigchillmodel.aabb;
+    player.characters[0].bbox = bigchillmodel.aabb;
 
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
@@ -626,7 +619,7 @@ int main(int argc, char* argv[])
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_lookat_l    = glm::vec4(player_pos[AXIS_X], player_pos[AXIS_Y] + height_offset, player_pos[AXIS_Z], 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        glm::vec4 camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f); // Ponto "c", centro da câmera
         glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
@@ -691,11 +684,11 @@ int main(int argc, char* argv[])
         UpdateEnemies();
 
         // Draw controlled BigChill if visible
-        if (g_characters[0].visible)
+        if (player.active_character == 0)
         {
-            model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z])
-                    * Matrix_Scale(g_characters[0].scale, g_characters[0].scale, g_characters[0].scale)
-                    * Matrix_Rotate_Y(player_rotate);
+            model = Matrix_Translate(player.position.x, player.position.y, player.position.z)
+                    * Matrix_Scale(player.characters[0].scale, player.characters[0].scale, player.characters[0].scale)
+                    * Matrix_Rotate_Y(player.rotate);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, CHILL);
             // Re-bind all previously loaded textures/samplers to their texture units
@@ -721,10 +714,10 @@ int main(int argc, char* argv[])
         }
 
         // Compute swampfire animation via modular function (keeps local state in swampfire_state)
-        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, jumping, delta_t, agora, swampfire_state, g_characters[1].visible);
+        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
 
         // Draw Swampfire instances if visible
-        if (g_characters[1].visible)
+        if (player.active_character == 1)
         {
             int current_anim_index = animRes.current_anim_index;
             is_attacking = animRes.is_attacking;
@@ -753,9 +746,9 @@ int main(int argc, char* argv[])
                     }
 
                     // A matriz model agora soma o offset no eixo Y
-                    model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y] + anim_y_offset, player_pos[AXIS_Z])
-                          * Matrix_Scale(g_characters[1].scale, g_characters[1].scale, g_characters[1].scale)
-                          * Matrix_Rotate_Y(player_rotate - (3.14159265f / 6))
+                    model = Matrix_Translate(player.position.x, player.position.y + anim_y_offset, player.position.z)
+                          * Matrix_Scale(player.characters[1].scale, player.characters[1].scale, player.characters[1].scale)
+                          * Matrix_Rotate_Y(player.rotate - (3.14159265f / 6))
                           * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                     glActiveTexture(GL_TEXTURE4);
@@ -780,16 +773,16 @@ int main(int argc, char* argv[])
             // Fireball projectiles: spawn on Q-release (strength provided by animRes), update and draw via modular API
             if (g_VirtualScene.find("the_sphere") != g_VirtualScene.end()) {
                 // Only spawn fireballs when the Swampfire character is active/visible
-                if (g_characters[1].visible && animRes.spawn_fireball_strength > 0.0f) {
-                    glm::vec3 ppos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
+                if (player.active_character == 1 && animRes.spawn_fireball_strength > 0.0f) {
+                    glm::vec3 ppos(player.position.x, player.position.y, player.position.z);
                     // spawn a sphere projectile (model base name "the_sphere")
-                    Projectiles_Spawn(std::string("the_sphere"), animRes.spawn_fireball_strength, ppos, player_rotate);
+                    Projectiles_Spawn(std::string("the_sphere"), animRes.spawn_fireball_strength, ppos, player.rotate);
                 }
                 Projectiles_Update(delta_t);
                 // Update particles (projectiles emit particles each update)
                 Particles_Update(delta_t);
                 // Draw projectiles using the static sphere model from the virtual scene
-                Projectiles_Draw(emptyModel, fireballAnimator, g_GpuProgramID, g_model_uniform, g_bone_matrices_uniform, g_object_id_uniform, g_VirtualScene, std::string("the_sphere"), g_characters[1].scale, FIREBALL);
+                Projectiles_Draw(emptyModel, fireballAnimator, g_GpuProgramID, g_model_uniform, g_bone_matrices_uniform, g_object_id_uniform, g_VirtualScene, std::string("the_sphere"), player.characters[1].scale, FIREBALL);
 
                 // (TEST SPHERE REMOVED)
             }
@@ -1751,12 +1744,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             g_AngleZ -= delta;
         else if (mod == 0 && !(mod & GLFW_MOD_SHIFT)) {
             // Swap active character
-            g_characters[g_active_character].visible = false;
-            g_active_character = (g_active_character + 1) % 2;
-            g_characters[g_active_character].visible = true;
+            player.active_character = (player.active_character + 1) % 2;
             // Sync position to current player position
             for (int i = 0; i < 3; ++i)
-                g_characters[g_active_character].pos[i] = player_pos[i];
+                // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)
                     {
                         ParticleOptions popts;
@@ -1765,7 +1756,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                         popts.scale = 0.15f + 0.01f * 6.0f;
                         popts.speed = 0.1f + 0.8f * 3.0f;
                         popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
-                        Particles_Spawn(glm::vec3(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]), popts);
+                        Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
                     }
         }
     }
@@ -1887,7 +1878,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player_pos[AXIS_Z], player_pos[AXIS_Y], player_pos[AXIS_X]);
+    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player.position.z, player.position.y, player.position.x);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
