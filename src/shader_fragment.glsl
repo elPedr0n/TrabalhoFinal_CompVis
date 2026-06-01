@@ -30,8 +30,8 @@ uniform mat4 projection;
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
-uniform vec4 bbox_min;
-uniform vec4 bbox_max;
+uniform vec4 aabb_min;
+uniform vec4 aabb_max;
 
 // Variáveis para acesso das imagens de textura
 uniform sampler2D TextureImage0;
@@ -88,7 +88,7 @@ void main()
         // projeção esférica EM COORDENADAS DO MODELO. Utilize como referência
         // o slides 134-150 do documento Aula_20_Mapeamento_de_Texturas.pdf.
         // A esfera que define a projeção deve estar centrada na posição
-        // "bbox_center" definida abaixo.
+        // "aabb_center" definida abaixo.
 
         // Você deve utilizar:
         //   função 'length( )' : comprimento Euclidiano de um vetor
@@ -97,8 +97,8 @@ void main()
         //   constante M_PI
         //   variável position_model
 
-        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-        vec4 d = position_model - bbox_center;
+        vec4 aabb_center = (aabb_min + aabb_max) / 2.0;
+        vec4 d = position_model - aabb_center;
 
         float rho   = length(d);
         float theta = atan(d.x,d.z);
@@ -121,14 +121,14 @@ void main()
         // 'h' no slides 158-160 do documento Aula_20_Mapeamento_de_Texturas.pdf.
         // Veja também a Questão 4 do Questionário 4 no Moodle.
 
-        float minx = bbox_min.x;
-        float maxx = bbox_max.x;
+        float minx = aabb_min.x;
+        float maxx = aabb_max.x;
 
-        float miny = bbox_min.y;
-        float maxy = bbox_max.y;
+        float miny = aabb_min.y;
+        float maxy = aabb_max.y;
 
-        float minz = bbox_min.z;
-        float maxz = bbox_max.z;
+        float minz = aabb_min.z;
+        float maxz = aabb_max.z;
 
         U = (position_model.x - minx) / (maxx - minx);
         V = (position_model.y - miny) / (maxy - miny);
@@ -173,7 +173,7 @@ void main()
     {
         U = texcoords.x;
         V = texcoords.y;
-        Kd0 = texture(TextureImage5, vec2(U,V)).rgb; 
+        Kd0 = texture(TextureImage4, vec2(U,V)).rgb; 
     }
     
         // Override color when requested (per-particle color via uniform)

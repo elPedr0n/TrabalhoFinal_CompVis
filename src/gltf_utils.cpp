@@ -268,13 +268,13 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model, co
             // Do not hardcode loading from the repository; fix GLTF image paths instead.
             obj.texture_id = texture_id;
 
-            // Compute bbox
+            // Compute AABB
             if (!positions.empty()) {
-                obj.bbox_min = positions[0];
-                obj.bbox_max = positions[0];
+                obj.aabb.min = positions[0];
+                obj.aabb.max = positions[0];
                 for (const auto& v : positions) {
-                    obj.bbox_min = glm::min(obj.bbox_min, v);
-                    obj.bbox_max = glm::max(obj.bbox_max, v);
+                    obj.aabb.min = glm::min(obj.aabb.min, v);
+                    obj.aabb.max = glm::max(obj.aabb.max, v);
                 }
             }
             g_VirtualScene[obj.name] = obj;
