@@ -6,6 +6,7 @@
 # Arquivos fonte C/C++. Inclua nesta lista todos os arquivos que devem
 # ser compilados.
 set(SOURCES
+  src/structs.h
   src/globals.h
   src/player.cpp
   src/main.cpp
@@ -18,7 +19,6 @@ set(SOURCES
   src/gltf_utils.cpp
   src/projectiles.cpp
   src/particles.cpp
-  src/platforms.cpp
   src/enemies.cpp
 )
 
@@ -65,7 +65,10 @@ endforeach()
 
 add_executable(${EXECUTABLE_NAME} ${SOURCES})
 
-target_include_directories(${EXECUTABLE_NAME} BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${EXECUTABLE_NAME} BEFORE PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/src
+)
 
 if(WIN32)
 
