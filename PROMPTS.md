@@ -888,3 +888,8 @@ add a particles.cpp where particles will be handled. make the sphere be yellow a
 
 PROMPT 5:
 make the whole particle system more modularized, function calling including parameters for the particles (color, life, age, etc.). change particle color to use hex strings
+
+
+### Commit com IA: Finalmente uma colisao que funciona vamoooo
+
+PROMPT: I need to correct the logic in collision. Now, the player and bbox are not doing the same movement, the bbox dont move the same as the pĺayer. Read the files and give me an explanations of why is that and the solution

@@ -531,7 +531,6 @@ int main(int argc, char* argv[])
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
     bigchillmodel.ComputeBoundingBox();
-    player.characters[0].bbox = bigchillmodel.aabb;
 
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
@@ -861,6 +860,9 @@ int main(int argc, char* argv[])
 
 void DrawBoundingBox(AABB& aabb, int restore_object_id) {
     if (g_BBoxVAO == 0) return;
+
+    glm::mat4 identity = Matrix_Identity();
+    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(identity));
 
     const GLfloat bbox_vertices[8 * 4] = {
         aabb.min.x, aabb.min.y, aabb.min.z, 1.0f, // V0

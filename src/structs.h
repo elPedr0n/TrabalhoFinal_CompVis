@@ -111,6 +111,13 @@ inline AABB MakeAABBFromCenterSize(const glm::vec3& center, const glm::vec3& siz
 	return AABB(center - half, center + half);
 }
 
+inline AABB makeAABBFromGround(const glm::vec3& position, const glm::vec3& size)
+{
+	glm::vec3 half = size * 0.5f;
+	return AABB(glm::vec3(position.x - half.x, position.y, position.z - half.z),
+				glm::vec3(position.x + half.x, position.y + size.y, position.z + half.z));
+}
+
 
 // Character struct — extend this for new properties
 struct Character {
@@ -121,7 +128,7 @@ struct Character {
 	Character() : model_name(""), scale(0.5f), bbox() {} 
 
 	Character(const char* name, glm::vec3 pos, float bbox_w, float bbox_h, float bbox_d, float scale)
-		: model_name(name), scale(scale), bbox(MakeAABBFromCenterSize(pos, glm::vec3(bbox_w, bbox_h, bbox_d))) {}
+		: model_name(name), scale(scale), bbox(makeAABBFromGround(pos, glm::vec3(bbox_w * scale, bbox_h * scale, bbox_d * scale))) {}
 };
 
 struct Player {
@@ -139,14 +146,10 @@ struct Player {
 	bool double_jump_available;
 
 	Player()
-		: active_character(0), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(4.0f), jumping(false), double_jump_available(false)
+		: active_character(0), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(6.0f), jumping(false), double_jump_available(false)
 	{
-		characters[0] = Character("the_bigchill", position, 0.695f, 0.985f, 0.225f, 0.5f);
-		characters[0].bbox.max = characters[0].bbox.max + position; // Ensure bbox is correctly positioned at player start
-		characters[0].bbox.min = characters[0].bbox.min + position; // Ensure bbox is correctly positioned at player start
-		characters[1] = Character("the_swampfire", position, 0.695f, 0.985f, 0.225f, 0.3f);
-		characters[1].bbox.max = characters[1].bbox.max + position; // Ensure bbox is correctly positioned at player start
-		characters[1].bbox.min = characters[1].bbox.min + position; // Ensure bbox is correctly positioned at player start
+		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f);
+		characters[1] = Character("the_swampfire", position, 1.38963f, 1.96548f, 0.454046f, 0.3f);
 	}
 };
 
