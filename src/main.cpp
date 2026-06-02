@@ -225,7 +225,7 @@ void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso n�
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
-void DrawBoundingBox(const char* object_name, int restore_object_id); // Desenha AABB em wireframe
+void DrawBoundingBox(AABB& aabb, int restore_object_id); // Desenha AABB em wireframe
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
@@ -410,12 +410,8 @@ Player player;
 float gravidade = -0.1f;
 float delta_t;
 
-// Characters controlled by player
-// Character g_characters[MAX_CHARACTERS] = {
-//     Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
-//     Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
-// };
-// int g_active_character = 0;
+// Gambiarra mais absurda eh us guri 
+glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -531,16 +527,22 @@ int main(int argc, char* argv[])
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
     bigchillmodel.ComputeBoundingBox();
-    player.characters[0].bbox = bigchillmodel.aabb;
 
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
     blockmodel.ComputeBoundingBox();
     for (int i = 0; i < MAX_PLATFORMS; i++) {
-        glm::vec3 pos = {i * 4.0f, -1.0f, i * 2.0f}; // Example positions for platforms
-        map[i].bbox = AABB(pos, blockmodel.aabb.min, blockmodel.aabb.max);
+        map[i].scale = glm::vec3(0.1f, 0.1f, 0.1f);
+        glm::vec3 pos = {i * 4.0f + 2.0f, -1.0f, i * 2.0f}; // Example positions for platforms
+        map[i].bbox = AABB(pos, blockmodel.aabb.min * map[i].scale, blockmodel.aabb.max * map[i].scale);
         map[i].position = pos;
+        // printf("Platform %d -> Position: (%.2f, %.2f, %.2f), Scale: (%.2f, %.2f, %.2f)\n", 
+        //     i, map[i].position.x, map[i].position.y, map[i].position.z,
+        //     map[i].scale.x, map[i].scale.y, map[i].scale.z);
+        // printf("platform min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)\n", 
+        //     map[i].bbox.min.x, map[i].bbox.min.y, map[i].bbox.min.z,
+        //     map[i].bbox.max.x, map[i].bbox.max.y, map[i].bbox.max.z);
     }
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
@@ -709,7 +711,7 @@ int main(int argc, char* argv[])
             }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
             DrawVirtualObject("the_bigchill");
-            DrawBoundingBox("the_bigchill", CHILL);
+            DrawBoundingBox(player.characters[0].bbox, CHILL);
             glEnable(GL_CULL_FACE);
         }
 
@@ -803,17 +805,16 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
-        DrawBoundingBox("the_plane", PLANE);
 
 
         // Desenhamos os blocos do mapa
         for (int i = 0; i < MAX_PLATFORMS; i++) {
             model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
-                  * Matrix_Scale(0.1f, 0.1f, 0.1f);
+                  * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BLOCO);
             DrawVirtualObject("TNT");
-            DrawBoundingBox("TNT", BLOCO);
+            DrawBoundingBox(map[i].bbox, BLOCO);
         }
 
 
@@ -853,14 +854,11 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void DrawBoundingBox(const char* object_name, int restore_object_id)
-{
+void DrawBoundingBox(AABB& aabb, int restore_object_id) {
     if (g_BBoxVAO == 0) return;
 
-    const auto object_it = g_VirtualScene.find(object_name);
-    if (object_it == g_VirtualScene.end()) return;
-
-    const AABB& aabb = object_it->second.aabb;
+    glm::mat4 identity = Matrix_Identity();
+    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(identity));
 
     const GLfloat bbox_vertices[8 * 4] = {
         aabb.min.x, aabb.min.y, aabb.min.z, 1.0f, // V0
@@ -1746,6 +1744,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // Swap active character
             player.active_character = (player.active_character + 1) % 2;
             // Sync position to current player position
+            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, bigchill_size);
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)
