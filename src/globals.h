@@ -35,4 +35,6 @@ extern float g_CameraTheta;
 extern float g_CameraPhi;   
 extern float g_CameraDistance; 
 
+extern glm::vec3 bigchill_size;
+
 #endif

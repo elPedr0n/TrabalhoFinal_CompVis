@@ -410,12 +410,8 @@ Player player;
 float gravidade = -0.1f;
 float delta_t;
 
-// Characters controlled by player
-// Character g_characters[MAX_CHARACTERS] = {
-//     Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
-//     Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
-// };
-// int g_active_character = 0;
+// Gambiarra mais absurda eh us guri 
+glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -1748,6 +1744,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // Swap active character
             player.active_character = (player.active_character + 1) % 2;
             // Sync position to current player position
+            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, bigchill_size);
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)
