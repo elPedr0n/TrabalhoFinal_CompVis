@@ -3,12 +3,11 @@
 #include "globals.h"
 #include <cmath>
 #include <algorithm>
+#include <vector>
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
-
-bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
 
 void UpdatePosition() {
 
@@ -82,38 +81,89 @@ void UpdatePosition() {
     }
     
     
+    // ... [Seu código de rotação e pulo (gravidade) até aqui permanece igual] ...
+    
     if (player.jumping) player.speed.y += gravidade;
-    
-    player.position.y += player.speed.y * delta_t;
-    player.position.x += move_x * player.speed.x * delta_t;
-    player.position.z += move_z * player.speed.z * delta_t;
-    
-    
-    // === INÍCIO DO SISTEMA DE COLISÃO ===
-    
-    bool colidiu_com_chao = false; // Flag para saber se podemos pular
 
-    // 1. Checagem do "Chão de Segurança" (O que você já tinha)
+    // 1. Calcula o quanto o jogador QUER se mover neste frame (Equivalente ao m_velocity inicial)
+    float move_vector_x = move_x * player.speed.x * delta_t;
+    float move_vector_y = player.speed.y * delta_t; // O pulo/gravidade já definiu player.speed.y
+    float move_vector_z = move_z * player.speed.z * delta_t;
+
+    // Guarda os valores originais para verificar se houve colisão depois (Equivalente ao originalVector)
+    float original_x = move_vector_x;
+    float original_y = move_vector_y;
+    float original_z = move_vector_z;
+
+    // Referência rápida para a BBox do personagem ativo
+    auto& player_bbox = player.characters[player.active_character].bbox;
+
+    // === EIXO Y ===
+    for (const auto& item : map) {
+        // Reduz o move_vector_y se colidir com algo
+        move_vector_y = player_bbox.GetClipY(item.bbox, move_vector_y);
+        // printf("DeltaY: %f\n", move_vector_y);
+        
+    }
+    // Move o jogador APENAS no Y antes de checar os outros eixos
+    player.position.y += move_vector_y;
+    player_bbox.Move(0.0f, move_vector_y, 0.0f); 
+
+    // === EIXO X ===
+    for (const auto& item : map) {
+        move_vector_x = player_bbox.GetClipX(item.bbox, move_vector_x);
+        // printf("DeltaX: %f\n", move_vector_x);
+    }
+    player.position.x += move_vector_x;
+    player_bbox.Move(move_vector_x, 0.0f, 0.0f);
+
+    // === EIXO Z ===
+    for (const auto& item : map) {
+        move_vector_z = player_bbox.GetClipZ(item.bbox, move_vector_z);
+        // printf("DeltaZ: %f\n", move_vector_z);
+    }
+    player.position.z += move_vector_z;
+    player_bbox.Move(0.0f, 0.0f, move_vector_z);
+
+
+    // === ATUALIZAÇÃO DE ESTADOS PÓS-COLISÃO ===
+    
+    bool colidiu_com_chao = false;
+
+    // 1. Checagem do "Chão de Segurança" (Hardcode)
     if (player.position.y <= -1.0f) {
         player.position.y = -1.0f;
         player.speed.y = 0.0f;
         colidiu_com_chao = true;
     }
 
-    for (auto item : map) {
-
+    // 2. Zerar velocidades em caso de colisão (física real)
+    if (move_vector_x != original_x) {
+        // Bateu numa parede no eixo X
+        // player.position.x -= (original_x - move_vector_x); // Reverte o movimento que não aconteceu
     }
 
+    if (move_vector_y != original_y) {
+        // Bateu no teto ou no chão
+        player.speed.y = 0.0f; 
+        
+        // Se a tentativa original era cair (y negativo) e foi alterada, é porque bateu no chão
+        if (original_y < 0.0f) {
+            colidiu_com_chao = true;
+        }
+    }
 
+    if (move_vector_z != original_z) {
+        // Bateu numa parede no eixo Z
+        // player.position.z -= (original_z - move_vector_z); // Reverte o movimento que não aconteceu
+    }
 
-    // 3. Atualiza as suas variáveis de estado baseadas na colisão
+    // 3. Atualiza as variáveis de estado baseadas na colisão final
     if (colidiu_com_chao) {
         player.jumping = false;
         player.double_jump_available = true; // Recarrega o pulo duplo
     } else {
-        // Se ele não colidiu com o chão nem com plataforma, ele está caindo
-        // (por exemplo, se ele andou pra fora da borda de uma plataforma sem pular)
+        // Se ele não colidiu com o chão nem ativou o hardcode (-1.0f), está caindo
         player.jumping = true; 
     }
-    
 }

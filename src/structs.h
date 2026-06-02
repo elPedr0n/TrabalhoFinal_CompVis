@@ -33,6 +33,16 @@ struct AABB {
 		return IntersectsX(other) && IntersectsY(other) && IntersectsZ(other);
 	}
 
+
+	void Move(float valueX, float valueY, float valueZ) {
+		min.x += valueX;
+		max.x += valueX;
+		min.y += valueY;
+		max.y += valueY;
+		min.z += valueZ;
+		max.z += valueZ;
+	}
+
 	float GetClipX(AABB against, float deltaX) {
 		//are we overlapping the other axes?
 		//(if we aren't, then an intersection could never actually take place)
@@ -132,7 +142,11 @@ struct Player {
 		: active_character(0), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(4.0f), jumping(false), double_jump_available(false)
 	{
 		characters[0] = Character("the_bigchill", position, 0.695f, 0.985f, 0.225f, 0.5f);
+		characters[0].bbox.max = characters[0].bbox.max + position; // Ensure bbox is correctly positioned at player start
+		characters[0].bbox.min = characters[0].bbox.min + position; // Ensure bbox is correctly positioned at player start
 		characters[1] = Character("the_swampfire", position, 0.695f, 0.985f, 0.225f, 0.3f);
+		characters[1].bbox.max = characters[1].bbox.max + position; // Ensure bbox is correctly positioned at player start
+		characters[1].bbox.min = characters[1].bbox.min + position; // Ensure bbox is correctly positioned at player start
 	}
 };
 
@@ -156,6 +170,7 @@ struct Enemy {
 struct MapItem {
 	AABB bbox;
 	glm::vec3 position;
+	glm::vec3 scale;
 };
 
 #endif

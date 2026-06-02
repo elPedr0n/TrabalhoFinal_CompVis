@@ -10,7 +10,7 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
-#define MAX_PLATFORMS 3
+#define MAX_PLATFORMS 1
 #define MAX_ENEMIES 1
 #define MAX_CHARACTERS 2
 
@@ -20,6 +20,8 @@
 extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
 
 extern struct MapItem map[MAX_PLATFORMS];
+
+#include "map.h"
 
 extern bool keys[1024];
 
