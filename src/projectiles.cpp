@@ -1,5 +1,6 @@
 #include "projectiles.h"
 #include "particles.h"
+#include "globals.h"
 
 #include <vector>
 #include <algorithm>
@@ -8,8 +9,19 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "matrices.h"
 
+extern void DrawBoundingBox(AABB& aabb, int restore_object_id);
+
 namespace {
-    struct Projectile { std::string model_name; glm::vec3 pos; glm::vec3 vel; float age=0.0f; float life=3.0f; float scale=1.0f; bool active=true; };
+    struct Projectile { 
+        std::string model_name;
+        glm::vec3 pos; 
+        glm::vec3 vel; 
+        float age=0.0f; 
+        float life=3.0f; 
+        float scale=1.0f;
+        bool active=true; 
+        AABB bbox;
+    };
     std::vector<Projectile> s_projectiles;
 
     constexpr float PROJECTILE_BASE_SPEED = 6.0f;
@@ -26,6 +38,7 @@ void Projectiles_Spawn(const std::string &modelBaseName, float strength, const g
     p.age = 0.0f;
     p.life = PROJECTILE_BASE_LIFE * (1.0f + 0.5f * strength);
     p.scale = 0.4f + 1.2f * strength;
+    p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
     p.active = true;
     s_projectiles.push_back(p);
 }
@@ -41,6 +54,29 @@ void Projectiles_Update(float delta_t)
     for (auto &p : s_projectiles) {
         if (!p.active) continue;
         p.pos += p.vel * delta_t;
+        p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+
+        // Hit map platforms
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            if (p.bbox.Intersects(map[i].bbox)) {
+                printf("Projectile hit platform %d\n", i);
+                p.active = false;
+                break;
+            }
+        }
+        // Hit enemies
+        if (p.active) {
+            for (int i = 0; i < MAX_ENEMIES; i++) {
+                if (!g_enemies[i].visible) continue;
+                if (p.bbox.Intersects(g_enemies[i].bbox)) {
+                    printf("Projectile hit enemy %d\n", i);
+                    p.active = false;
+                    // future: deal damage to g_enemies[i] here
+                    break;
+                }
+            }
+        }
+
         p.age += delta_t;
         if (p.age >= p.life) p.active = false;
         // Emit a stronger particle trail from projectile position (via options)
@@ -98,6 +134,8 @@ void Projectiles_Draw(const tinygltf::Model &model,
                 glBindVertexArray(it->second.vertex_array_object_id);
                 glDrawElements(it->second.rendering_mode, it->second.num_indices, GL_UNSIGNED_INT, (void*)(it->second.first_index * sizeof(GLuint)));
                 glBindVertexArray(0);
+                AABB bbox_copy = p.bbox;
+                DrawBoundingBox(bbox_copy, objectIdValue);
             }
         }
         else {
@@ -121,6 +159,8 @@ void Projectiles_Draw(const tinygltf::Model &model,
             glBindVertexArray(it->second.vertex_array_object_id);
             glDrawElements(it->second.rendering_mode, it->second.num_indices, GL_UNSIGNED_INT, (void*)(it->second.first_index * sizeof(GLuint)));
             glBindVertexArray(0);
+            AABB bbox_copy = p.bbox;
+            DrawBoundingBox(bbox_copy, objectIdValue);
         }
     }
 }

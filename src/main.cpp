@@ -415,7 +415,7 @@ glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.965
 glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
-    Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
+    Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
 #include "projectiles.h"
@@ -792,13 +792,14 @@ int main(int argc, char* argv[])
 
 
         // Desenhar o inimigo
-        // for (int i = 0; i < MAX_ENEMIES; i++) {
-        //     model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
-        //           * Matrix_Scale(0.5f, 0.5f, 0.5f);
-        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //     glUniform1i(g_object_id_uniform, BUNNY);
-        //     DrawVirtualObject("the_bunny");        
-        // }
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
+                  * Matrix_Scale(0.5f, 0.5f, 0.5f);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            DrawVirtualObject("the_bunny");    
+            DrawBoundingBox(g_enemies[i].bbox, BUNNY);    
+        }
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
