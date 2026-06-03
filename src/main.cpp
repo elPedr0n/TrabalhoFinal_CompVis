@@ -263,6 +263,9 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 //Movimentação do player 
 void UpdatePosition(); 
 
+// Faz a logica de criacao do ataque do swampfire
+void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
+
 // Colisao superior das caixas
 bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
 
@@ -724,6 +727,7 @@ int main(int argc, char* argv[])
         {
             int current_anim_index = animRes.current_anim_index;
             is_attacking = animRes.is_attacking;
+            ProcessMeleeHitboxes(animRes, swampfire_state, SWAMPFIRE);
             float anim_time_to_pass = animRes.anim_time_to_pass;
 
             // Atualiza o animador modular
@@ -2107,3 +2111,43 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
+
+void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id) 
+{
+    if (!animRes.punch1_active && !animRes.punch2_active) return;
+
+    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
+    float reach = 0.35f;
+    float height = 0.5f;
+
+    if (animRes.punch1_active) {
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
+
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+            if (state.punch1_hit_enemies.count(i)) continue;
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                printf("Punch 1 hit enemy %d!\n", i);
+                state.punch1_hit_enemies.insert(i);
+            }
+        }
+    }
+
+    if (animRes.punch2_active) {
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
+
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+            if (state.punch2_hit_enemies.count(i)) continue;
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                printf("Punch 2 hit enemy %d!\n", i);
+                state.punch2_hit_enemies.insert(i);
+            }
+        }
+    }
+}
