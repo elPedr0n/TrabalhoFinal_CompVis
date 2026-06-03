@@ -412,9 +412,10 @@ float delta_t;
 
 // Gambiarra mais absurda eh us guri 
 glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
+glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
-    Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
+    Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
 #include "projectiles.h"
@@ -753,9 +754,9 @@ int main(int argc, char* argv[])
                           * Matrix_Rotate_Y(player.rotate - (3.14159265f / 6))
                           * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-                    glActiveTexture(GL_TEXTURE4);
+                    glActiveTexture(GL_TEXTURE5);
                     glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     // Draw axes in model space (debug)
                     if (g_AxesVAO != 0) {
@@ -767,7 +768,7 @@ int main(int argc, char* argv[])
                         glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     }
                     DrawVirtualObject(name.c_str());
-                    // DrawBoundingBox(name.c_str(), SWAMPFIRE);
+                    DrawBoundingBox(player.characters[1].bbox, SWAMPFIRE);
                 }
             }
         }
@@ -791,13 +792,14 @@ int main(int argc, char* argv[])
 
 
         // Desenhar o inimigo
-        // for (int i = 0; i < MAX_ENEMIES; i++) {
-        //     model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
-        //           * Matrix_Scale(0.5f, 0.5f, 0.5f);
-        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //     glUniform1i(g_object_id_uniform, BUNNY);
-        //     DrawVirtualObject("the_bunny");        
-        // }
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
+                  * Matrix_Scale(0.5f, 0.5f, 0.5f);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BUNNY);
+            DrawVirtualObject("the_bunny");    
+            DrawBoundingBox(g_enemies[i].bbox, BUNNY);    
+        }
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
@@ -1744,7 +1746,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // Swap active character
             player.active_character = (player.active_character + 1) % 2;
             // Sync position to current player position
-            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, bigchill_size);
+            glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)

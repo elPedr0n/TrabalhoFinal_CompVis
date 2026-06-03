@@ -160,7 +160,7 @@ void main()
     {
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
-        Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
+        Kd0 = texture(TextureImage5, vec2(U,V)).rgb;
     } else if ( object_id == 6 ) // FIREBALL
     {
         // Solid yellow/orange for the fireball and its particles (emissive)

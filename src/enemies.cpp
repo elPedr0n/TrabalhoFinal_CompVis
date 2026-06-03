@@ -9,7 +9,7 @@ void UpdateEnemies() {
         // Movimentação, persegue o jogador
         glm::vec3 direction_to_player = glm::vec3(
             player.position.x - g_enemies[i].position.x,
-            0.0f, // Ignora diferença vertical para manter no chão
+            -0.5f, // Ignora diferença vertical para manter no chão
             player.position.z - g_enemies[i].position.z
         );
 
@@ -19,6 +19,8 @@ void UpdateEnemies() {
             g_enemies[i].position.z += direction_to_player.z * g_enemies[i].speed * delta_t;
             // std::cout << "Inimigo " << i << " esta no range do jogador" << std::endl;
         } 
+
+        g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position, glm::vec3(1.0f, 0.99f, 0.775f)); // Atualiza AABB do inimigo com base na nova posição
 
     }
 
