@@ -754,9 +754,9 @@ int main(int argc, char* argv[])
                           * Matrix_Rotate_Y(player.rotate - (3.14159265f / 6))
                           * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-                    glActiveTexture(GL_TEXTURE4);
+                    glActiveTexture(GL_TEXTURE5);
                     glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     // Draw axes in model space (debug)
                     if (g_AxesVAO != 0) {

@@ -900,3 +900,7 @@ PROMPT: I need to correct the logic in collision. Now, the player and bbox are n
 PROMPT 1: So, i want to debug some stuff. I want you to just tell me what to change, dont apply anything to the files. The swampfire model, when on top of a platform, the clipping position is ok, but the animation is bugged, it keeps going to 2 diferent animations, i believe it is the jumping and idle animation.
 
 PROMPT 2: Okay, but i have another problem, the way thar is implemented now, the ground doesnt have a collider, so even when idle on the ground, both models aabbs are going to through the floor, where do i change this? dont change any file.
+
+### Commit com IA: Arrumado o bug de binding de texturas ao trocar para o Swampfire
+
+PROMPT: Now I have another debug I need to do, dont change any of the files, I want to know where to change. When I press Z to change from the bigchill obj model to the swampfire gltf model, the texture of the platform change to some part of the swampfire model, it doesnt keep its own. Show me why this happens and where to change 
