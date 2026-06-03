@@ -145,6 +145,10 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
         state.anim_start_time = agora;
         state.last_applied_anim_index = current_anim_index;
         if (current_anim_index == 0) state.jump_timer = 0.0f;
+        if (current_anim_index == 1) {
+            state.punch1_hit_enemies.clear();
+            state.punch2_hit_enemies.clear();
+        }
     }
 
     anim_time_to_pass = agora - state.anim_start_time;
@@ -177,6 +181,16 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                 if (anim_time_to_pass < 0.0f) anim_time_to_pass = 0.0f;
             }
         }
+    }
+
+    if (current_anim_index == 1) {
+        float elapsed = anim_time_to_pass;
+        // Punch 1 window — tune these by watching the animation
+        if (elapsed >= 0.15f && elapsed <= 0.4f)
+            res.punch1_active = true;
+        // Punch 2 window
+        if (elapsed >= 0.5f && elapsed <= 0.75f)
+            res.punch2_active = true;
     }
 
     res.current_anim_index = current_anim_index;
