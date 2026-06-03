@@ -160,7 +160,17 @@ void main()
     {
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
+<<<<<<< HEAD
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb;
+=======
+        Kd0 = texture(TextureImage5, vec2(U,V)).rgb;
+    }
+    else if ( object_id == 8 ) // BENTENNYSON
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y;  // flip V for glTF
+        Kd0 = texture(TextureImage5, vec2(U,V)).rgb;
+>>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
     } else if ( object_id == 6 ) // FIREBALL
     {
         // Solid yellow/orange for the fireball and its particles (emissive)

@@ -9,6 +9,7 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
+<<<<<<< HEAD
 #define MAX_PLATFORMS 3
 
 #define MAX_ENEMIES 1
@@ -31,6 +32,11 @@ struct Character {
 		bbox[2] = bbox_d;
 	}
 };
+=======
+#define MAX_PLATFORMS 1
+#define MAX_ENEMIES 1
+#define MAX_CHARACTERS 3
+>>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
 
 // BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
 
@@ -83,4 +89,11 @@ extern float g_CameraTheta;
 extern float g_CameraPhi;   
 extern float g_CameraDistance; 
 
+<<<<<<< HEAD
+=======
+extern glm::vec3 bigchill_size;
+extern glm::vec3 swampfire_size;
+extern glm::vec3 bentennyson_size;
+
+>>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
 #endif

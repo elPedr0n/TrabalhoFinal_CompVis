@@ -55,14 +55,49 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
 
     // 1/2. Attack handling (E and Q). Disabled while jumping.
     if (jumping) {
-        // Cancel any ongoing Q hold when jumping
+        // Cancel any ongoing holds when jumping
         state.q_state = 0;
-        // If jumping, we skip attack handling and keep pending fireball (it should not fire while jumping)
+        state.is_e_attacking = false;
+        // If jumping, we skip attack handling and keep pending fireball
     } else {
+<<<<<<< HEAD
         // Attack with E
         if (active && key_down(GLFW_KEY_E)) {
+=======
+        bool e_is_down = key_down(GLFW_KEY_E);
+        bool e_just_pressed = e_is_down && !state.e_key_was_down;
+        state.e_key_was_down = e_is_down;
+
+        // Allow continuous punching if E is held down
+        if (player.active_character == 1 && e_is_down && !state.is_e_attacking && state.q_state == 0) {
+            state.is_e_attacking = true;
+            state.e_attack_timer = 0.0f;
+        }
+
+        if (state.is_e_attacking) {
+>>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
             current_anim_index = 1;
             is_attacking = true;
+            state.e_attack_timer += delta_t;
+            
+            float max_attack_time = 0.6f; // reasonable fallback
+            if (model.animations.size() > 1) {
+                const tinygltf::Animation &anim = model.animations[1];
+                float max_t = 0.0f;
+                for (const auto &samp : anim.samplers) {
+                    if (samp.input < 0) continue;
+                    const tinygltf::Accessor &acc = model.accessors[samp.input];
+                    const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+                    const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+                    const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
+                    if (acc.count > 0) max_t = std::max(max_t, times[acc.count - 1]);
+                }
+                if (max_t > 0.0f) max_attack_time = max_t;
+            }
+
+            if (state.e_attack_timer >= max_attack_time) {
+                state.is_e_attacking = false;
+            }
         }
         // Attack with Q (hold = 3, release = 2) - support charging
         else {
@@ -181,6 +216,103 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
     res.current_anim_index = current_anim_index;
     res.anim_time_to_pass = anim_time_to_pass;
     res.is_attacking = is_attacking;
+    return res;
+}
+
+BenAnimResult computeBenAnimation(const tinygltf::Model& model,
+                                 const bool keys[1024],
+                                 bool jumping,
+                                 float delta_t,
+                                 float agora,
+                                 BenAnimState& state)
+{
+    BenAnimResult res;
+    auto key_down = [&](int k){ return k >= 0 && k < 1024 ? keys[k] : false; };
+    bool is_moving = key_down(GLFW_KEY_W) || key_down(GLFW_KEY_A) ||
+                     key_down(GLFW_KEY_S) || key_down(GLFW_KEY_D) ||
+                     key_down(GLFW_KEY_UP) || key_down(GLFW_KEY_DOWN) ||
+                     key_down(GLFW_KEY_LEFT) || key_down(GLFW_KEY_RIGHT);
+
+    int current_anim_index = 7; // Idle_Loop default
+    float anim_time_to_pass = 0.0f;
+
+    // Handle Fighting Stance and Attack (E = 4)
+    bool e_is_down = key_down(GLFW_KEY_E);
+    bool e_just_pressed = e_is_down && !state.e_key_was_down;
+    state.e_key_was_down = e_is_down;
+
+    if (state.in_fighting_stance) {
+        state.time_since_last_punch += delta_t;
+        if (state.time_since_last_punch > 5.0f) {
+            state.in_fighting_stance = false;
+        }
+    }
+
+    // Allow continuous punching if E is held down
+    if (player.active_character == 2 && e_is_down && !jumping && !state.is_attacking) {
+        state.is_attacking = true;
+        state.attack_timer = 0.0f;
+        state.in_fighting_stance = true;
+        state.time_since_last_punch = 0.0f;
+    }
+
+    if (state.is_attacking) {
+        current_anim_index = 4; // Fighting Left Jab
+        state.attack_timer += delta_t;
+        
+        // Find attack animation duration
+        float max_attack_time = 0.6f; // reasonable fallback
+        if (model.animations.size() > 4) {
+            const tinygltf::Animation &anim = model.animations[4];
+            float max_t = 0.0f;
+            for (const auto &samp : anim.samplers) {
+                if (samp.input < 0) continue;
+                const tinygltf::Accessor &acc = model.accessors[samp.input];
+                const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+                const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+                const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
+                if (acc.count > 0) max_t = std::max(max_t, times[acc.count - 1]);
+            }
+            if (max_t > 0.0f) max_attack_time = max_t;
+        }
+
+        if (state.attack_timer >= max_attack_time) {
+            state.is_attacking = false;
+        }
+    }
+
+    if (!state.is_attacking) {
+        if (jumping) {
+            // Always use Jump_Loop (9) while in the air as requested
+            current_anim_index = 9; 
+        } else if (is_moving && player.active_character == 2) {
+            current_anim_index = 16; // Sprint_Loop
+        } else {
+            current_anim_index = state.in_fighting_stance ? 3 : 7; // Fighting Idle (3) or Idle_Loop (7)
+        }
+    }
+
+    if (current_anim_index != state.last_applied_anim_index) {
+        state.anim_start_time = agora;
+        state.last_applied_anim_index = current_anim_index;
+        if (jumping && current_anim_index == 9) state.jump_timer = 0.0f;
+    }
+
+    if (jumping && current_anim_index == 9) {
+        state.jump_timer += delta_t;
+    }
+
+    anim_time_to_pass = agora - state.anim_start_time;
+
+    // Adjust speed for Sprint_Loop if needed, otherwise normal
+    if (current_anim_index == 16) {
+        anim_time_to_pass *= 1.5f; // Adjust run animation speed slightly if needed
+    }
+
+    res.current_anim_index = current_anim_index;
+    res.anim_time_to_pass = anim_time_to_pass;
+    res.is_attacking = state.is_attacking;
+    
     return res;
 }
 
