@@ -893,3 +893,10 @@ make the whole particle system more modularized, function calling including para
 ### Commit com IA: Finalmente uma colisao que funciona vamoooo
 
 PROMPT: I need to correct the logic in collision. Now, the player and bbox are not doing the same movement, the bbox dont move the same as the pĺayer. Read the files and give me an explanations of why is that and the solution
+
+
+### Commit com IA: Implementacao de uma bbox temporaria no modelo do Swampfire e correcao de bugs relativos a gravidade e animacoes desse modelo em cima de plataformas do mapa.
+
+PROMPT 1: So, i want to debug some stuff. I want you to just tell me what to change, dont apply anything to the files. The swampfire model, when on top of a platform, the clipping position is ok, but the animation is bugged, it keeps going to 2 diferent animations, i believe it is the jumping and idle animation.
+
+PROMPT 2: Okay, but i have another problem, the way thar is implemented now, the ground doesnt have a collider, so even when idle on the ground, both models aabbs are going to through the floor, where do i change this? dont change any file.

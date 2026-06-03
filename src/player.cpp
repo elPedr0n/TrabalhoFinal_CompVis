@@ -80,10 +80,7 @@ void UpdatePosition() {
         player.double_jump_available = true;
     }
     
-    
-    // ... [Seu código de rotação e pulo (gravidade) até aqui permanece igual] ...
-    
-    if (player.jumping) player.speed.y += gravidade;
+    player.speed.y += gravidade;
 
     // 1. Calcula o quanto o jogador QUER se mover neste frame (Equivalente ao m_velocity inicial)
     float move_vector_x = move_x * player.speed.x * delta_t;
@@ -107,7 +104,7 @@ void UpdatePosition() {
     }
     // Move o jogador APENAS no Y antes de checar os outros eixos
     player.position.y += move_vector_y;
-    player_bbox.Move(0.0f, move_vector_y, 0.0f); 
+    // player_bbox.Move(0.0f, move_vector_y, 0.0f); 
 
     // === EIXO X ===
     for (const auto& item : map) {
@@ -115,7 +112,7 @@ void UpdatePosition() {
         // printf("DeltaX: %f\n", move_vector_x);
     }
     player.position.x += move_vector_x;
-    player_bbox.Move(move_vector_x, 0.0f, 0.0f);
+    // player_bbox.Move(move_vector_x, 0.0f, 0.0f);
 
     // === EIXO Z ===
     for (const auto& item : map) {
@@ -123,7 +120,7 @@ void UpdatePosition() {
         // printf("DeltaZ: %f\n", move_vector_z);
     }
     player.position.z += move_vector_z;
-    player_bbox.Move(0.0f, 0.0f, move_vector_z);
+    // player_bbox.Move(0.0f, 0.0f, move_vector_z);
 
 
     // === ATUALIZAÇÃO DE ESTADOS PÓS-COLISÃO ===
@@ -166,4 +163,7 @@ void UpdatePosition() {
         // Se ele não colidiu com o chão nem ativou o hardcode (-1.0f), está caindo
         player.jumping = true; 
     }
+
+    glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+    player_bbox = makeAABBFromGround(player.position, size);
 }

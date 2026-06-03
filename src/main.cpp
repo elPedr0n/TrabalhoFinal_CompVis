@@ -412,6 +412,7 @@ float delta_t;
 
 // Gambiarra mais absurda eh us guri 
 glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
+glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -767,7 +768,7 @@ int main(int argc, char* argv[])
                         glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     }
                     DrawVirtualObject(name.c_str());
-                    // DrawBoundingBox(name.c_str(), SWAMPFIRE);
+                    DrawBoundingBox(player.characters[1].bbox, SWAMPFIRE);
                 }
             }
         }
@@ -1744,7 +1745,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             // Swap active character
             player.active_character = (player.active_character + 1) % 2;
             // Sync position to current player position
-            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, bigchill_size);
+            glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)
