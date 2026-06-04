@@ -163,8 +163,19 @@ struct Enemy {
 	AABB bbox;
 	float speed; // Velocidade de movimento do inimigo
 
+	// Attack state
+	bool is_attacking;
+	float attack_timer;
+	float attack_cooldown;
+	float attack_duration;
+	float attack_range;
+	bool has_hit_player;     // single-hit per attack
+	bool punch_active;       // hitbox active this frame
+
 	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: rotate(rot), scale(sc), visible(vis), speed(0.8f)
+		: rotate(rot), scale(sc), visible(vis), speed(0.8f),
+		is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f),
+		attack_duration(0.8f), attack_range(1.0f), has_hit_player(false), punch_active(false)
 	{
 		position.x = px; position.y = py; position.z = pz;
 		bbox = MakeAABBFromCenterSize(position, glm::vec3(bbox_w, bbox_h, bbox_d));

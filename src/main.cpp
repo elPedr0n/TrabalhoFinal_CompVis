@@ -269,6 +269,7 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
 
 // função de update dos inimigos
 void UpdateEnemies();
+void ProcessEnemyMeleeHitboxes();
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
@@ -692,6 +693,7 @@ int main(int argc, char* argv[])
         }
 
         UpdateEnemies();
+        ProcessEnemyMeleeHitboxes();
 
         // Draw controlled BigChill if visible
         if (player.active_character == 0)
@@ -2215,6 +2217,36 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
         if (punch_box.Intersects(g_enemies[i].bbox)) {
             printf("Ben punch hit enemy %d!\n", i);
             state.punch_hit_enemies.insert(i);
+        }
+    }
+}
+
+
+void ProcessEnemyMeleeHitboxes()
+{
+    auto& player_bbox = player.characters[player.active_character].bbox;
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!g_enemies[i].visible) continue;
+        if (!g_enemies[i].punch_active) continue;
+        if (g_enemies[i].has_hit_player) continue; // single hit per attack
+
+        glm::vec3 forward = glm::vec3(
+            sin(g_enemies[i].rotate), 0.0f, cos(g_enemies[i].rotate));
+        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune
+        float reach = 0.5f;
+        float height = 0.3f;
+
+        glm::vec3 center = g_enemies[i].position 
+                         + forward * reach 
+                         + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, BUNNY);
+
+        if (punch_box.Intersects(player_bbox)) {
+            printf("Enemy %d hit the player!\n", i);
+            g_enemies[i].has_hit_player = true;
+            // future: deal damage to player here
         }
     }
 }
