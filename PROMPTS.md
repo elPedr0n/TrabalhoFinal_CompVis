@@ -928,3 +928,6 @@ PROMPT 1: Make so the project is able to load .glb files as well. Then apply it 
 
 PROMPT 2: corrija as animações do swampfire, ele deve pelo menos ir até o fim da animação de soco após cada toque em "e"
 
+### Commit com IA: Coloquei o ataque do Ben ja com a hitbox e arrumei as proporcoes da bbox dele 
+
+PROMPT: I want to add the same method as the swampfire attack for the ben tennyson model. This one doesnt have more than 1 punch, so it will be just one. Just tell me what needs to be done in the files, where to change. DO NOT CHANGE DIRECTLY THE FILES
