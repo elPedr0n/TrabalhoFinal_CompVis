@@ -19,6 +19,8 @@ uniform mat4 projection;
 // Uniforme para identificar qual objeto estamos desenhando
 // (Como o OpenGL compartilha uniformes, ele vai pegar o valor que você já envia na main.cpp!)
 uniform int object_id; 
+// BEN object id (match CPU-side)
+#define BEN 8
 
 // Array de ossos
 const int MAX_BONES = 100;
@@ -38,8 +40,8 @@ void main()
     vec4 local_position = model_coefficients;
     vec4 local_normal = normal_coefficients;
 
-    // Se o objeto for o Swampfire (ID 4 definido no seu #define SWAMPFIRE 4), aplicamos os ossos!
-    if (object_id == 4) 
+    // Se o objeto for o Swampfire (ID 4) ou Ben (ID BEN), aplicamos os ossos!
+    if (object_id == 4 || object_id == BEN) 
     {
         mat4 boneTransform = mat4(0.0);
         boneTransform += boneMatrices[jointIds[0]] * weights[0];

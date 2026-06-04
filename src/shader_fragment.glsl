@@ -40,6 +40,7 @@ uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
+uniform sampler2D TextureImage6;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
@@ -161,6 +162,13 @@ void main()
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
         Kd0 = texture(TextureImage5, vec2(U,V)).rgb;
+    }
+    else if ( object_id == 8 ) // BENTENNYSON
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y;  // flip V for glTF
+        Kd0 = texture(TextureImage6, vec2(U,V)).rgb;
+
     } else if ( object_id == 6 ) // FIREBALL
     {
         // Solid yellow/orange for the fireball and its particles (emissive)

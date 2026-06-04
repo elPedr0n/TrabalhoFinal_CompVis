@@ -413,9 +413,11 @@ Player player;
 float gravidade = -0.1f;
 float delta_t;
 
+
 // Gambiarra mais absurda eh us guri 
 glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
 glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
+glm::vec3 bentennyson_size = glm::vec3(2.0f * player.characters[2].scale, 2.5f * player.characters[2].scale, 2.0f * player.characters[2].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -551,6 +553,7 @@ int main(int argc, char* argv[])
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
+    tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -578,10 +581,12 @@ int main(int argc, char* argv[])
 
     // Swampfire animation local state (preserves timers and flags)
     SwampfireAnimState swampfire_state;
+    BenAnimState ben_state;
 
     GltfAnimator swampfireAnimator(gltfmodel);
     // Animator placeholder for projectiles (no GLTF for projectiles)
     GltfAnimator fireballAnimator(emptyModel);
+    GltfAnimator bentennysonAnimator(bentennyson_model);
     // keep swampfire_state alive for the main loop (defined above)
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -678,6 +683,7 @@ int main(int argc, char* argv[])
         #define SWAMPFIRE 4
         #define BLOCO 5
         #define FIREBALL 6
+        #define BENTENNYSON 8
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
 
@@ -721,6 +727,9 @@ int main(int argc, char* argv[])
 
         // Compute swampfire animation via modular function (keeps local state in swampfire_state)
         SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
+        
+        BenAnimResult benRes = computeBenAnimation(bentennyson_model, keys, player.jumping, delta_t, agora, ben_state);
+
 
         // Draw Swampfire instances if visible
         if (player.active_character == 1)
@@ -775,6 +784,41 @@ int main(int argc, char* argv[])
                     DrawBoundingBox(player.characters[1].bbox, SWAMPFIRE);
                 }
             }
+        }
+
+        // Draw Ben Tennyson instances if visible
+        if (player.active_character == 2)
+        {
+            is_attacking = benRes.is_attacking;
+
+            model = Matrix_Translate(player.position.x, player.position.y, player.position.z)
+                  * Matrix_Scale(player.characters[2].scale, player.characters[2].scale, player.characters[2].scale)
+                  * Matrix_Rotate_Y(player.rotate);
+
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BENTENNYSON);
+
+            bentennysonAnimator.update(bentennyson_model, benRes.current_anim_index, benRes.anim_time_to_pass);
+            const auto& benBones = bentennysonAnimator.getBoneMatrices();
+            
+            if (g_bone_matrices_uniform >= 0) {
+                if (!benBones.empty()) {
+                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)benBones.size(), GL_FALSE, (const GLfloat*)benBones.data());
+                } else {
+                    std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                    glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                }
+            }
+
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_bentennyson_") == 0) {
+                    glActiveTexture(GL_TEXTURE6);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
+                    DrawVirtualObject(pair.first.c_str());
+                }
+            }
+            DrawBoundingBox(player.characters[2].bbox, BENTENNYSON);
         }
 
             // Fireball projectiles: spawn on Q-release (strength provided by animRes), update and draw via modular API
@@ -1748,10 +1792,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             g_AngleZ -= delta;
         else if (mod == 0 && !(mod & GLFW_MOD_SHIFT)) {
             // Swap active character
-            player.active_character = (player.active_character + 1) % 2;
+            player.active_character = (player.active_character + 1) % 3;
             // Sync position to current player position
-            glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+            glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
             player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)

@@ -146,10 +146,12 @@ struct Player {
 	bool double_jump_available;
 
 	Player()
-		: active_character(0), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(6.0f), jumping(false), double_jump_available(false)
+		: active_character(2), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(6.0f), jumping(false), double_jump_available(false)
 	{
 		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f);
 		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f);
+		characters[2] = Character("the_bentennyson", position, 2.0f, 2.5f, 2.0f, 0.6f);
+
 	}
 };
 

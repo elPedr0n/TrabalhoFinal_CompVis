@@ -290,7 +290,13 @@ tinygltf::Model loadGltfModelAndBuildScene(const std::string &path, const std::s
     std::string err;
     std::string warn;
 
-    bool ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    bool is_glb = (path.length() >= 4 && path.substr(path.length() - 4) == ".glb");
+    bool ret = false;
+    if (is_glb) {
+        ret = loader.LoadBinaryFromFile(&model, &err, &warn, path);
+    } else {
+        ret = loader.LoadASCIIFromFile(&model, &err, &warn, path);
+    }
 
     if (!warn.empty())
         fprintf(stderr, "glTF warning: %s\n", warn.c_str());
