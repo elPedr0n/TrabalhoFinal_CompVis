@@ -40,6 +40,7 @@ uniform sampler2D TextureImage2;
 uniform sampler2D TextureImage3;
 uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
+uniform sampler2D TextureImage6;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;

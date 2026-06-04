@@ -808,9 +808,9 @@ int main(int argc, char* argv[])
 
             for (const auto& pair : g_VirtualScene) {
                 if (pair.first.find("the_bentennyson_") == 0) {
-                    glActiveTexture(GL_TEXTURE5);
+                    glActiveTexture(GL_TEXTURE6);
                     glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 5);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
                     DrawVirtualObject(pair.first.c_str());
                 }
             }
