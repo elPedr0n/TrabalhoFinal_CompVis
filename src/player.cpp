@@ -164,6 +164,7 @@ void UpdatePosition() {
         player.jumping = true; 
     }
 
-    glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+    glm::vec3 size = player.active_character == 0 ? bigchill_size 
+               : (player.active_character == 1 ? swampfire_size : bentennyson_size);
     player_bbox = makeAABBFromGround(player.position, size);
 }

@@ -265,9 +265,7 @@ void UpdatePosition();
 
 // Faz a logica de criacao do ataque do swampfire
 void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
-
-// Colisao superior das caixas
-bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
+void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id);
 
 // função de update dos inimigos
 void UpdateEnemies();
@@ -417,7 +415,7 @@ float delta_t;
 // Gambiarra mais absurda eh us guri 
 glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
 glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
-glm::vec3 bentennyson_size = glm::vec3(2.0f * player.characters[2].scale, 2.5f * player.characters[2].scale, 2.0f * player.characters[2].scale);
+glm::vec3 bentennyson_size = glm::vec3(1.18f * player.characters[2].scale, 1.5f * player.characters[2].scale, 0.9f * player.characters[2].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
@@ -790,7 +788,7 @@ int main(int argc, char* argv[])
         if (player.active_character == 2)
         {
             is_attacking = benRes.is_attacking;
-
+            ProcessBenMeleeHitboxes(benRes, ben_state, BENTENNYSON);
             model = Matrix_Translate(player.position.x, player.position.y, player.position.z)
                   * Matrix_Scale(player.characters[2].scale, player.characters[2].scale, player.characters[2].scale)
                   * Matrix_Rotate_Y(player.rotate);
@@ -1795,6 +1793,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             player.active_character = (player.active_character + 1) % 3;
             // Sync position to current player position
             glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
+            printf("Switched to character %d\n", player.active_character);
             player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
 
             for (int i = 0; i < 3; ++i)
@@ -2193,6 +2192,29 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
                 printf("Punch 2 hit enemy %d!\n", i);
                 state.punch2_hit_enemies.insert(i);
             }
+        }
+    }
+}
+
+void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id) 
+{
+    if (!animRes.punch_active) return;
+
+    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
+    float reach = 0.35f;
+    float height = 0.5f;
+
+    glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+    AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+    DrawBoundingBox(punch_box, restore_object_id);
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!g_enemies[i].visible) continue;
+        if (state.punch_hit_enemies.count(i)) continue;
+        if (punch_box.Intersects(g_enemies[i].bbox)) {
+            printf("Ben punch hit enemy %d!\n", i);
+            state.punch_hit_enemies.insert(i);
         }
     }
 }

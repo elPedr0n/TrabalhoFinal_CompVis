@@ -76,12 +76,14 @@ struct BenAnimState {
     bool in_fighting_stance = false;
     float time_since_last_punch = 0.0f;
     bool e_key_was_down = false;
+    std::set<int> punch_hit_enemies;  // same as swampfire's punch1_hit_enemies
 };
 
 struct BenAnimResult {
     int current_anim_index = 7;
     float anim_time_to_pass = 0.0f;
     bool is_attacking = false;
+    bool punch_active = false;
 };
 
 BenAnimResult computeBenAnimation(const tinygltf::Model& model,

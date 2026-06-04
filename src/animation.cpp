@@ -134,7 +134,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                     }
                 } else {
                     state.q_state = 0;
-                    // If for some reason pending remained, emit now as fallback
+                // If for some reason pending remained, emit now as fallback
                     if (state.pending_fireball_strength > 0.0f) {
                         res.spawn_fireball_strength = state.pending_fireball_strength;
                         state.pending_fireball_strength = 0.0f;
@@ -306,6 +306,7 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         state.anim_start_time = agora;
         state.last_applied_anim_index = current_anim_index;
         if (jumping && current_anim_index == 9) state.jump_timer = 0.0f;
+        if (current_anim_index == 4) state.punch_hit_enemies.clear();
     }
 
     if (jumping && current_anim_index == 9) {
@@ -313,6 +314,13 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
     }
 
     anim_time_to_pass = agora - state.anim_start_time;
+
+    if (current_anim_index == 4) {
+        float elapsed = anim_time_to_pass;
+        // Tune these values by watching Ben's jab animation
+        if (elapsed >= 0.25f && elapsed <= 0.45f)
+            res.punch_active = true;
+    }
 
     // Adjust speed for Sprint_Loop if needed, otherwise normal
     if (current_anim_index == 16) {
