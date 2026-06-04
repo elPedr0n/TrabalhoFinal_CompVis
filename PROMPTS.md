@@ -912,8 +912,19 @@ PROMPT: Now I want to do a lot of stuff related to the projectile. Just tell me 
 2. This collider should cease its existence when the projectile cease existence
 3. If the collider touches another AABB, that isnt the players, it should die (this is for the future, the projectile is an attack)
 
+### Commit com IA: Implementacao dos ataques do modelo do swampfire. Criacao de hit com os inimigos e hitbox temporaria.
+
+PROMPT: Now I want to implement a new thing, attacks. For now lets just focus on Swampfire attacks, since its the model with animatios. 
+1. I want to create a new bbox for a especific time during its atack (bound to the E key).
+1.1. The attack will be 2 bounding boxes, because the model throws 2 punches 
+2. It will be drawn using de DrawBoundingBox function for now to debug it if necessary.
+3. The only thing that we will test it collision is the enemy, for now lets just printf() a phrase indicating the collision occured.
+4. If that bbox collided with an enemy, that bbox cannot damage the same enemy twice.
+ONLY TELL ME WHAT TO DO, DONT CHANGE ANY FILES
+
 ### Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire 
 
 PROMPT 1: Make so the project is able to load .glb files as well. Then apply it to load the "ben_tennyson.glb" model on /data and add it to the transformation cycle
 
 PROMPT 2: corrija as animações do swampfire, ele deve pelo menos ir até o fim da animação de soco após cada toque em "e"
+

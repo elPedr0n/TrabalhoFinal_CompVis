@@ -5,6 +5,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include <set>
 
 class GltfAnimator {
 public:
@@ -34,9 +35,13 @@ struct SwampfireAnimState {
     float anim_start_time = 0.0f;
     // Pending fireball strength stored until release animation finishes
     float pending_fireball_strength = 0.0f;
+    std::set<int> punch1_hit_enemies;
+    std::set<int> punch2_hit_enemies;
+  
     bool is_e_attacking = false;
     float e_attack_timer = 0.0f;
     bool e_key_was_down = false;
+
 };
 
 // Result of the Swampfire animation computation for this frame.
@@ -46,6 +51,8 @@ struct SwampfireAnimResult {
     bool is_attacking = false;
     // If >0, spawn a fireball with this normalized strength (0..1)
     float spawn_fireball_strength = 0.0f;
+    bool punch1_active = false;
+    bool punch2_active = false;
 };
 
 // Compute the proper animation index and local animation time for the
