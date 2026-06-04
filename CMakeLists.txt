@@ -6,8 +6,6 @@
 # Arquivos fonte C/C++. Inclua nesta lista todos os arquivos que devem
 # ser compilados.
 set(SOURCES
-  src/globals.h
-  src/structs.h
   src/player.cpp
   src/main.cpp
   src/animation.cpp
@@ -20,7 +18,6 @@ set(SOURCES
   src/projectiles.cpp
   src/particles.cpp
   src/enemies.cpp
-  src/map.h
 )
 
 cmake_minimum_required(VERSION 3.5.0)

@@ -695,6 +695,14 @@ int main(int argc, char* argv[])
         UpdateEnemies();
         ProcessEnemyMeleeHitboxes();
 
+        // Re-bind all previously loaded textures/samplers to their texture units
+        for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
+        {
+            glActiveTexture(GL_TEXTURE0 + tu);
+            glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
+            glBindSampler(tu, g_LoadedSamplerIDs[tu]);
+        }
+
         // Draw controlled BigChill if visible
         if (player.active_character == 0)
         {
@@ -703,13 +711,6 @@ int main(int argc, char* argv[])
                     * Matrix_Rotate_Y(player.rotate);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, CHILL);
-            // Re-bind all previously loaded textures/samplers to their texture units
-            for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
-            {
-                glActiveTexture(GL_TEXTURE0 + tu);
-                glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
-                glBindSampler(tu, g_LoadedSamplerIDs[tu]);
-            }
             // Draw axes in BigChill model space (origin-centered debug)
             if (g_AxesVAO != 0) {
                 glUniform1i(g_object_id_uniform, AXES_DEBUG);
