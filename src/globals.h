@@ -5,81 +5,28 @@
 #include <glm/glm.hpp>
 #include <string>
 
+
 #define AXIS_X 0
 #define AXIS_Y 1
 #define AXIS_Z 2
 
-<<<<<<< HEAD
-#define MAX_PLATFORMS 3
-
-#define MAX_ENEMIES 1
-
-// Character struct — extend this for new properties
-struct Character {
-	std::string model_name;
-	float pos[3];
-	float rotate;
-	float scale;
-	bool  visible;
-    float bbox[3]; // Bounding box dimensions (width, height, depth)
-
-	Character(const char* name, float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: model_name(name), rotate(rot), scale(sc), visible(vis)
-	{
-		pos[0] = px; pos[1] = py; pos[2] = pz;
-		bbox[0] = bbox_w;
-		bbox[1] = bbox_h;
-		bbox[2] = bbox_d;
-	}
-};
-=======
 #define MAX_PLATFORMS 1
 #define MAX_ENEMIES 1
 #define MAX_CHARACTERS 3
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
+
+#include "structs.h"
 
 // BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
 
-extern Character g_characters[2];  // 0 = BigChill, 1 = Swampfire
-extern int       g_active_character;
+extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
 
-struct Platform {
-    glm::vec3 position; // Centro da plataforma
-    glm::vec3 scale;    // Tamanho (Largura, Altura, Profundidade)
-};
+extern struct MapItem map[MAX_PLATFORMS];
 
-extern Platform g_platforms[MAX_PLATFORMS]; // Array com as plataformas atuais 
-
-
-struct Enemie {
-	glm::vec3 position;
-	float rotate;
-	float scale;
-	bool visible;
-	float bbox[3]; // Bounding box dimensions (width, height, depth)
-	float speed; // Velocidade de movimento do inimigo
-
-	Enemie(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: rotate(rot), scale(sc), visible(vis), speed(0.8f)
-	{
-		position.x = px; position.y = py; position.z = pz;
-		bbox[0] = bbox_w;
-		bbox[1] = bbox_h;
-		bbox[2] = bbox_d;
-	}
-};
-
-extern Enemie g_enemies[MAX_ENEMIES]; // Array with the current enemies
+#include "map.h"
 
 extern bool keys[1024];
-extern bool jumping;
-extern bool double_jump_available;
 
-extern float player_pos[3];
-extern float player_speed[3];
-extern float player_rotate;
-extern float player_scalling;
-extern float jump_speed;
+extern struct Player player;
 
 extern float gravidade;
 
@@ -89,11 +36,8 @@ extern float g_CameraTheta;
 extern float g_CameraPhi;   
 extern float g_CameraDistance; 
 
-<<<<<<< HEAD
-=======
 extern glm::vec3 bigchill_size;
 extern glm::vec3 swampfire_size;
 extern glm::vec3 bentennyson_size;
 
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
 #endif

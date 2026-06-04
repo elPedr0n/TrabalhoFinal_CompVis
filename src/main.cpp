@@ -155,12 +155,11 @@ struct ObjModel
     }
 
     // Variáveis para guardar as dimensões do modelo
-    glm::vec3 bbox_min;
-    glm::vec3 bbox_max;
-    glm::vec3 bbox_dimensions; // x = Largura, y = Altura, z = Profundidade
+    AABB aabb;
+    glm::vec3 aabb_dimensions; // x = Largura, y = Altura, z = Profundidade
 
-    //Variáveis pra desenhar as bounding boxes
-    glm::vec3 bbox_vertices[8];
+    // Variáveis pra desenhar as AABBs
+    glm::vec3 aabb_vertices[8];
 
     // Função que calcula tudo isso
     void ComputeBoundingBox() {
@@ -194,24 +193,23 @@ struct ObjModel
         }
 
         // Salva os valores calculados nas variáveis que criamos no Passo 1
-        this->bbox_min = glm::vec3(min_x, min_y, min_z);
-        this->bbox_max = glm::vec3(max_x, max_y, max_z);
+        this->aabb = AABB(glm::vec3(min_x, min_y, min_z), glm::vec3(max_x, max_y, max_z));
         
         // As dimensões finais são a diferença entre o máximo e o mínimo
-        this->bbox_dimensions = this->bbox_max - this->bbox_min;
+        this->aabb_dimensions = this->aabb.max - this->aabb.min;
 
         // Imprime no console para você ler facilmente quando rodar o jogo
         printf("Dimensoes -> Largura(X): %.2f, Altura(Y): %.2f, Profund(Z): %.2f\n", 
-            this->bbox_dimensions.x, this->bbox_dimensions.y, this->bbox_dimensions.z);
+            this->aabb_dimensions.x, this->aabb_dimensions.y, this->aabb_dimensions.z);
             
-            this->bbox_vertices[0] = glm::vec3(this->bbox_min.x, this->bbox_min.y, this->bbox_min.z); // V0
-            this->bbox_vertices[1] = glm::vec3(this->bbox_max.x, this->bbox_min.y, this->bbox_min.z); // V1
-            this->bbox_vertices[2] = glm::vec3(this->bbox_max.x, this->bbox_max.y, this->bbox_min.z); // V2
-            this->bbox_vertices[3] = glm::vec3(this->bbox_min.x, this->bbox_max.y, this->bbox_min.z); // V3
-            this->bbox_vertices[4] = glm::vec3(this->bbox_min.x, this->bbox_min.y, this->bbox_max.z); // V4
-            this->bbox_vertices[5] = glm::vec3(this->bbox_max.x, this->bbox_min.y, this->bbox_max.z); // V5
-            this->bbox_vertices[6] = glm::vec3(this->bbox_max.x, this->bbox_max.y, this->bbox_max.z); // V6
-            this->bbox_vertices[7] = glm::vec3(this->bbox_min.x, this->bbox_max.y, this->bbox_max.z); // V7
+            this->aabb_vertices[0] = glm::vec3(this->aabb.min.x, this->aabb.min.y, this->aabb.min.z); // V0
+            this->aabb_vertices[1] = glm::vec3(this->aabb.max.x, this->aabb.min.y, this->aabb.min.z); // V1
+            this->aabb_vertices[2] = glm::vec3(this->aabb.max.x, this->aabb.max.y, this->aabb.min.z); // V2
+            this->aabb_vertices[3] = glm::vec3(this->aabb.min.x, this->aabb.max.y, this->aabb.min.z); // V3
+            this->aabb_vertices[4] = glm::vec3(this->aabb.min.x, this->aabb.min.y, this->aabb.max.z); // V4
+            this->aabb_vertices[5] = glm::vec3(this->aabb.max.x, this->aabb.min.y, this->aabb.max.z); // V5
+            this->aabb_vertices[6] = glm::vec3(this->aabb.max.x, this->aabb.max.y, this->aabb.max.z); // V6
+            this->aabb_vertices[7] = glm::vec3(this->aabb.min.x, this->aabb.max.y, this->aabb.max.z); // V7
         }
 };
 
@@ -227,7 +225,7 @@ void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso n�
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
-void DrawBoundingBox(const char* object_name, int restore_object_id); // Desenha AABB em wireframe
+void DrawBoundingBox(AABB& aabb, int restore_object_id); // Desenha AABB em wireframe
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
 GLuint LoadShader_Fragment(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
@@ -261,10 +259,6 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
-
-
-// Mapping para detecção das teclas
-void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod);
 
 //Movimentação do player 
 void UpdatePosition(); 
@@ -328,8 +322,8 @@ GLint g_model_uniform;
 GLint g_view_uniform;
 GLint g_projection_uniform;
 GLint g_object_id_uniform;
-GLint g_bbox_min_uniform;
-GLint g_bbox_max_uniform;
+GLint g_aabb_min_uniform;
+GLint g_aabb_max_uniform;
 GLint g_bone_matrices_uniform;
 // Axes debug VAO/VBO
 GLuint g_AxesVAO = 0;
@@ -410,38 +404,25 @@ std::vector<GLuint> g_LoadedSamplerIDs;
 
 // Vetor global para movimentação
 bool keys[1024] = {false};
-bool jumping = false;
-bool double_jump_available = false;
 
-// Variáveis do player
-float player_pos[3] = {0.0f,-1.0f,0.0f};
-float player_speed[3] = {2, 0, 2}; //Usando 2 como velocidade
-float player_rotate = 0;
-float player_scalling = 0.5f;
-float jump_speed = 4.0f;
+Player player;
 
 float gravidade = -0.1f;
 float delta_t;
 
-<<<<<<< HEAD
-// Characters controlled by player
-Character g_characters[2] = {
-    Character("the_bigchill",  0.0f, -1.0f, 0.0f, 0.0f, 0.5f, true, 0.695f, 0.985f, 0.225f),
-    Character("the_swampfire", 0.0f, -1.0f, 0.0f, 0.0f, 0.3f, false, 0.695f, 0.985f, 0.225f),
-};
-int g_active_character = 0;
-=======
+
 // Gambiarra mais absurda eh us guri 
 glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.96548f * player.characters[0].scale, 0.454046f * player.characters[0].scale);
 glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
 glm::vec3 bentennyson_size = glm::vec3(2.0f * player.characters[2].scale, 2.5f * player.characters[2].scale, 2.0f * player.characters[2].scale);
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
 
-Enemie g_enemies[MAX_ENEMIES] = {
-    Enemie(2.0f, 0.0f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
+Enemy g_enemies[MAX_ENEMIES] = {
+    Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
 #include "projectiles.h"
+
+MapItem map[MAX_PLATFORMS];
 
 
 int main(int argc, char* argv[])
@@ -494,6 +475,10 @@ int main(int argc, char* argv[])
     // Indicamos que as chamadas OpenGL deverão renderizar nesta janela
     glfwMakeContextCurrent(window);
 
+    // Papo do windows pra poder rodar mais de boa
+    // Limit FPS to the monitor refresh rate (VSync)
+    glfwSwapInterval(1);
+
     // Carregamento de todas funções definidas por OpenGL 3.3, utilizando a
     // biblioteca GLAD.
     gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
@@ -526,7 +511,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
-    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4 (bound to TextureImage5)
+    LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -544,19 +529,31 @@ int main(int argc, char* argv[])
     ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
     ComputeNormals(&bigchillmodel);
     BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
+    bigchillmodel.ComputeBoundingBox();
 
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
-
     blockmodel.ComputeBoundingBox();
+    for (int i = 0; i < MAX_PLATFORMS; i++) {
+        map[i].scale = glm::vec3(0.1f, 0.1f, 0.1f);
+        glm::vec3 pos = {i * 4.0f + 2.0f, -1.0f, i * 2.0f}; // Example positions for platforms
+        map[i].bbox = AABB(pos, blockmodel.aabb.min * map[i].scale, blockmodel.aabb.max * map[i].scale);
+        map[i].position = pos;
+        // printf("Platform %d -> Position: (%.2f, %.2f, %.2f), Scale: (%.2f, %.2f, %.2f)\n", 
+        //     i, map[i].position.x, map[i].position.y, map[i].position.z,
+        //     map[i].scale.x, map[i].scale.y, map[i].scale.z);
+        // printf("platform min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)\n", 
+        //     map[i].bbox.min.x, map[i].bbox.min.y, map[i].bbox.min.z,
+        //     map[i].bbox.max.x, map[i].bbox.max.y, map[i].bbox.max.z);
+    }
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
-
+    
     if ( argc > 1 )
     {
         ObjModel model(argv[1]);
@@ -630,7 +627,7 @@ int main(int argc, char* argv[])
 
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
         // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_lookat_l    = glm::vec4(player_pos[AXIS_X], player_pos[AXIS_Y] + height_offset, player_pos[AXIS_Z], 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        glm::vec4 camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
         glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f); // Ponto "c", centro da câmera
         glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
         glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
@@ -696,11 +693,11 @@ int main(int argc, char* argv[])
         UpdateEnemies();
 
         // Draw controlled BigChill if visible
-        if (g_characters[0].visible)
+        if (player.active_character == 0)
         {
-            model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z])
-                    * Matrix_Scale(g_characters[0].scale, g_characters[0].scale, g_characters[0].scale)
-                    * Matrix_Rotate_Y(player_rotate);
+            model = Matrix_Translate(player.position.x, player.position.y, player.position.z)
+                    * Matrix_Scale(player.characters[0].scale, player.characters[0].scale, player.characters[0].scale)
+                    * Matrix_Rotate_Y(player.rotate);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, CHILL);
             // Re-bind all previously loaded textures/samplers to their texture units
@@ -710,32 +707,29 @@ int main(int argc, char* argv[])
                 glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
                 glBindSampler(tu, g_LoadedSamplerIDs[tu]);
             }
-            // // Draw axes in BigChill model space (origin-centered debug)
-            // if (g_AxesVAO != 0) {
-            //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
-            //     glBindVertexArray(g_AxesVAO);
-            //     glLineWidth(2.0f);
-            //     glDrawArrays(GL_LINES, 0, 6);
-            //     glBindVertexArray(0);
-            //     glUniform1i(g_object_id_uniform, CHILL);
-            // }
+            // Draw axes in BigChill model space (origin-centered debug)
+            if (g_AxesVAO != 0) {
+                glUniform1i(g_object_id_uniform, AXES_DEBUG);
+                glBindVertexArray(g_AxesVAO);
+                glLineWidth(2.0f);
+                glDrawArrays(GL_LINES, 0, 6);
+                glBindVertexArray(0);
+                glUniform1i(g_object_id_uniform, CHILL);
+            }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
             DrawVirtualObject("the_bigchill");
-            // DrawBoundingBox("the_bigchill", CHILL);
+            DrawBoundingBox(player.characters[0].bbox, CHILL);
             glEnable(GL_CULL_FACE);
         }
 
         // Compute swampfire animation via modular function (keeps local state in swampfire_state)
-<<<<<<< HEAD
-        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, jumping, delta_t, agora, swampfire_state, g_characters[1].visible);
-=======
         SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
         
         BenAnimResult benRes = computeBenAnimation(bentennyson_model, keys, player.jumping, delta_t, agora, ben_state);
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
+
 
         // Draw Swampfire instances if visible
-        if (g_characters[1].visible)
+        if (player.active_character == 1)
         {
             int current_anim_index = animRes.current_anim_index;
             is_attacking = animRes.is_attacking;
@@ -764,14 +758,14 @@ int main(int argc, char* argv[])
                     }
 
                     // A matriz model agora soma o offset no eixo Y
-                    model = Matrix_Translate(player_pos[AXIS_X], player_pos[AXIS_Y] + anim_y_offset, player_pos[AXIS_Z])
-                          * Matrix_Scale(g_characters[1].scale, g_characters[1].scale, g_characters[1].scale)
-                          * Matrix_Rotate_Y(player_rotate - (3.14159265f / 6))
+                    model = Matrix_Translate(player.position.x, player.position.y + anim_y_offset, player.position.z)
+                          * Matrix_Scale(player.characters[1].scale, player.characters[1].scale, player.characters[1].scale)
+                          * Matrix_Rotate_Y(player.rotate - (3.14159265f / 6))
                           * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-                    glActiveTexture(GL_TEXTURE4);
+                    glActiveTexture(GL_TEXTURE5);
                     glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     // Draw axes in model space (debug)
                     if (g_AxesVAO != 0) {
@@ -783,7 +777,7 @@ int main(int argc, char* argv[])
                         glUniform1i(g_object_id_uniform, SWAMPFIRE);
                     }
                     DrawVirtualObject(name.c_str());
-                    // DrawBoundingBox(name.c_str(), SWAMPFIRE);
+                    DrawBoundingBox(player.characters[1].bbox, SWAMPFIRE);
                 }
             }
         }
@@ -816,7 +810,7 @@ int main(int argc, char* argv[])
                 if (pair.first.find("the_bentennyson_") == 0) {
                     glActiveTexture(GL_TEXTURE5);
                     glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 5);
                     DrawVirtualObject(pair.first.c_str());
                 }
             }
@@ -826,66 +820,30 @@ int main(int argc, char* argv[])
             // Fireball projectiles: spawn on Q-release (strength provided by animRes), update and draw via modular API
             if (g_VirtualScene.find("the_sphere") != g_VirtualScene.end()) {
                 // Only spawn fireballs when the Swampfire character is active/visible
-                if (g_characters[1].visible && animRes.spawn_fireball_strength > 0.0f) {
-                    glm::vec3 ppos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
+                if (player.active_character == 1 && animRes.spawn_fireball_strength > 0.0f) {
+                    glm::vec3 ppos(player.position.x, player.position.y, player.position.z);
                     // spawn a sphere projectile (model base name "the_sphere")
-                    Projectiles_Spawn(std::string("the_sphere"), animRes.spawn_fireball_strength, ppos, player_rotate);
+                    Projectiles_Spawn(std::string("the_sphere"), animRes.spawn_fireball_strength, ppos, player.rotate);
                 }
                 Projectiles_Update(delta_t);
                 // Update particles (projectiles emit particles each update)
                 Particles_Update(delta_t);
                 // Draw projectiles using the static sphere model from the virtual scene
-                Projectiles_Draw(emptyModel, fireballAnimator, g_GpuProgramID, g_model_uniform, g_bone_matrices_uniform, g_object_id_uniform, g_VirtualScene, std::string("the_sphere"), g_characters[1].scale, FIREBALL);
+                Projectiles_Draw(emptyModel, fireballAnimator, g_GpuProgramID, g_model_uniform, g_bone_matrices_uniform, g_object_id_uniform, g_VirtualScene, std::string("the_sphere"), player.characters[1].scale, FIREBALL);
 
                 // (TEST SPHERE REMOVED)
             }
 
-        // Desenhar as plataformas
-        constexpr size_t TNT_TEXTURE_INDEX = 4;
-        constexpr GLint TNT_TEXTURE_UNIT = 5;
 
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
-            
-        //     model = Matrix_Translate(g_platforms[i].position[AXIS_X], g_platforms[i].position[AXIS_Y], g_platforms[i].position[AXIS_Z])
-        //         *Matrix_Scale(0.1f, 0.1f, 0.1f);
-        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //     // Keep block texture isolated from glTF texture unit 4 used by Swampfire.
-        //     if (g_LoadedTextureIDs.size() > TNT_TEXTURE_INDEX && g_LoadedSamplerIDs.size() > TNT_TEXTURE_INDEX)
-        //     {
-        //         glActiveTexture(GL_TEXTURE0 + TNT_TEXTURE_UNIT);
-        //         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[TNT_TEXTURE_INDEX]);  // TNT.png
-        //         glBindSampler(TNT_TEXTURE_UNIT, g_LoadedSamplerIDs[TNT_TEXTURE_INDEX]);
-        //     }
-        //     glUniform1i(g_object_id_uniform, BLOCO);
-        //     DrawVirtualObject("TNT");
-        //     // DrawBoundingBox("TNT", BLOCO);
-        //     // // Draw axes at TNT local origin; enlarged and depth-free for visibility.
-        //     // if (g_AxesVAO != 0) {
-        //     //     glm::mat4 tnt_axes_model = model * Matrix_Scale(6.0f, 6.0f, 6.0f);
-        //     //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(tnt_axes_model));
-        //     //     glUniform1i(g_object_id_uniform, AXES_DEBUG);
-        //     //     glDisable(GL_DEPTH_TEST);
-        //     //     glBindVertexArray(g_AxesVAO);
-        //     //     glLineWidth(2.0f);
-        //     //     glDrawArrays(GL_LINES, 0, 6);
-        //     //     glBindVertexArray(0);
-        //     //     glEnable(GL_DEPTH_TEST);
-        //     //     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        //     //     glUniform1i(g_object_id_uniform, BLOCO);
-        //     // }
-            
-        // }
-
-        
         // Desenhar o inimigo
         for (int i = 0; i < MAX_ENEMIES; i++) {
             model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
                   * Matrix_Scale(0.5f, 0.5f, 0.5f);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BUNNY);
-            DrawVirtualObject("the_bunny");        
+            DrawVirtualObject("the_bunny");    
+            DrawBoundingBox(g_enemies[i].bbox, BUNNY);    
         }
-
 
         // Desenhamos o plano do chão
         model = Matrix_Translate(0.0f, -1.0f, 0.0f)
@@ -893,7 +851,19 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
-        DrawBoundingBox("the_plane", PLANE);
+
+
+        // Desenhamos os blocos do mapa
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
+                  * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, BLOCO);
+            DrawVirtualObject("TNT");
+            DrawBoundingBox(map[i].bbox, BLOCO);
+        }
+
+
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
@@ -930,25 +900,21 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void DrawBoundingBox(const char* object_name, int restore_object_id)
-{
+void DrawBoundingBox(AABB& aabb, int restore_object_id) {
     if (g_BBoxVAO == 0) return;
 
-    const auto object_it = g_VirtualScene.find(object_name);
-    if (object_it == g_VirtualScene.end()) return;
-
-    const glm::vec3 bbox_min = object_it->second.bbox_min;
-    const glm::vec3 bbox_max = object_it->second.bbox_max;
+    glm::mat4 identity = Matrix_Identity();
+    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(identity));
 
     const GLfloat bbox_vertices[8 * 4] = {
-        bbox_min.x, bbox_min.y, bbox_min.z, 1.0f, // V0
-        bbox_max.x, bbox_min.y, bbox_min.z, 1.0f, // V1
-        bbox_max.x, bbox_max.y, bbox_min.z, 1.0f, // V2
-        bbox_min.x, bbox_max.y, bbox_min.z, 1.0f, // V3
-        bbox_min.x, bbox_min.y, bbox_max.z, 1.0f, // V4
-        bbox_max.x, bbox_min.y, bbox_max.z, 1.0f, // V5
-        bbox_max.x, bbox_max.y, bbox_max.z, 1.0f, // V6
-        bbox_min.x, bbox_max.y, bbox_max.z, 1.0f  // V7
+        aabb.min.x, aabb.min.y, aabb.min.z, 1.0f, // V0
+        aabb.max.x, aabb.min.y, aabb.min.z, 1.0f, // V1
+        aabb.max.x, aabb.max.y, aabb.min.z, 1.0f, // V2
+        aabb.min.x, aabb.max.y, aabb.min.z, 1.0f, // V3
+        aabb.min.x, aabb.min.y, aabb.max.z, 1.0f, // V4
+        aabb.max.x, aabb.min.y, aabb.max.z, 1.0f, // V5
+        aabb.max.x, aabb.max.y, aabb.max.z, 1.0f, // V6
+        aabb.min.x, aabb.max.y, aabb.max.z, 1.0f  // V7
     };
 
     glBindVertexArray(g_BBoxVAO);
@@ -1028,12 +994,10 @@ void DrawVirtualObject(const char* object_name)
     // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
     glBindVertexArray(g_VirtualScene[object_name].vertex_array_object_id);
 
-    // Setamos as variáveis "bbox_min" e "bbox_max" do fragment shader
-    // com os parâmetros da axis-aligned bounding box (AABB) do modelo.
-    glm::vec3 bbox_min = g_VirtualScene[object_name].bbox_min;
-    glm::vec3 bbox_max = g_VirtualScene[object_name].bbox_max;
-    glUniform4f(g_bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
-    glUniform4f(g_bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
+    // Setamos as variáveis de AABB do fragment shader com os limites do modelo.
+    const AABB& aabb = g_VirtualScene[object_name].aabb;
+    glUniform4f(g_aabb_min_uniform, aabb.min.x, aabb.min.y, aabb.min.z, 1.0f);
+    glUniform4f(g_aabb_max_uniform, aabb.max.x, aabb.max.y, aabb.max.z, 1.0f);
 
     // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
     // apontados pelo VAO como linhas. Veja a definição de
@@ -1092,8 +1056,8 @@ void LoadShadersFromFiles()
     g_view_uniform       = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
     g_projection_uniform = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
     g_object_id_uniform  = glGetUniformLocation(g_GpuProgramID, "object_id"); // Variável "object_id" em shader_fragment.glsl
-    g_bbox_min_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_min");
-    g_bbox_max_uniform   = glGetUniformLocation(g_GpuProgramID, "bbox_max");
+    g_aabb_min_uniform   = glGetUniformLocation(g_GpuProgramID, "aabb_min");
+    g_aabb_max_uniform   = glGetUniformLocation(g_GpuProgramID, "aabb_max");
     g_bone_matrices_uniform = glGetUniformLocation(g_GpuProgramID, "boneMatrices[0]");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
@@ -1268,8 +1232,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         const float minval = std::numeric_limits<float>::lowest();
         const float maxval = std::numeric_limits<float>::max();
 
-        glm::vec3 bbox_min = glm::vec3(maxval,maxval,maxval);
-        glm::vec3 bbox_max = glm::vec3(minval,minval,minval);
+        glm::vec3 aabb_min = glm::vec3(maxval,maxval,maxval);
+        glm::vec3 aabb_max = glm::vec3(minval,minval,minval);
 
         for (size_t triangle = 0; triangle < num_triangles; ++triangle)
         {
@@ -1346,12 +1310,12 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                 model_coefficients.push_back( vz ); // Z
                 model_coefficients.push_back( 1.0f ); // W
 
-                bbox_min.x = std::min(bbox_min.x, vx);
-                bbox_min.y = std::min(bbox_min.y, vy);
-                bbox_min.z = std::min(bbox_min.z, vz);
-                bbox_max.x = std::max(bbox_max.x, vx);
-                bbox_max.y = std::max(bbox_max.y, vy);
-                bbox_max.z = std::max(bbox_max.z, vz);
+                aabb_min.x = std::min(aabb_min.x, vx);
+                aabb_min.y = std::min(aabb_min.y, vy);
+                aabb_min.z = std::min(aabb_min.z, vz);
+                aabb_max.x = std::max(aabb_max.x, vx);
+                aabb_max.y = std::max(aabb_max.y, vy);
+                aabb_max.z = std::max(aabb_max.z, vz);
 
                 // Inspecionando o código da tinyobjloader, o aluno Bernardo
                 // Sulzbach (2017/1) apontou que a maneira correta de testar se
@@ -1390,8 +1354,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
         theobject.rendering_mode = GL_TRIANGLES;       // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
         theobject.vertex_array_object_id = vertex_array_object_id;
 
-        theobject.bbox_min = bbox_min;
-        theobject.bbox_max = bbox_max;
+        theobject.aabb = AABB(aabb_min, aabb_max);
 
         g_VirtualScene[model->shapes[shape].name] = theobject;
     }
@@ -1825,19 +1788,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             g_AngleZ -= delta;
         else if (mod == 0 && !(mod & GLFW_MOD_SHIFT)) {
             // Swap active character
-<<<<<<< HEAD
-            g_characters[g_active_character].visible = false;
-            g_active_character = (g_active_character + 1) % 2;
-            g_characters[g_active_character].visible = true;
-            // Sync position to current player position
-=======
             player.active_character = (player.active_character + 1) % 3;
             // Sync position to current player position
             glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
             player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
+
             for (int i = 0; i < 3; ++i)
-                g_characters[g_active_character].pos[i] = player_pos[i];
+                // g_characters[g_active_character].pos[i] = player_pos[i];
                     // Spawn green transform particles at player position (use ParticleOptions)
                     {
                         ParticleOptions popts;
@@ -1846,7 +1803,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                         popts.scale = 0.15f + 0.01f * 6.0f;
                         popts.speed = 0.1f + 0.8f * 3.0f;
                         popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
-                        Particles_Spawn(glm::vec3(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]), popts);
+                        Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
                     }
         }
     }
@@ -1968,7 +1925,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player_pos[AXIS_Z], player_pos[AXIS_Y], player_pos[AXIS_X]);
+    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player.position.z, player.position.y, player.position.x);
 
     TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 }
@@ -2195,10 +2152,3 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
-void KeyMapping(GLFWwindow* window, int key, int scancode, int action, int mod) {
-    if (action == GLFW_PRESS)
-        keys[key] = true;
-    else if (action == GLFW_RELEASE)
-        keys[key] = false;
-}

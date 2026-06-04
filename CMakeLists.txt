@@ -7,6 +7,7 @@
 # ser compilados.
 set(SOURCES
   src/globals.h
+  src/structs.h
   src/player.cpp
   src/main.cpp
   src/animation.cpp
@@ -18,8 +19,8 @@ set(SOURCES
   src/gltf_utils.cpp
   src/projectiles.cpp
   src/particles.cpp
-  src/platforms.cpp
   src/enemies.cpp
+  src/map.h
 )
 
 cmake_minimum_required(VERSION 3.5.0)
@@ -65,7 +66,10 @@ endforeach()
 
 add_executable(${EXECUTABLE_NAME} ${SOURCES})
 
-target_include_directories(${EXECUTABLE_NAME} BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/include)
+target_include_directories(${EXECUTABLE_NAME} BEFORE PRIVATE
+  ${PROJECT_SOURCE_DIR}/include
+  ${PROJECT_SOURCE_DIR}/src
+)
 
 if(WIN32)
 

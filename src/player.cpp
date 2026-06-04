@@ -1,9 +1,13 @@
 #include <glad/glad.h>  
 #include <GLFW/glfw3.h>
 #include "globals.h"
-#include <bits/stdc++.h>
+#include <cmath>
+#include <algorithm>
+#include <vector>
 
-bool CheckCollisionAABB(glm::vec3 posA, glm::vec3 scaleA, glm::vec3 posB, glm::vec3 scaleB);
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
 
 void UpdatePosition() {
 
@@ -35,7 +39,7 @@ void UpdatePosition() {
         float target_angle = atan2(move_x, move_z);
         
         // Calcula a diferença entre o ângulo alvo e o ângulo atual
-        float diff = target_angle - player_rotate;
+        float diff = target_angle - player.rotate;
 
         // Normaliza a diferença para ficar no intervalo de -π a π.
         // Isso impede que o personagem dê "uma volta completa" ao passar do ângulo -π para π.
@@ -50,84 +54,116 @@ void UpdatePosition() {
 
         if (std::abs(step) >= std::abs(diff)) {
             // Se o passo for maior que a distância que falta, crava no alvo
-            player_rotate = target_angle;
+            player.rotate = target_angle;
         } else {
             // Caso contrário, gira suavemente
-            player_rotate += step;
+            player.rotate += step;
         }
 
         // Mantém o ângulo final dentro de -π a π para evitar estourar o limite numérico do float com o tempo
-        while (player_rotate <= -M_PI) player_rotate += (2.0f * M_PI);
-        while (player_rotate >  M_PI) player_rotate -= (2.0f * M_PI);
+        while (player.rotate <= -M_PI) player.rotate += (2.0f * M_PI);
+        while (player.rotate >  M_PI) player.rotate -= (2.0f * M_PI);
     }
     
     
-    if (keys[GLFW_KEY_SPACE] and jumping and g_active_character == 0 and double_jump_available) { // Aq q entra o double jump
+    if (keys[GLFW_KEY_SPACE] and player.jumping and player.active_character == 0 and player.double_jump_available) { // Aq q entra o double jump
         keys[GLFW_KEY_SPACE] = false;
-        double_jump_available = false;
-        player_speed[AXIS_Y] = jump_speed;
+        player.double_jump_available = false;
+        player.speed.y = player.jump_speed;
 
     }
 
-    if (keys[GLFW_KEY_SPACE] and !jumping){
+    if (keys[GLFW_KEY_SPACE] and !player.jumping){
         keys[GLFW_KEY_SPACE] = false;
-        jumping = true;
-        player_speed[AXIS_Y] = jump_speed;
-        double_jump_available = true;
+        player.jumping = true;
+        player.speed.y = player.jump_speed;
+        player.double_jump_available = true;
     }
-
-
-    if (jumping) player_speed[AXIS_Y] += gravidade;
-
-    player_pos[AXIS_Y] += player_speed[AXIS_Y] * delta_t;
-    player_pos[AXIS_X] += move_x * player_speed[AXIS_X] * delta_t;
-    player_pos[AXIS_Z] += move_z * player_speed[AXIS_Z] * delta_t;
-
-    // === INÍCIO DO SISTEMA DE COLISÃO ===
     
-    bool colidiu_com_chao = false; // Flag para saber se podemos pular
+    player.speed.y += gravidade;
 
-    // 1. Checagem do "Chão de Segurança" (O que você já tinha)
-    if (player_pos[AXIS_Y] <= -1.0f) {
-        player_pos[AXIS_Y] = -1.0f;
-        player_speed[AXIS_Y] = 0.0f;
+    // 1. Calcula o quanto o jogador QUER se mover neste frame (Equivalente ao m_velocity inicial)
+    float move_vector_x = move_x * player.speed.x * delta_t;
+    float move_vector_y = player.speed.y * delta_t; // O pulo/gravidade já definiu player.speed.y
+    float move_vector_z = move_z * player.speed.z * delta_t;
+
+    // Guarda os valores originais para verificar se houve colisão depois (Equivalente ao originalVector)
+    float original_x = move_vector_x;
+    float original_y = move_vector_y;
+    float original_z = move_vector_z;
+
+    // Referência rápida para a BBox do personagem ativo
+    auto& player_bbox = player.characters[player.active_character].bbox;
+
+    // === EIXO Y ===
+    for (const auto& item : map) {
+        // Reduz o move_vector_y se colidir com algo
+        move_vector_y = player_bbox.GetClipY(item.bbox, move_vector_y);
+        // printf("DeltaY: %f\n", move_vector_y);
+        
+    }
+    // Move o jogador APENAS no Y antes de checar os outros eixos
+    player.position.y += move_vector_y;
+    // player_bbox.Move(0.0f, move_vector_y, 0.0f); 
+
+    // === EIXO X ===
+    for (const auto& item : map) {
+        move_vector_x = player_bbox.GetClipX(item.bbox, move_vector_x);
+        // printf("DeltaX: %f\n", move_vector_x);
+    }
+    player.position.x += move_vector_x;
+    // player_bbox.Move(move_vector_x, 0.0f, 0.0f);
+
+    // === EIXO Z ===
+    for (const auto& item : map) {
+        move_vector_z = player_bbox.GetClipZ(item.bbox, move_vector_z);
+        // printf("DeltaZ: %f\n", move_vector_z);
+    }
+    player.position.z += move_vector_z;
+    // player_bbox.Move(0.0f, 0.0f, move_vector_z);
+
+
+    // === ATUALIZAÇÃO DE ESTADOS PÓS-COLISÃO ===
+    
+    bool colidiu_com_chao = false;
+
+    // 1. Checagem do "Chão de Segurança" (Hardcode)
+    if (player.position.y <= -1.0f) {
+        player.position.y = -1.0f;
+        player.speed.y = 0.0f;
         colidiu_com_chao = true;
     }
 
-    // // 2. Checagem das Plataformas
-    // // Crie as caixas para o teste (substitua p_scale pelos valores da bbox do seu modelo)
-    // glm::vec3 p_pos(player_pos[AXIS_X], player_pos[AXIS_Y], player_pos[AXIS_Z]);
-    // glm::vec3 p_scale(g_characters[g_active_character].bbox[0], g_characters[g_active_character].bbox[1], g_characters[g_active_character].bbox[2]);
-
-    // // p_pos.y -= 0.9;
-    // // Supondo que você tem um vetor global std::vector<Platform> level_platforms;
-    // for (const auto& plat : g_platforms) {
-    //     if (CheckCollisionAABB(p_pos, p_scale, plat.position, plat.scale)) {
-            
-    //         // std::cout << "Colidiu com a plataforma!" << std::endl;
-    //         // O jogador só "pisa" na plataforma se ele estiver CAINDO.
-    //         // Se ele estiver subindo (speed > 0), ele passa direto (ajuda na fluidez do pulo)
-    //         if (player_speed[AXIS_Y] <= 0.0f) {
-                
-    //             // std::cout << player_speed[AXIS_Y] <<" Colidiu com a plataforma e esta descendo!" << std::endl;
-    //             // Trava o Y do jogador EXATAMENTE no topo da plataforma
-    //             // Topo da plataforma = Centro Y dela + Metade da Altura dela
-    //             player_pos[AXIS_Y] = plat.position.y + (plat.scale.y); // Ajusta para o topo da plataforma
-                
-    //             player_speed[AXIS_Y] = 0.0f; // Zera a velocidade de queda
-    //             colidiu_com_chao = true;     // Avisa que o jogador está pisando em algo
-    //         }
-    //     }
-    // }
-
-    // 3. Atualiza as suas variáveis de estado baseadas na colisão
-    if (colidiu_com_chao) {
-        jumping = false;
-        double_jump_available = true; // Recarrega o pulo duplo
-    } else {
-        // Se ele não colidiu com o chão nem com plataforma, ele está caindo
-        // (por exemplo, se ele andou pra fora da borda de uma plataforma sem pular)
-        jumping = true; 
+    // 2. Zerar velocidades em caso de colisão (física real)
+    if (move_vector_x != original_x) {
+        // Bateu numa parede no eixo X
+        // player.position.x -= (original_x - move_vector_x); // Reverte o movimento que não aconteceu
     }
-    
+
+    if (move_vector_y != original_y) {
+        // Bateu no teto ou no chão
+        player.speed.y = 0.0f; 
+        
+        // Se a tentativa original era cair (y negativo) e foi alterada, é porque bateu no chão
+        if (original_y < 0.0f) {
+            colidiu_com_chao = true;
+        }
+    }
+
+    if (move_vector_z != original_z) {
+        // Bateu numa parede no eixo Z
+        // player.position.z -= (original_z - move_vector_z); // Reverte o movimento que não aconteceu
+    }
+
+    // 3. Atualiza as variáveis de estado baseadas na colisão final
+    if (colidiu_com_chao) {
+        player.jumping = false;
+        player.double_jump_available = true; // Recarrega o pulo duplo
+    } else {
+        // Se ele não colidiu com o chão nem ativou o hardcode (-1.0f), está caindo
+        player.jumping = true; 
+    }
+
+    glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+    player_bbox = makeAABBFromGround(player.position, size);
 }

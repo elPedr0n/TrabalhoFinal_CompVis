@@ -887,11 +887,7 @@ erase all references to a fireball gltf. make it a solid orange sphere instead, 
 add a particles.cpp where particles will be handled. make the sphere be yellow and emit fire-like particles
 
 PROMPT 5:
-<<<<<<< HEAD
 make the whole particle system more modularized, function calling including parameters for the particles (color, life, age, etc.). change particle color to use hex strings
-=======
-make the whole particle system more modularized, function calling including parameters for the particles (color, life, age, etc.). change particle color to use hex strings
-
 
 ### Commit com IA: Finalmente uma colisao que funciona vamoooo
 
@@ -921,4 +917,3 @@ PROMPT: Now I want to do a lot of stuff related to the projectile. Just tell me 
 PROMPT 1: Make so the project is able to load .glb files as well. Then apply it to load the "ben_tennyson.glb" model on /data and add it to the transformation cycle
 
 PROMPT 2: corrija as animações do swampfire, ele deve pelo menos ir até o fim da animação de soco após cada toque em "e"
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)

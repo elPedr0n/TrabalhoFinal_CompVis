@@ -151,6 +151,7 @@ struct Player {
 		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f);
 		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f);
 		characters[2] = Character("the_bentennyson", position, 2.0f, 2.5f, 2.0f, 0.6f);
+
 	}
 };
 

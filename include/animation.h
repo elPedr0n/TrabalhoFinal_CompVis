@@ -57,10 +57,6 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                                              bool jumping,
                                              float delta_t,
                                              float agora,
-<<<<<<< HEAD
-                                             SwampfireAnimState& state,
-                                             bool active);
-=======
                                              SwampfireAnimState& state);
 
 // Ben Tennyson animation state and result
@@ -87,4 +83,4 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
                                  float delta_t,
                                  float agora,
                                  BenAnimState& state);
->>>>>>> d3404aa (Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire)
+
