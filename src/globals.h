@@ -12,9 +12,10 @@
 
 #define MAX_PLATFORMS 1
 #define MAX_ENEMIES 1
-#define MAX_CHARACTERS 2
+#define MAX_CHARACTERS 3
 
 #include "structs.h"
+
 // BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
 
 extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
@@ -37,5 +38,6 @@ extern float g_CameraDistance;
 
 extern glm::vec3 bigchill_size;
 extern glm::vec3 swampfire_size;
+extern glm::vec3 bentennyson_size;
 
 #endif

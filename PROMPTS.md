@@ -889,7 +889,6 @@ add a particles.cpp where particles will be handled. make the sphere be yellow a
 PROMPT 5:
 make the whole particle system more modularized, function calling including parameters for the particles (color, life, age, etc.). change particle color to use hex strings
 
-
 ### Commit com IA: Finalmente uma colisao que funciona vamoooo
 
 PROMPT: I need to correct the logic in collision. Now, the player and bbox are not doing the same movement, the bbox dont move the same as the pĺayer. Read the files and give me an explanations of why is that and the solution
@@ -912,3 +911,9 @@ PROMPT: Now I want to do a lot of stuff related to the projectile. Just tell me 
 1. I want to add a collider to the projectile, an AABB that have its position updated alongside the drawing of the model.
 2. This collider should cease its existence when the projectile cease existence
 3. If the collider touches another AABB, that isnt the players, it should die (this is for the future, the projectile is an attack)
+
+### Commit com IA: Modelo do Ben adicionado com animações e leves ajustes no ataque do swampfire 
+
+PROMPT 1: Make so the project is able to load .glb files as well. Then apply it to load the "ben_tennyson.glb" model on /data and add it to the transformation cycle
+
+PROMPT 2: corrija as animações do swampfire, ele deve pelo menos ir até o fim da animação de soco após cada toque em "e"

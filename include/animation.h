@@ -34,6 +34,9 @@ struct SwampfireAnimState {
     float anim_start_time = 0.0f;
     // Pending fireball strength stored until release animation finishes
     float pending_fireball_strength = 0.0f;
+    bool is_e_attacking = false;
+    float e_attack_timer = 0.0f;
+    bool e_key_was_down = false;
 };
 
 // Result of the Swampfire animation computation for this frame.
@@ -55,3 +58,29 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                                              float delta_t,
                                              float agora,
                                              SwampfireAnimState& state);
+
+// Ben Tennyson animation state and result
+struct BenAnimState {
+    int last_applied_anim_index = -1;
+    float anim_start_time = 0.0f;
+    float jump_timer = 0.0f;
+    float attack_timer = 0.0f;
+    bool is_attacking = false;
+    bool in_fighting_stance = false;
+    float time_since_last_punch = 0.0f;
+    bool e_key_was_down = false;
+};
+
+struct BenAnimResult {
+    int current_anim_index = 7;
+    float anim_time_to_pass = 0.0f;
+    bool is_attacking = false;
+};
+
+BenAnimResult computeBenAnimation(const tinygltf::Model& model,
+                                 const bool keys[1024],
+                                 bool jumping,
+                                 float delta_t,
+                                 float agora,
+                                 BenAnimState& state);
+
