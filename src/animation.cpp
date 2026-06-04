@@ -61,7 +61,12 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
         // If jumping, we skip attack handling and keep pending fireball (it should not fire while jumping)
     } else {
         // Attack with E
-        if (player.active_character == 1 && key_down(GLFW_KEY_E)) {
+        // 1. Check if an E attack is already playing and hasn't finished yet
+        float e_attack_duration = 0.95f; // TODO: Tune this to the exact length of the punch animation in seconds
+        bool is_playing_e_attack = (state.last_applied_anim_index == 1) && 
+                                   ((agora - state.anim_start_time) < e_attack_duration);
+
+        if (player.active_character == 1 && (key_down(GLFW_KEY_E) || is_playing_e_attack)) {
             current_anim_index = 1;
             is_attacking = true;
         }
@@ -186,7 +191,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
     if (current_anim_index == 1) {
         float elapsed = anim_time_to_pass;
         // Punch 1 window — tune these by watching the animation
-        if (elapsed >= 0.15f && elapsed <= 0.4f)
+        if (elapsed >= 0.25f && elapsed <= 0.4f)
             res.punch1_active = true;
         // Punch 2 window
         if (elapsed >= 0.5f && elapsed <= 0.75f)
