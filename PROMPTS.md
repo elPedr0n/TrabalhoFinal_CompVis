@@ -931,3 +931,14 @@ PROMPT 2: corrija as animações do swampfire, ele deve pelo menos ir até o fim
 ### Commit com IA: Coloquei o ataque do Ben ja com a hitbox e arrumei as proporcoes da bbox dele 
 
 PROMPT: I want to add the same method as the swampfire attack for the ben tennyson model. This one doesnt have more than 1 punch, so it will be just one. Just tell me what needs to be done in the files, where to change. DO NOT CHANGE DIRECTLY THE FILES
+
+### Commit com IA: Movimentacao e ataques dos inimigos funcionando para o modelo obj atual
+
+PROMPT: Now we are going to do a new thing, add some logic to the enemies.
+1. Add the collision logic to the movement of the enemies, I dont wanna see them going into the blocks
+2. I want to add an attack for them
+2.1 This attack will happen once its distance to the player met X or the bboxes intersects (give me the 2 options so I can test the better)
+2.2 The attack will happen for a period of time and should have a bbox, similar to ben and swampfire attack.
+2.3 It is a single hit attack
+3. For now the enemy is just the bunny, but keep in mind that later we will have a model gltf for them, so keep in mind this for future implementations
+Do not change any of the files, give me the changes necessary and i will add them to the code.  
