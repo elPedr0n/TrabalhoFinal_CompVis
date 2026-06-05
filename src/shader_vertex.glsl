@@ -21,6 +21,7 @@ uniform mat4 projection;
 uniform int object_id; 
 // BEN object id (match CPU-side)
 #define BEN 8
+#define FOREVERKNIGHT 9
 
 // Array de ossos
 const int MAX_BONES = 100;
@@ -40,21 +41,24 @@ void main()
     vec4 local_position = model_coefficients;
     vec4 local_normal = normal_coefficients;
 
-    // Se o objeto for o Swampfire (ID 4) ou Ben (ID BEN), aplicamos os ossos!
-    if (object_id == 4 || object_id == BEN) 
+    // Se o objeto for o Swampfire (ID 4) ou Ben (ID BEN) ou ForeverKnight (ID FOREVERKNIGHT), aplicamos os ossos!
+    if (object_id == 4 || object_id == BEN || object_id == FOREVERKNIGHT) 
     {
-        mat4 boneTransform = mat4(0.0);
-        boneTransform += boneMatrices[jointIds[0]] * weights[0];
-        boneTransform += boneMatrices[jointIds[1]] * weights[1];
-        boneTransform += boneMatrices[jointIds[2]] * weights[2];
-        boneTransform += boneMatrices[jointIds[3]] * weights[3];
+        float weightSum = weights[0] + weights[1] + weights[2] + weights[3];
+        if (weightSum > 0.0) {
+            mat4 boneTransform = mat4(0.0);
+            boneTransform += boneMatrices[jointIds[0]] * weights[0];
+            boneTransform += boneMatrices[jointIds[1]] * weights[1];
+            boneTransform += boneMatrices[jointIds[2]] * weights[2];
+            boneTransform += boneMatrices[jointIds[3]] * weights[3];
 
-        // Entorta o vértice
-        local_position = boneTransform * model_coefficients;
-        
-        // Entorta a normal para a luz acompanhar a malha (matemática de normais)
-        mat3 boneNormalTransform = mat3(inverse(transpose(boneTransform)));
-        local_normal = vec4(boneNormalTransform * normal_coefficients.xyz, 0.0);
+            // Entorta o vértice
+            local_position = boneTransform * model_coefficients;
+            
+            // Entorta a normal para a luz acompanhar a malha (matemática de normais)
+            mat3 boneNormalTransform = mat3(inverse(transpose(boneTransform)));
+            local_normal = vec4(boneNormalTransform * normal_coefficients.xyz, 0.0);
+        }
     }
 
     // Projeta na tela

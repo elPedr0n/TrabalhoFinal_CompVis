@@ -261,15 +261,13 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 //Movimentação do player 
-void UpdatePosition(); 
+void UpdatePosition(bool can_move);
+void ResolvePlayerMapCollisions();
 
 // Faz a logica de criacao do ataque do swampfire
-void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
-void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id);
 
 // função de update dos inimigos
 void UpdateEnemies();
-void ProcessEnemyMeleeHitboxes();
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
 
@@ -422,6 +420,7 @@ Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
+
 #include "projectiles.h"
 
 MapItem map[MAX_PLATFORMS];
@@ -553,6 +552,7 @@ int main(int argc, char* argv[])
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
+    tinygltf::Model foreverknight_model = loadGltfModelAndBuildScene("../../data/forever_knight.glb", "the_foreverknight");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -582,10 +582,14 @@ int main(int argc, char* argv[])
     SwampfireAnimState swampfire_state;
     BenAnimState ben_state;
 
+    int current_enemy_anim = 36;
+    bool t_key_was_down = false;
+
     GltfAnimator swampfireAnimator(gltfmodel);
     // Animator placeholder for projectiles (no GLTF for projectiles)
     GltfAnimator fireballAnimator(emptyModel);
     GltfAnimator bentennysonAnimator(bentennyson_model);
+    GltfAnimator foreverknightAnimator(foreverknight_model);
     // keep swampfire_state alive for the main loop (defined above)
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -683,14 +687,14 @@ int main(int argc, char* argv[])
         #define BLOCO 5
         #define FIREBALL 6
         #define BENTENNYSON 8
+        #define FOREVERKNIGHT 9
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
 
         
-        // O personagem só pode se mover se não estiver no meio de um ataque
-        if (!is_attacking) {
-            UpdatePosition();
-        }
+        // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
+        bool can_move = !is_attacking && !player.is_dead && !player.is_flinching;
+        UpdatePosition(can_move);
 
         UpdateEnemies();
         ProcessEnemyMeleeHitboxes();
@@ -741,7 +745,7 @@ int main(int argc, char* argv[])
             float anim_time_to_pass = animRes.anim_time_to_pass;
 
             // Atualiza o animador modular
-            swampfireAnimator.update(gltfmodel, current_anim_index, anim_time_to_pass);
+            swampfireAnimator.update(gltfmodel, current_anim_index, anim_time_to_pass, !player.is_dead);
 
             // Envia para a placa de vídeo
             const auto& boneMatrices = swampfireAnimator.getBoneMatrices();
@@ -792,14 +796,15 @@ int main(int argc, char* argv[])
         {
             is_attacking = benRes.is_attacking;
             ProcessBenMeleeHitboxes(benRes, ben_state, BENTENNYSON);
-            model = Matrix_Translate(player.position.x, player.position.y, player.position.z)
+            float ben_y_offset = player.is_flinching ? -0.110f : 0.0f;
+            model = Matrix_Translate(player.position.x, player.position.y + ben_y_offset, player.position.z)
                   * Matrix_Scale(player.characters[2].scale, player.characters[2].scale, player.characters[2].scale)
                   * Matrix_Rotate_Y(player.rotate);
 
             glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, BENTENNYSON);
 
-            bentennysonAnimator.update(bentennyson_model, benRes.current_anim_index, benRes.anim_time_to_pass);
+            bentennysonAnimator.update(bentennyson_model, benRes.current_anim_index, benRes.anim_time_to_pass, !(player.is_dead || player.is_flinching));
             const auto& benBones = bentennysonAnimator.getBoneMatrices();
             
             if (g_bone_matrices_uniform >= 0) {
@@ -840,14 +845,91 @@ int main(int argc, char* argv[])
             }
 
 
+        bool t_is_down = keys[GLFW_KEY_T];
+
+
         // Desenhar o inimigo
         for (int i = 0; i < MAX_ENEMIES; i++) {
-            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y, g_enemies[i].position.z)
-                  * Matrix_Scale(0.5f, 0.5f, 0.5f);
+            if (!g_enemies[i].visible) continue;
+
+            // Se estiver piscando (morto), ignorar o draw em frames alternados
+            if (g_enemies[i].is_flashing && fmod(agora, 0.2f) < 0.1f) {
+                continue;
+            }
+
+            // Calcula a rotação LÓGICA (exata para o jogador) que será usada pela Hitbox de ataque.
+            if (!g_enemies[i].is_dead) {
+                float dx = player.position.x - g_enemies[i].position.x;
+                float dz = player.position.z - g_enemies[i].position.z;
+                g_enemies[i].rotate = atan2(dx, dz);
+            }
+
+            // Determina a animação baseada no estado do inimigo
+            int current_enemy_anim = 0; // 0 = Idle
+            float anim_time = agora;
+
+            if (g_enemies[i].is_dead) {
+                if (g_enemies[i].death_timer < g_enemies[i].death_anim_duration) {
+                    current_enemy_anim = 16; // Fall
+                    anim_time = std::min(g_enemies[i].death_timer, 2.65f);
+                } else {
+                    current_enemy_anim = 17; // Stand / Faint
+                    anim_time = 0.0f; // Pausa no primeiro frame
+                }
+            } else if (g_enemies[i].is_flinching) {
+                current_enemy_anim = g_enemies[i].flinch_anim; // 16 or 17
+                anim_time = g_enemies[i].flinch_timer;
+            } else if (g_enemies[i].is_attacking) {
+                current_enemy_anim = 21; // 21 = Taunt
+                anim_time = g_enemies[i].attack_timer; // Toca do começo
+            } else {
+                float dist_to_player = glm::distance(
+                    glm::vec3(g_enemies[i].position.x, 0.0f, g_enemies[i].position.z),
+                    glm::vec3(player.position.x, 0.0f, player.position.z));
+                if (dist_to_player > g_enemies[i].attack_range) {
+                    current_enemy_anim = 34; // ForeverKnight_Run
+                    anim_time = agora * 2.0f; // Speed up run animation
+                }
+            }
+
+            // Atualiza o animador para este inimigo específico
+            bool loop_anim = !(g_enemies[i].is_dead || g_enemies[i].is_flinching);
+            foreverknightAnimator.update(foreverknight_model, current_enemy_anim, anim_time, loop_anim);
+
+            // Aplica offset Y se estiver correndo (anim 34)
+            float y_offset = (current_enemy_anim == 34) ? 0.2f : 0.0f;
+            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y - 0.6f + y_offset, g_enemies[i].position.z)
+                  * Matrix_Scale(0.8f, 0.8f, 0.8f)
+                  * Matrix_Rotate_Y(g_enemies[i].rotate - 1.08f)
+                  * Matrix_Translate(-3.985f, 0.043f, -0.205f);
+
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BUNNY);
-            DrawVirtualObject("the_bunny");    
-            DrawBoundingBox(g_enemies[i].bbox, BUNNY);    
+            glUniform1i(g_object_id_uniform, FOREVERKNIGHT);
+
+            const auto& fkBones = foreverknightAnimator.getBoneMatrices();
+            if (g_bone_matrices_uniform >= 0) {
+                if (!fkBones.empty()) {
+                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)fkBones.size(), GL_FALSE, (const GLfloat*)fkBones.data());
+                } else {
+                    std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                    glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                }
+            }
+
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_foreverknight_") == 0) {
+                    glActiveTexture(GL_TEXTURE7);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
+                    
+                    // Desabilitar culling para esse modelo para corrigir faces viradas do avesso
+                    glDisable(GL_CULL_FACE);
+                    DrawVirtualObject(pair.first.c_str());
+                    glEnable(GL_CULL_FACE);
+                }
+            }
+
+            DrawBoundingBox(g_enemies[i].bbox, BUNNY);
         }
 
         // Desenhamos o plano do chão
@@ -881,6 +963,50 @@ int main(int argc, char* argv[])
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
+
+        // Draw Health
+        char health_buf[64];
+        snprintf(health_buf, sizeof(health_buf), "Health: %.0f", player.health);
+        TextRendering_PrintString(window, health_buf, -0.9f, -0.9f, 2.0f);
+
+        // Respawn Logic & Death Message
+        if (player.is_dead) {
+            TextRendering_PrintString(window, "Voce morreu!", -0.2f, 0.0f, 3.0f);
+            player.death_timer += delta_t;
+            if (player.death_timer >= 3.0f) {
+                player.position = glm::vec3(0.0f, -1.0f, 0.0f);
+                player.health = player.max_health;
+                player.is_dead = false;
+                player.death_timer = 0.0f;
+
+                for (int i = 0; i < MAX_ENEMIES; i++) {
+                    g_enemies[i].visible = false;
+                }
+                SpawnEnemy(glm::vec3(5.0f, -0.5f, 5.0f));
+            }
+        } else if (player.is_flinching) {
+            player.flinch_timer += delta_t;
+            if (player.flinch_timer >= 0.5f) {
+                player.is_flinching = false;
+            }
+        }
+
+        // Imprimimos a vida dos inimigos em cima das suas cabeças
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+            glm::vec4 enemy_pos_world = glm::vec4(g_enemies[i].position.x, g_enemies[i].position.y + 1.2f, g_enemies[i].position.z, 1.0f);
+            glm::vec4 enemy_pos_ndc = projection * view * enemy_pos_world;
+            if (enemy_pos_ndc.w > 0.0f) {
+                enemy_pos_ndc /= enemy_pos_ndc.w;
+                // Só desenha se estiver na frente da câmera (z NDC entre -1 e 1)
+                if (enemy_pos_ndc.z >= -1.0f && enemy_pos_ndc.z <= 1.0f) {
+                    char hp_buf[32];
+                    snprintf(hp_buf, sizeof(hp_buf), "%.0f", g_enemies[i].health);
+                    // Desloca um pouco o X para centralizar melhor
+                    TextRendering_PrintString(window, hp_buf, enemy_pos_ndc.x - 0.05f, enemy_pos_ndc.y, 1.5f);
+                }
+            }
+        }
 
         // O framebuffer onde OpenGL executa as operações de renderização não
         // é o mesmo que está sendo mostrado para o usuário, caso contrário
@@ -1073,6 +1199,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage4"), 4);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
     glUseProgram(0);
 }
 
@@ -1791,13 +1919,18 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     {
         if (mod & GLFW_MOD_SHIFT)
             g_AngleZ -= delta;
-        else if (mod == 0 && !(mod & GLFW_MOD_SHIFT)) {
+        else if (mod == 0 && !(mod & GLFW_MOD_SHIFT) && !player.is_dead) {
             // Swap active character
+            float old_max = player.max_health;
             player.active_character = (player.active_character + 1) % 3;
+            float new_max = player.active_character == 0 ? 200.0f : (player.active_character == 1 ? 250.0f : 100.0f);
+            player.health = player.health * (new_max / old_max);
+            player.max_health = new_max;
             // Sync position to current player position
             glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
             printf("Switched to character %d\n", player.active_character);
             player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+            ResolvePlayerMapCollisions();
 
             for (int i = 0; i < 3; ++i)
                 // g_characters[g_active_character].pos[i] = player_pos[i];
@@ -2158,96 +2291,3 @@ void PrintObjModelInfo(ObjModel* model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
-void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id) 
-{
-    if (!animRes.punch1_active && !animRes.punch2_active) return;
-
-    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
-    float reach = 0.35f;
-    float height = 0.5f;
-
-    if (animRes.punch1_active) {
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
-            if (state.punch1_hit_enemies.count(i)) continue;
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                printf("Punch 1 hit enemy %d!\n", i);
-                state.punch1_hit_enemies.insert(i);
-            }
-        }
-    }
-
-    if (animRes.punch2_active) {
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
-            if (state.punch2_hit_enemies.count(i)) continue;
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                printf("Punch 2 hit enemy %d!\n", i);
-                state.punch2_hit_enemies.insert(i);
-            }
-        }
-    }
-}
-
-void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id) 
-{
-    if (!animRes.punch_active) return;
-
-    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
-    float reach = 0.35f;
-    float height = 0.5f;
-
-    glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-    AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-    DrawBoundingBox(punch_box, restore_object_id);
-
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!g_enemies[i].visible) continue;
-        if (state.punch_hit_enemies.count(i)) continue;
-        if (punch_box.Intersects(g_enemies[i].bbox)) {
-            printf("Ben punch hit enemy %d!\n", i);
-            state.punch_hit_enemies.insert(i);
-        }
-    }
-}
-
-
-void ProcessEnemyMeleeHitboxes()
-{
-    auto& player_bbox = player.characters[player.active_character].bbox;
-
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!g_enemies[i].visible) continue;
-        if (!g_enemies[i].punch_active) continue;
-        if (g_enemies[i].has_hit_player) continue; // single hit per attack
-
-        glm::vec3 forward = glm::vec3(
-            sin(g_enemies[i].rotate), 0.0f, cos(g_enemies[i].rotate));
-        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune
-        float reach = 0.5f;
-        float height = 0.3f;
-
-        glm::vec3 center = g_enemies[i].position 
-                         + forward * reach 
-                         + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, BUNNY);
-
-        if (punch_box.Intersects(player_bbox)) {
-            printf("Enemy %d hit the player!\n", i);
-            g_enemies[i].has_hit_player = true;
-            // future: deal damage to player here
-        }
-    }
-}

@@ -68,10 +68,12 @@ void Projectiles_Update(float delta_t)
         if (p.active) {
             for (int i = 0; i < MAX_ENEMIES; i++) {
                 if (!g_enemies[i].visible) continue;
+                if (g_enemies[i].is_dead) continue;
                 if (p.bbox.Intersects(g_enemies[i].bbox)) {
-                    printf("Projectile hit enemy %d\n", i);
+                    // Apply damage based on scale
+                    float damage = 20.0f + (p.scale - 0.4f) * 25.0f;
+                    ApplyDamageToEnemy(i, damage);
                     p.active = false;
-                    // future: deal damage to g_enemies[i] here
                     break;
                 }
             }

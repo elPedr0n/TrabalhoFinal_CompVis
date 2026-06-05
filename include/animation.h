@@ -13,7 +13,7 @@ public:
     GltfAnimator(const tinygltf::Model& model);
 
     // Update: Calcula a interpolação do frame atual e atualiza as matrizes dos ossos
-    void update(const tinygltf::Model& model, int anim_index, float current_time);
+    void update(const tinygltf::Model& model, int anim_index, float current_time, bool loop = true);
 
     // Retorna as matrizes prontas para a GPU
     const std::vector<glm::mat4>& getBoneMatrices() const { return boneMatrices; }
@@ -77,6 +77,7 @@ struct BenAnimState {
     float time_since_last_punch = 0.0f;
     bool e_key_was_down = false;
     std::set<int> punch_hit_enemies;  // same as swampfire's punch1_hit_enemies
+    float attack_speed_multiplier = 1.0f;
 };
 
 struct BenAnimResult {
