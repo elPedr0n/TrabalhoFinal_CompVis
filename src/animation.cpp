@@ -55,12 +55,35 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
     float anim_time_to_pass = 0.0f;
 
     // 1/2. Attack handling (E and Q). Disabled while jumping.
-    if (jumping) {
-        // Cancel any ongoing holds when jumping
-        state.q_state = 0;
+    if (player.is_dead) {
+        if (jumping) {
+            current_anim_index = 0; // jump
+            anim_time_to_pass = 0.5f;
+        } else {
+            current_anim_index = 5; // death
+            anim_time_to_pass = player.death_timer;
+        }
+        is_attacking = false;
         state.is_e_attacking = false;
-        // If jumping, we skip attack handling and keep pending fireball
+        state.q_state = 0;
+    } else if (player.is_flinching) {
+        if (jumping) {
+            current_anim_index = 0; // jump
+            anim_time_to_pass = 0.5f;
+        } else {
+            current_anim_index = 4; // damage
+            anim_time_to_pass = player.flinch_timer;
+        }
+        is_attacking = false;
+        state.is_e_attacking = false;
+        state.q_state = 0;
     } else {
+        if (jumping) {
+            // Cancel any ongoing holds when jumping
+            state.q_state = 0;
+            state.is_e_attacking = false;
+            // If jumping, we skip attack handling and keep pending fireball
+        } else {
         bool e_is_down = key_down(GLFW_KEY_E);
         bool e_just_pressed = e_is_down && !state.e_key_was_down;
         state.e_key_was_down = e_is_down;
@@ -93,6 +116,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
 
             if (state.e_attack_timer >= max_attack_time) {
                 state.is_e_attacking = false;
+                state.last_applied_anim_index = -1; // Reset animation to cycle hitboxes
             }
         }
         // Attack with Q (hold = 3, release = 2) - support charging
@@ -159,6 +183,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
             current_anim_index = 6;
         }
     }
+    }
 
     // Debug override: numeric keys 0-9
     for (int num = 0; num <= 9; ++num) {
@@ -181,7 +206,9 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
         }
     }
 
-    anim_time_to_pass = agora - state.anim_start_time;
+    if (!player.is_dead && !player.is_flinching) {
+        anim_time_to_pass = agora - state.anim_start_time;
+    }
 
     // Jump ping-pong handling
     if (current_anim_index == 0) {
@@ -247,15 +274,33 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
     float anim_time_to_pass = 0.0f;
 
     // Handle Fighting Stance and Attack (E = 4)
+    if (player.is_dead) {
+        if (jumping) {
+            current_anim_index = 9; // Jump_Loop
+            anim_time_to_pass = 0.5f;
+        } else {
+            current_anim_index = 2; // Death01
+            anim_time_to_pass = player.death_timer;
+        }
+        state.is_attacking = false;
+        state.in_fighting_stance = false;
+    } else if (player.is_flinching) {
+        if (jumping) {
+            current_anim_index = 9; // Jump_Loop
+            anim_time_to_pass = 0.5f;
+        } else {
+            current_anim_index = 18; // Hit_Chest
+            anim_time_to_pass = player.flinch_timer;
+        }
+        state.is_attacking = false;
+    } else {
     bool e_is_down = key_down(GLFW_KEY_E);
     bool e_just_pressed = e_is_down && !state.e_key_was_down;
     state.e_key_was_down = e_is_down;
 
-    if (state.in_fighting_stance) {
-        state.time_since_last_punch += delta_t;
-        if (state.time_since_last_punch > 5.0f) {
-            state.in_fighting_stance = false;
-        }
+    if (!e_is_down) {
+        state.in_fighting_stance = false;
+        state.attack_speed_multiplier = 1.0f;
     }
 
     // Allow continuous punching if E is held down
@@ -268,7 +313,7 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
 
     if (state.is_attacking) {
         current_anim_index = 4; // Fighting Left Jab
-        state.attack_timer += delta_t;
+        state.attack_timer += delta_t * state.attack_speed_multiplier;
         
         // Find attack animation duration
         float max_attack_time = 0.6f; // reasonable fallback
@@ -301,6 +346,7 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
             current_anim_index = state.in_fighting_stance ? 3 : 7; // Fighting Idle (3) or Idle_Loop (7)
         }
     }
+    }
 
     if (current_anim_index != state.last_applied_anim_index) {
         state.anim_start_time = agora;
@@ -313,9 +359,12 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         state.jump_timer += delta_t;
     }
 
-    anim_time_to_pass = agora - state.anim_start_time;
+    if (!player.is_dead && !player.is_flinching) {
+        anim_time_to_pass = agora - state.anim_start_time;
+    }
 
     if (current_anim_index == 4) {
+        anim_time_to_pass = state.attack_timer;
         float elapsed = anim_time_to_pass;
         // Tune these values by watching Ben's jab animation
         if (elapsed >= 0.25f && elapsed <= 0.45f)
@@ -334,7 +383,7 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
     return res;
 }
 
-void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float current_time) {
+void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float current_time, bool loop) {
     if (model.skins.empty()) return;
     const tinygltf::Skin &skin = model.skins[0];
 
@@ -378,7 +427,13 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
             }
             sampler_output_accessor[si] = samp.output;
         }
-        if (max_time > 0.0f) anim_time = fmod(current_time, max_time);
+        if (max_time > 0.0f) {
+            if (loop) {
+                anim_time = fmod(current_time, max_time);
+            } else {
+                anim_time = std::min(current_time, max_time);
+            }
+        }
 
         for (const auto &ch : anim.channels) {
             int samp_idx = ch.sampler;

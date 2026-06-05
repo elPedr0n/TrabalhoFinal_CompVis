@@ -11,10 +11,11 @@
 #define AXIS_Z 2
 
 #define MAX_PLATFORMS 1
-#define MAX_ENEMIES 1
+#define MAX_ENEMIES 100
 #define MAX_CHARACTERS 3
 
 #include "structs.h"
+#include "animation.h"
 
 // BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
 
@@ -39,5 +40,13 @@ extern float g_CameraDistance;
 extern glm::vec3 bigchill_size;
 extern glm::vec3 swampfire_size;
 extern glm::vec3 bentennyson_size;
+
+void ApplyDamageToEnemy(int enemy_id, float damage);
+void SpawnEnemy(glm::vec3 pos);
+void DrawBoundingBox(struct AABB& aabb, int restore_object_id);
+
+void ProcessEnemyMeleeHitboxes();
+void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
+void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id);
 
 #endif

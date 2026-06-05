@@ -4,20 +4,23 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include "animation.h"
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
 
-void UpdatePosition() {
+void UpdatePosition(bool can_move) {
 
     float input_x = 0.0f;
     float input_z = 0.0f;
 
-    if (keys[GLFW_KEY_A]) input_x -= 1.0f;
-    if (keys[GLFW_KEY_D]) input_x += 1.0f;
-    if (keys[GLFW_KEY_S]) input_z += 1.0f;
-    if (keys[GLFW_KEY_W]) input_z -= 1.0f;
+    if (can_move) {
+        if (keys[GLFW_KEY_A]) input_x -= 1.0f;
+        if (keys[GLFW_KEY_D]) input_x += 1.0f;
+        if (keys[GLFW_KEY_S]) input_z += 1.0f;
+        if (keys[GLFW_KEY_W]) input_z -= 1.0f;
+    }
 
     // 2. Variáveis para o movimento final rotacionado
     float move_x = 0.0f;
@@ -66,18 +69,20 @@ void UpdatePosition() {
     }
     
     
-    if (keys[GLFW_KEY_SPACE] and player.jumping and player.active_character == 0 and player.double_jump_available) { // Aq q entra o double jump
-        keys[GLFW_KEY_SPACE] = false;
-        player.double_jump_available = false;
-        player.speed.y = player.jump_speed;
+    if (can_move) {
+        if (keys[GLFW_KEY_SPACE] and player.jumping and player.active_character == 0 and player.double_jump_available) { // Aq q entra o double jump
+            keys[GLFW_KEY_SPACE] = false;
+            player.double_jump_available = false;
+            player.speed.y = player.jump_speed;
 
-    }
+        }
 
-    if (keys[GLFW_KEY_SPACE] and !player.jumping){
-        keys[GLFW_KEY_SPACE] = false;
-        player.jumping = true;
-        player.speed.y = player.jump_speed;
-        player.double_jump_available = true;
+        if (keys[GLFW_KEY_SPACE] and !player.jumping){
+            keys[GLFW_KEY_SPACE] = false;
+            player.jumping = true;
+            player.speed.y = player.jump_speed;
+            player.double_jump_available = true;
+        }
     }
     
     player.speed.y += gravidade;
@@ -167,4 +172,106 @@ void UpdatePosition() {
     glm::vec3 size = player.active_character == 0 ? bigchill_size 
                : (player.active_character == 1 ? swampfire_size : bentennyson_size);
     player_bbox = makeAABBFromGround(player.position, size);
+}
+
+void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id) 
+{
+    if (!animRes.punch1_active && !animRes.punch2_active) return;
+
+    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
+    float reach = 0.35f;
+    float height = 0.5f;
+
+    if (animRes.punch1_active) {
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
+
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+            if (g_enemies[i].is_dead) continue;
+            if (state.punch1_hit_enemies.count(i)) continue;
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                printf("Punch 1 hit enemy %d!\n", i);
+                state.punch1_hit_enemies.insert(i);
+                ApplyDamageToEnemy(i, 20.0f);
+            }
+        }
+    }
+
+    if (animRes.punch2_active) {
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
+
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+            if (g_enemies[i].is_dead) continue;
+            if (state.punch2_hit_enemies.count(i)) continue;
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                printf("Punch 2 hit enemy %d!\n", i);
+                state.punch2_hit_enemies.insert(i);
+                ApplyDamageToEnemy(i, 20.0f);
+            }
+        }
+    }
+}
+
+void ResolvePlayerMapCollisions() {
+    auto& bbox = player.characters[player.active_character].bbox;
+    for (const auto& item : map) {
+        if (bbox.Intersects(item.bbox)) {
+            glm::vec3 centerP = (bbox.min + bbox.max) * 0.5f;
+            glm::vec3 centerM = (item.bbox.min + item.bbox.max) * 0.5f;
+            glm::vec3 extP = (bbox.max - bbox.min) * 0.5f;
+            glm::vec3 extM = (item.bbox.max - item.bbox.min) * 0.5f;
+            
+            float dx = centerP.x - centerM.x;
+            float dz = centerP.z - centerM.z;
+            
+            float px = (extP.x + extM.x) - std::abs(dx);
+            float pz = (extP.z + extM.z) - std::abs(dz);
+            
+            if (px < pz) {
+                if (dx > 0) player.position.x += px + 0.001f;
+                else        player.position.x -= px + 0.001f;
+            } else {
+                if (dz > 0) player.position.z += pz + 0.001f;
+                else        player.position.z -= pz + 0.001f;
+            }
+            
+            glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
+            bbox = makeAABBFromGround(player.position, size);
+        }
+    }
+}
+
+void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id) 
+{
+    if (!animRes.punch_active) return;
+
+    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
+    float reach = 0.35f;
+    float height = 0.5f;
+
+    glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+    AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+    DrawBoundingBox(punch_box, restore_object_id);
+
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!g_enemies[i].visible) continue;
+        if (g_enemies[i].is_dead) continue;
+        if (state.punch_hit_enemies.count(i)) continue;
+        if (punch_box.Intersects(g_enemies[i].bbox)) {
+            printf("Ben punch hit enemy %d!\n", i);
+            state.punch_hit_enemies.insert(i);
+            ApplyDamageToEnemy(i, 5.0f);
+            state.attack_speed_multiplier *= 2.0f; // Increase speed on hit
+            if (state.attack_speed_multiplier > 6.0f) {
+                state.attack_speed_multiplier = 6.0f;
+            }
+        }
+    }
 }
