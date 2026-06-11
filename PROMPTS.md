@@ -942,3 +942,8 @@ PROMPT: Now we are going to do a new thing, add some logic to the enemies.
 2.3 It is a single hit attack
 3. For now the enemy is just the bunny, but keep in mind that later we will have a model gltf for them, so keep in mind this for future implementations
 Do not change any of the files, give me the changes necessary and i will add them to the code.  
+
+
+### Commit com IA: Adicionei o modelo do castelo assim como a renderizacao dele
+
+PROMPT: I added a new model in the data directory, it is a gltf castle. I believe it does not have any animation. I need to put it in the game, create me an implementation plan to put it into my game and implement it.
