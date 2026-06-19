@@ -73,19 +73,19 @@ void UpdatePosition(bool can_move) {
         if (keys[GLFW_KEY_SPACE] and player.jumping and player.active_character == 0 and player.double_jump_available) { // Aq q entra o double jump
             keys[GLFW_KEY_SPACE] = false;
             player.double_jump_available = false;
-            player.speed.y = player.jump_speed;
+            player.speed.y = player.characters[player.active_character].jump_speed;
 
         }
 
         if (keys[GLFW_KEY_SPACE] and !player.jumping){
             keys[GLFW_KEY_SPACE] = false;
             player.jumping = true;
-            player.speed.y = player.jump_speed;
+            player.speed.y = player.characters[player.active_character].jump_speed;
             player.double_jump_available = true;
         }
     }
     
-    player.speed.y += gravidade;
+    player.speed.y += gravidade * delta_t;
 
     // 1. Calcula o quanto o jogador QUER se mover neste frame (Equivalente ao m_velocity inicial)
     float move_vector_x = move_x * player.speed.x * delta_t;

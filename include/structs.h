@@ -124,11 +124,12 @@ struct Character {
 	std::string model_name;
 	float scale;
     AABB bbox;
+	float jump_speed;
 
-	Character() : model_name(""), scale(0.5f), bbox() {} 
+	Character() : model_name(""), scale(0.5f), bbox(), jump_speed(6.0f) {} 
 
-	Character(const char* name, glm::vec3 pos, float bbox_w, float bbox_h, float bbox_d, float scale)
-		: model_name(name), scale(scale), bbox(makeAABBFromGround(pos, glm::vec3(bbox_w * scale, bbox_h * scale, bbox_d * scale))) {}
+	Character(const char* name, glm::vec3 pos, float bbox_w, float bbox_h, float bbox_d, float scale, float jump)
+		: model_name(name), scale(scale), bbox(makeAABBFromGround(pos, glm::vec3(bbox_w * scale, bbox_h * scale, bbox_d * scale))), jump_speed(jump) {}
 };
 
 struct Player {
@@ -140,7 +141,6 @@ struct Player {
 	
 	float rotate;
 	float scale;
-	float jump_speed;
 
 	bool jumping;
 	bool double_jump_available;
@@ -153,11 +153,11 @@ struct Player {
 	float flinch_timer;
 
 	Player()
-		: active_character(2), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jump_speed(6.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f)
+		: active_character(2), position(0.0f, -1.0f, 0.0f), speed(2.0f, 0.0f, 2.0f), rotate(0.0f), scale(1.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f)
 	{
-		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f);
-		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f);
-		characters[2] = Character("the_bentennyson", position, 1.38f, 1.5f, 0.27f, 0.6f);
+		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f, bigchill_jump_speed); // Calafrio pula mais alto
+		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f, swampfire_jump_speed); // Fogo Fátuo pula mais baixo
+		characters[2] = Character("the_bentennyson", position, 1.38f, 1.5f, 0.27f, 0.6f, bentennyson_jump_speed); // Ben salto médio
 
 	}
 };
