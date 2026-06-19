@@ -5,7 +5,7 @@
     - Deixar apenas timer do alien e HP
   - [ ] Lógica e modelos dos quebráveis   
   - [ ] Ataques big chill
-  - [ ] Calibragem de velocidade de pulo
+  - [X] Calibragem de velocidade de pulo
   - [ ] Lógica câmera fixa para segunda parte do mapa 
   - [ ] Mapa
     - [ ] Mapeamento da posição de spawn do jogador e inimigos
