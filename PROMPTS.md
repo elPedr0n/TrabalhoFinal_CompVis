@@ -944,6 +944,35 @@ PROMPT: Now we are going to do a new thing, add some logic to the enemies.
 Do not change any of the files, give me the changes necessary and i will add them to the code.  
 
 
+### Commit com IA: Cavaleiros Eternos adicionados como inimigos, assim como estrutura geral de combate, com saúde, dano e morte
+
+PROMPT 1: faça o inimigo carregado ser o testforeverknight.glb em data. Carregue suas animações e textura também.
+
+PROMPT 2:
+Implemente um sistema de saúde para os inimigos exibido em texto acima deles. Ao sofrer dano de diferentes ataques (cada um com seu próprio valor de dano), o inimigo deve cancelar ações, tocar uma animação de reação (flinch) e não atacar. Ao zerar a vida, ele deve tocar a animação de morte apenas uma vez, piscar na tela e realizar um respawn em um local aleatório próximo.
+
+PROMPT 3:
+Crie hitboxes de ataque em AABB que respeitem o tempo exato das animações. A hitbox só deve ficar ativa durante os frames de impacto (ex: apenas nos 80% do meio da animação do soco) e deve ser rotacionada corretamente para onde o modelo do inimigo ou do jogador está apontando.
+
+PROMPT 4:
+Faça com que os projéteis (bolas de fogo) causem dano aos inimigos de forma dinâmica e proporcional ao seu tamanho (escala) no momento do impacto.
+
+PROMPT 5:
+Limpe o arquivo main.cpp. Separe e mova as funções de mecânica de jogo, processamento de hitboxes de ataque, aplicação de dano e atualização de estados para seus próprios arquivos dedicados (como player.cpp e enemies.cpp), usando headers para conectar as dependências.
+
+PROMPT 6: Crie uma nova animação de caminhada e adicione-a diretamente ao arquivo do modelo 3D do cavaleiro, preservando todas as animações nativas. Para isso, crie um script em Python que manipule a estrutura binária do GLB, mesclando os canais de uma animação existente para a parte superior do corpo garantindo que a espada fique perfeitamente colada na mão — com cálculos para simular o movimento das pernas no ciclo de caminhada.
+
+PROMPT 7: Adicione a última animação de etargeted_animations(1) para ben_tennyson.glb, e use essa animação como animação de flinch em caso de levar dano
+
+PROMPT 8: Ao acertar um soco, a velocidade de ataque de ben deve duplicar, até que ben dê 10 socos por segundo. A animação ficará mais rápida.
+
+PROMPT 9: O ataque inimigo agora dá dano no jogador, aplicando um knockback, tocando uma animação de reação de dor (flinch) e forçando o jogador a rotacionar imediatamente para encarar o inimigo que o atingiu.
+
+PROMPT 10: Crie a mecânica de morte do jogador. Ao ter a vida zerada, independentemente de qual alien esteja ativo, o personagem deve forçar uma transformação de volta para o Ben (emitindo partículas na tela). O Ben tocará sua animação de morte (cancelando eventuais forças de pulo) e o jogo exibirá uma tela de "Você morreu!", esperando alguns segundos antes de resetar os inimigos e dar respawn no jogador.
+
+PROMPT 11: Atualize o motor de movimentação e física. Garanta que a gravidade continue atuando mesmo enquanto o jogador está preso no ar em animações como flinch ou morte (não o deixando congelado voando). Adicione também uma varredura instantânea de colisões que "empurre" automaticamente o jogador para fora de blocos/paredes do cenário caso ele se transforme e sua nova hitbox acabe engolindo uma estrutura.
+
+                          
 ### Commit com IA: Adicionei o modelo do castelo assim como a renderizacao dele
 
 PROMPT: I added a new model in the data directory, it is a gltf castle. I believe it does not have any animation. I need to put it in the game, create me an implementation plan to put it into my game and implement it.

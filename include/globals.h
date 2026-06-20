@@ -14,6 +14,10 @@
 #define MAX_ENEMIES 100
 #define MAX_CHARACTERS 3
 
+extern float bigchill_jump_speed;
+extern float swampfire_jump_speed;
+extern float bentennyson_jump_speed;
+
 #include "structs.h"
 #include "animation.h"
 

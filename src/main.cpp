@@ -407,8 +407,12 @@ bool keys[1024] = {false};
 
 Player player;
 
-float gravidade = -0.1f;
+float gravidade = -6.0f;
 float delta_t;
+
+float bigchill_jump_speed = 5.0f;
+float swampfire_jump_speed = 4.0f;
+float bentennyson_jump_speed = 3.0f;
 
 
 // Gambiarra mais absurda eh us guri 
