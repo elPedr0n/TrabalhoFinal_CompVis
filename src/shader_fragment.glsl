@@ -42,6 +42,7 @@ uniform sampler2D TextureImage4;
 uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
+uniform sampler2D TextureImage8;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
@@ -176,6 +177,12 @@ void main()
         U = texcoords.x;
         V = 1.0 - texcoords.y;  // flip V for glTF
         Kd0 = texture(TextureImage7, vec2(U,V)).rgb;
+    }
+    else if ( object_id == 11 ) // CASTLE
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y;  // flip V for glTF
+        Kd0 = texture(TextureImage8, vec2(U,V)).rgb;
     } else if ( object_id == 6 ) // FIREBALL
     {
         // Solid yellow/orange for the fireball and its particles (emissive)

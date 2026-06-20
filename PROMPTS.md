@@ -943,6 +943,7 @@ PROMPT: Now we are going to do a new thing, add some logic to the enemies.
 3. For now the enemy is just the bunny, but keep in mind that later we will have a model gltf for them, so keep in mind this for future implementations
 Do not change any of the files, give me the changes necessary and i will add them to the code.  
 
+
 ### Commit com IA: Cavaleiros Eternos adicionados como inimigos, assim como estrutura geral de combate, com saúde, dano e morte
 
 PROMPT 1: faça o inimigo carregado ser o testforeverknight.glb em data. Carregue suas animações e textura também.
@@ -970,3 +971,8 @@ PROMPT 9: O ataque inimigo agora dá dano no jogador, aplicando um knockback, to
 PROMPT 10: Crie a mecânica de morte do jogador. Ao ter a vida zerada, independentemente de qual alien esteja ativo, o personagem deve forçar uma transformação de volta para o Ben (emitindo partículas na tela). O Ben tocará sua animação de morte (cancelando eventuais forças de pulo) e o jogo exibirá uma tela de "Você morreu!", esperando alguns segundos antes de resetar os inimigos e dar respawn no jogador.
 
 PROMPT 11: Atualize o motor de movimentação e física. Garanta que a gravidade continue atuando mesmo enquanto o jogador está preso no ar em animações como flinch ou morte (não o deixando congelado voando). Adicione também uma varredura instantânea de colisões que "empurre" automaticamente o jogador para fora de blocos/paredes do cenário caso ele se transforme e sua nova hitbox acabe engolindo uma estrutura.
+
+                          
+### Commit com IA: Adicionei o modelo do castelo assim como a renderizacao dele
+
+PROMPT: I added a new model in the data directory, it is a gltf castle. I believe it does not have any animation. I need to put it in the game, create me an implementation plan to put it into my game and implement it.

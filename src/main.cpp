@@ -557,6 +557,7 @@ int main(int argc, char* argv[])
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
     tinygltf::Model foreverknight_model = loadGltfModelAndBuildScene("../../data/forever_knight.glb", "the_foreverknight");
+    tinygltf::Model castle_model = loadGltfModelAndBuildScene("../../data/castelin/scene.gltf", "the_castle");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -652,7 +653,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -15.0f; // Posição do "far plane"
+        float farplane  = -200.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -692,6 +693,7 @@ int main(int argc, char* argv[])
         #define FIREBALL 6
         #define BENTENNYSON 8
         #define FOREVERKNIGHT 9
+        #define CASTLE 11
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
 
@@ -942,6 +944,24 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+
+        // Desenhamos o Castelo
+        // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
+        model = Matrix_Translate(0.0f, -1.0f, -15.0f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CASTLE);
+        for (const auto& pair : g_VirtualScene) {
+            if (pair.first.find("the_castle_") == 0) {
+                glActiveTexture(GL_TEXTURE8);
+                glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+                
+                // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
+                glDisable(GL_CULL_FACE);
+                DrawVirtualObject(pair.first.c_str());
+                glEnable(GL_CULL_FACE);
+            }
+        }
 
 
         // Desenhamos os blocos do mapa

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Sci-fi Mega Castle by Jungle Jim
+* source:	https://sketchfab.com/3d-models/sci-fi-mega-castle-by-jungle-jim-b1cd2b9ae975477b87ab180faf46e2b2
+* author:	Jungle Jim (https://sketchfab.com/jungle_jim)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Sci-fi Mega Castle by Jungle Jim" (https://sketchfab.com/3d-models/sci-fi-mega-castle-by-jungle-jim-b1cd2b9ae975477b87ab180faf46e2b2) by Jungle Jim (https://sketchfab.com/jungle_jim) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
