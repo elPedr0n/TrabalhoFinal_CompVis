@@ -43,9 +43,11 @@ uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
+uniform float hud_health_ratio;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
+uniform float current_time;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -196,6 +198,35 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb; 
+    } else if ( object_id == 10 ) // COLLECT_OBJ
+    {
+        float blink = (sin(current_time * 15.0) + 1.0) * 0.5;
+        Kd0 = mix(vec3(1.0, 0.0, 0.0), vec3(2.0, 2.0, 2.0), blink);
+    } else if ( object_id == 11 ) // HUD_BAR_BG
+    {
+        float bg_u_min = 0.047;
+        float bg_u_max = 0.275;
+        float v_min = 0.025;
+        float v_max = 0.96;
+        
+        U = texcoords.x * (bg_u_max - bg_u_min) + bg_u_min;
+        V = texcoords.y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 12 ) // HUD_BAR_FG
+    {
+        float fg_u_min = 0.342;
+        float fg_u_max = 0.57;
+        float v_min = 0.025;
+        float v_max = 0.96;
+
+        float scaled_y = texcoords.y * hud_health_ratio;
+        U = texcoords.x * (fg_u_max - fg_u_min) + fg_u_min;
+        V = scaled_y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
     }
     
         // Override color when requested (per-particle color via uniform)
@@ -215,10 +246,13 @@ void main()
         return;
     }
 
-    // Equação de Iluminação
-    float lambert = max(0,dot(n,l));
-
-    color.rgb = Kd0 * (lambert + 0.01);
+    if (object_id == 11 || object_id == 12) {
+        color.rgb = Kd0;
+    } else {
+        // Equação de Iluminação
+        float lambert = max(0,dot(n,l));
+        color.rgb = Kd0 * (lambert + 0.01);
+    }
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
@@ -234,6 +268,8 @@ void main()
     // Use lower alpha for additive particles so blending uses source alpha
     if (object_id == 6) {
         color.a = 0.85;
+    } else if (object_id == 10) {
+        color.a = 0.3; // Mais transparente
     } else {
         color.a = 1.0;
     }

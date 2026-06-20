@@ -223,7 +223,7 @@ void PopMatrix(glm::mat4& M);
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
-void LoadTextureImage(const char* filename); // Função que carrega imagens de textura
+void LoadTextureImage(const char* filename, bool use_rgba = false); // Função que carrega imagens de textura
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
 void DrawBoundingBox(AABB& aabb, int restore_object_id); // Desenha AABB em wireframe
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
@@ -325,6 +325,8 @@ GLint g_object_id_uniform;
 GLint g_aabb_min_uniform;
 GLint g_aabb_max_uniform;
 GLint g_bone_matrices_uniform;
+GLint g_hud_health_ratio_uniform;
+GLint g_current_time_uniform;
 // Axes debug VAO/VBO
 GLuint g_AxesVAO = 0;
 GLuint g_AxesVBO = 0;
@@ -517,6 +519,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
     LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
+    LoadTextureImage("../../data/health_bar.png", true); // TextureImage8
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -568,6 +571,7 @@ int main(int argc, char* argv[])
     }
 
     // Inicializamos o código para renderização de texto.
+    glCheckError();
     TextRendering_Init();
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
@@ -603,6 +607,7 @@ int main(int argc, char* argv[])
         if (keys[GLFW_KEY_ESCAPE])
             glfwSetWindowShouldClose(window, GL_TRUE);
 
+        // Update delta time
         float agora = (float)glfwGetTime();
         delta_t = agora - anterior;
         anterior = agora;
@@ -624,6 +629,7 @@ int main(int argc, char* argv[])
         // Pedimos para a GPU utilizar o programa de GPU criado acima (contendo
         // os shaders de vértice e fragmentos).
         glUseProgram(g_GpuProgramID);
+        glUniform1f(g_current_time_uniform, (float)agora);
 
         // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
@@ -696,6 +702,7 @@ int main(int argc, char* argv[])
         #define CASTLE 11
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
+        #define COLLECT_OBJ 10
 
         
         // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
@@ -703,6 +710,7 @@ int main(int argc, char* argv[])
         UpdatePosition(can_move);
 
         UpdateEnemies();
+        UpdateCollectibles();
         ProcessEnemyMeleeHitboxes();
 
         // Re-bind all previously loaded textures/samplers to their texture units
@@ -977,6 +985,62 @@ int main(int argc, char* argv[])
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
+
+        // Draw Collectibles
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        for (int i = 0; i < MAX_COLLECTIBLES; i++) {
+            if (g_collectibles[i].active && g_collectibles[i].visible_this_frame) {
+                model = Matrix_Translate(g_collectibles[i].position.x, g_collectibles[i].position.y, g_collectibles[i].position.z)
+                      * Matrix_Scale(g_collectibles[i].scale, g_collectibles[i].scale, g_collectibles[i].scale);
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, COLLECT_OBJ); 
+                DrawVirtualObject("the_sphere");
+            }
+        }
+        glDisable(GL_BLEND);
+
+        // Draw HUD
+        glDisable(GL_DEPTH_TEST);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        
+        glm::mat4 id_mat = Matrix_Identity();
+        glUniformMatrix4fv(g_view_uniform, 1, GL_FALSE, glm::value_ptr(id_mat));
+        glUniformMatrix4fv(g_projection_uniform, 1, GL_FALSE, glm::value_ptr(id_mat));
+
+        float bar_x = -0.85f;
+        float bar_y = 0.0f; // center vertically
+        float scale_x = 0.05f;
+        float scale_y = 0.6f;
+
+        glActiveTexture(GL_TEXTURE8);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[5]);
+
+        // BG (Gray)
+        model = Matrix_Translate(bar_x, bar_y, 0.0f)
+              * Matrix_Scale(scale_x, scale_y, 1.0f)
+              * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 11); // HUD_BAR_BG
+        DrawVirtualObject("the_plane");
+
+        // FG (Red)
+        float h_ratio = player.health / player.max_health;
+        glUniform1f(g_hud_health_ratio_uniform, h_ratio);
+
+        if (h_ratio > 0.0f) {
+            model = Matrix_Translate(bar_x, bar_y - (1.0f - h_ratio)*scale_y, 0.0f)
+                  * Matrix_Scale(scale_x, scale_y * h_ratio, 1.0f)
+                  * Matrix_Rotate_X(M_PI / 2.0f);
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 12); // HUD_BAR_FG
+            DrawVirtualObject("the_plane");
+        }
+
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
         TextRendering_ShowEulerAngles(window);
@@ -988,10 +1052,7 @@ int main(int argc, char* argv[])
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
 
-        // Draw Health
-        char health_buf[64];
-        snprintf(health_buf, sizeof(health_buf), "Health: %.0f", player.health);
-        TextRendering_PrintString(window, health_buf, -0.9f, -0.9f, 2.0f);
+        // Draw Health (removido, usando apenas a barra)
 
         // Respawn Logic & Death Message
         if (player.is_dead) {
@@ -1085,7 +1146,7 @@ void DrawBoundingBox(AABB& aabb, int restore_object_id) {
 }
 
 // Função que carrega uma imagem para ser utilizada como textura
-void LoadTextureImage(const char* filename)
+void LoadTextureImage(const char* filename, bool use_rgba)
 {
     printf("Carregando imagem \"%s\"... ", filename);
 
@@ -1094,7 +1155,8 @@ void LoadTextureImage(const char* filename)
     int width;
     int height;
     int channels;
-    unsigned char *data = stbi_load(filename, &width, &height, &channels, 3);
+    int req_channels = use_rgba ? 4 : 3;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, req_channels);
 
     if ( data == NULL )
     {
@@ -1127,7 +1189,9 @@ void LoadTextureImage(const char* filename)
     GLuint textureunit = g_NumLoadedTextures;
     glActiveTexture(GL_TEXTURE0 + textureunit);
     glBindTexture(GL_TEXTURE_2D, texture_id);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    GLint internal_format = use_rgba ? GL_SRGB8_ALPHA8 : GL_SRGB8;
+    GLenum format = use_rgba ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
     glGenerateMipmap(GL_TEXTURE_2D);
     glBindSampler(textureunit, sampler_id);
 
@@ -1214,6 +1278,8 @@ void LoadShadersFromFiles()
     g_aabb_min_uniform   = glGetUniformLocation(g_GpuProgramID, "aabb_min");
     g_aabb_max_uniform   = glGetUniformLocation(g_GpuProgramID, "aabb_max");
     g_bone_matrices_uniform = glGetUniformLocation(g_GpuProgramID, "boneMatrices[0]");
+    g_hud_health_ratio_uniform = glGetUniformLocation(g_GpuProgramID, "hud_health_ratio");
+    g_current_time_uniform = glGetUniformLocation(g_GpuProgramID, "current_time");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
     glUseProgram(g_GpuProgramID);
@@ -1225,6 +1291,7 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
     glUseProgram(0);
 }
 
@@ -1945,11 +2012,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             g_AngleZ -= delta;
         else if (mod == 0 && !(mod & GLFW_MOD_SHIFT) && !player.is_dead) {
             // Swap active character
-            float old_max = player.max_health;
             player.active_character = (player.active_character + 1) % 3;
-            float new_max = player.active_character == 0 ? 200.0f : (player.active_character == 1 ? 250.0f : 100.0f);
-            player.health = player.health * (new_max / old_max);
-            player.max_health = new_max;
             // Sync position to current player position
             glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
             printf("Switched to character %d\n", player.active_character);
