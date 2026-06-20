@@ -13,6 +13,7 @@
 #define MAX_PLATFORMS 15
 #define MAX_ENEMIES 100
 #define MAX_CHARACTERS 3
+#define MAX_COLLECTIBLES 100
 
 extern float bigchill_jump_speed;
 extern float swampfire_jump_speed;
@@ -26,6 +27,10 @@ extern float bentennyson_jump_speed;
 extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
 
 extern struct MapItem map[MAX_PLATFORMS];
+
+extern struct Collectible g_collectibles[MAX_COLLECTIBLES];
+void SpawnCollectibles(glm::vec3 pos, int count);
+void UpdateCollectibles();
 
 #include "map.h"
 

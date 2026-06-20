@@ -10,6 +10,7 @@
 
 #define BUNNY 1
 
+
 void ResolvePlayerMapCollisions();
 
 void SpawnEnemy(glm::vec3 pos) {
@@ -186,8 +187,9 @@ void ApplyDamageToEnemy(int enemy_id, float damage) {
         g_enemies[enemy_id].death_timer = 0.0f;
         g_enemies[enemy_id].death_anim_duration = 2.66f; 
         g_enemies[enemy_id].is_attacking = false;
-        g_enemies[enemy_id].is_flinching = false;
         g_enemies[enemy_id].punch_active = false;
+
+        SpawnCollectibles(g_enemies[enemy_id].position, 5);
 
         for(int k=0; k<2; ++k) {
             float angle = (rand() % 360) * (M_PI / 180.0f);
@@ -260,7 +262,10 @@ void ProcessEnemyMeleeHitboxes()
                 glm::vec3 look_dir = g_enemies[i].position - player.position;
                 player.rotate = atan2(look_dir.x, look_dir.z);
 
-                player.health -= 50.0f;
+                float defense = player.active_character == 0 ? 0.5f : (player.active_character == 1 ? 0.4f : 1.0f);
+                float damage = 50.0f * defense;
+                player.health -= damage;
+                
                 if (player.health <= 0.0f) {
                     player.health = 0.0f;
                     player.is_dead = true;
@@ -269,7 +274,6 @@ void ProcessEnemyMeleeHitboxes()
                     
                     if (player.active_character != 2) {
                         player.active_character = 2; // Switch to Ben
-                        player.max_health = 100.0f;
                         player.characters[2].bbox = makeAABBFromGround(player.position, bentennyson_size);
                         
                         ParticleOptions popts;

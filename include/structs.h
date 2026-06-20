@@ -215,4 +215,18 @@ struct MapItem {
 	glm::vec3 scale;
 };
 
+struct Collectible {
+    glm::vec3 position;
+    glm::vec3 velocity;
+    bool active;
+    float timer;
+    float duration;
+    float blink_time;
+    AABB bbox;
+    float scale;
+    bool visible_this_frame;
+
+    Collectible() : active(false), timer(0.0f), duration(10.0f), blink_time(7.0f), scale(0.15f), visible_this_frame(true) {}
+};
+
 #endif

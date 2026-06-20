@@ -1,7 +1,7 @@
 ## Coloquemos aqui finalmente oq ta faltando pra termos um jogo foda
 
 - **Jogabilidade**
-  - [ ] Lógica e modelos dos coletáveis 
+  - [X] Lógica e modelos dos coletáveis 
     - Deixar apenas timer do alien e HP
   - [ ] Lógica e modelos dos quebráveis   
   - [ ] Ataques big chill
