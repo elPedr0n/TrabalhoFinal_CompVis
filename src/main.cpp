@@ -144,10 +144,16 @@ struct ObjModel
                     current_selector = 3.0f; // bcck2.png => TextureImage3
                 else if (material_name.find("bcck1") != std::string::npos)
                     current_selector = 2.0f;
-                else if (material_name.find("paredes") != std::string::npos)
+                else if (material_name.find("paredes") != std::string::npos || material_name.find("concrete") != std::string::npos)
                     current_selector = 10.0f; // Sinaliza que deve usar Concreto
                 else if (material_name.find("Material.001") != std::string::npos || material_name.find("wood") != std::string::npos)
                     current_selector = 9.0f;  // Sinaliza que deve usar Madeira
+                else if (material_name.find("phong") != std::string::npos || material_name.find("lambert") != std::string::npos)
+                    current_selector = 11.0f;
+                else if (material_name.find("sides") != std::string::npos)
+                    current_selector = 12.0f;
+                else if (material_name.find("top") != std::string::npos)
+                    current_selector = 14.0f;
                 continue;
             }
 
@@ -555,6 +561,9 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/map_ground/A5_WoodTextureSeamless.png"); // TextureImage9
     LoadTextureImage("../../data/map_ground/concreto.jpeg"); // TextureImage10
     LoadTextureImage("../../data/health_bar.png", true); // TextureImage8
+    LoadTextureImage("../../data/map_ground/speedboat_n1/textures/phong12_baseColor.png"); // TextureImage11 (idx 8)
+    LoadTextureImage("../../data/map_ground/madeira_lados.png"); // TextureImage12 (idx 9)
+    LoadTextureImage("../../data/map_ground/madeira_cima.png"); // TextureImage14 (idx 10)
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -1029,18 +1038,29 @@ int main(int argc, char* argv[])
         glActiveTexture(GL_TEXTURE10);
         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[6]);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
+
+        glActiveTexture(GL_TEXTURE11);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[8]);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
+
+        glActiveTexture(GL_TEXTURE12);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[9]);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
+
+        glActiveTexture(GL_TEXTURE14);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[10]);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage14"), 14);
     
         // 4. Desenhar o Objeto Visual
         // Mude a string abaixo EXATAMENTE para o nome do objeto (mesh) salvo dentro do seu arquivo .obj
         glDisable(GL_CULL_FACE); // Desabilita culling para o chão, que é duplo-face
-        DrawVirtualObject("Plane"); 
-        glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
-        // ==== DESENHAR OS COLLIDERS (MUITO ÚTIL PARA DEBUG) ====
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            // Desenha a caixa delimitadora usando a função existente
-            // O segundo parâmetro (GROUND) diz para a GPU voltar para o ID do chão após desenhar a linha
-            DrawBoundingBox(map[i].bbox, GROUND);
+        for (const auto& shape : ground_model.shapes) {
+            if (shape.name.find("Collider") != std::string::npos) {
+                continue; // Skip physical collider meshes from being rendered visually
+            }
+            DrawVirtualObject(shape.name.c_str());
         }
+        glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
 
 
         // // Desenhamos o plano do chão
@@ -1565,55 +1585,36 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                 material_id = model->shapes[shape].mesh.material_ids[triangle];
             }
 
-            float texture_selector = 2.0f; // bcck1.png => TextureImage2
-            auto face_selector_it = model->face_texture_selector_by_shape.find(model->shapes[shape].name);
-            if (face_selector_it != model->face_texture_selector_by_shape.end() &&
-                triangle < face_selector_it->second.size())
-            {
-                texture_selector = face_selector_it->second[triangle];
-            }
-            else if (material_id >= 0 && material_id < (int)model->materials.size())
+            float texture_selector = 2.0f; // Default
+            if (material_id >= 0 && material_id < (int)model->materials.size())
             {
                 const auto& material = model->materials[material_id];
-                const bool uses_bcck2 =
-                    material.name.find("bcck2") != std::string::npos ||
-                    material.diffuse_texname.find("bcck2") != std::string::npos;
-                const bool uses_bcck1 =
-                    material.name.find("bcck1") != std::string::npos ||
-                    material.diffuse_texname.find("bcck1") != std::string::npos;
-
-                if (uses_bcck2)
-                {
+                std::string mat_name = material.name;
+                
+                if (mat_name.find("bcck2") != std::string::npos)
                     texture_selector = 3.0f;
-                }
-                else if (!uses_bcck1)
-                {
-                    auto it = fallback_texture_unit_by_material_id.find(material_id);
-                    if (it == fallback_texture_unit_by_material_id.end())
-                    {
-                        fallback_texture_unit_by_material_id[material_id] = next_fallback_texture_unit;
-                        texture_selector = next_fallback_texture_unit;
-                        next_fallback_texture_unit = (next_fallback_texture_unit == 2.0f) ? 3.0f : 2.0f;
-                    }
-                    else
-                    {
-                        texture_selector = it->second;
-                    }
-                }
-            }
-            else if (material_id >= 0)
-            {
-                auto it = fallback_texture_unit_by_material_id.find(material_id);
-                if (it == fallback_texture_unit_by_material_id.end())
-                {
-                    fallback_texture_unit_by_material_id[material_id] = next_fallback_texture_unit;
-                    texture_selector = next_fallback_texture_unit;
-                    next_fallback_texture_unit = (next_fallback_texture_unit == 2.0f) ? 3.0f : 2.0f;
-                }
-                else
-                {
-                    texture_selector = it->second;
-                }
+                else if (mat_name.find("bcck1") != std::string::npos)
+                    texture_selector = 2.0f;
+                else if (mat_name.find("paredes") != std::string::npos || mat_name.find("concrete") != std::string::npos)
+                    texture_selector = 10.0f;
+                else if (mat_name.find("Material.001") != std::string::npos || mat_name.find("wood") != std::string::npos)
+                    texture_selector = 9.0f;
+                else if (mat_name.find("sides") != std::string::npos)
+                    texture_selector = 12.0f;
+                else if (mat_name.find("top") != std::string::npos)
+                    texture_selector = 14.0f;
+                else if (mat_name.find("phong12") != std::string::npos)
+                    texture_selector = 11.0f;
+                else if (mat_name.find("phongE5") != std::string::npos)
+                    texture_selector = 15.0f; // Blue
+                else if (mat_name.find("phongE6") != std::string::npos || mat_name.find("phong32") != std::string::npos)
+                    texture_selector = 16.0f; // Red
+                else if (mat_name.find("phongE7") != std::string::npos || mat_name == "phong11" || mat_name == "phong2" || mat_name == "pasted__phong11" || mat_name == "pasted__phong2")
+                    texture_selector = 17.0f; // Orange
+                else if (mat_name.find("lambert4") != std::string::npos || mat_name.find("phong28") != std::string::npos || mat_name.find("phongE3") != std::string::npos || mat_name.find("phongE8") != std::string::npos || mat_name == "phong10" || mat_name == "phong14" || mat_name == "phong19" || mat_name == "phong4" || mat_name == "phong5" || mat_name == "phong7" || mat_name == "phong8" || mat_name == "phong9" || mat_name.find("phongE1") != std::string::npos || mat_name.find("phongE2") != std::string::npos || mat_name == "phong17")
+                    texture_selector = 18.0f; // Dark Gray / Black
+                else if (mat_name.find("phong") != std::string::npos || mat_name.find("lambert") != std::string::npos)
+                    texture_selector = 19.0f; // White / Default
             }
 
             for (size_t vertex = 0; vertex < 3; ++vertex)

@@ -991,3 +991,13 @@ PROMPT 2: little change of plans, I will first make a model for the ground of my
 PROMPT 3: eu adicionei la o meu modelo, agora preciso que me direcione para renderizar ele na tela, mexendo na parte do opengl caso necessario, ja instanciei as novas texturas que ele devera usar q sao duas, TextureImage 9 e 10. Nao mude nada nos arquivos, me diga oq deve mudar
 
 PROMPT 4: eles estao spawnando errado, coloque os para spawnar apenas no Z negativo, me diga onde tera que mudar e n mude nd
+
+
+### Commit com IA: Chao do mapa praticamente implementado com texturas
+
+PROMPT 1: novamente vamos fazer mais coisas agoraaaaa. Seguinte, modelei mais coisas dentro do meu mapa. expandi a parte caminhavel, alem de adicionar novas texturas e um modelo. Preciso que vc va ate o meu @data/map_ground/chao_mapa.mtl identifique quais texturas n estao sendo carregadas, as carregue, coloque o modelo do barco para ser desenhado tambem, ele eh usado dentro do obj.
+Nao cometa erros
+
+PROMPT 2: nao quero que me desenhe os colliders inclusive, somente os cilindros, barco, Plane e Plane2. Fui rodar e deu erro para o modelo do barco
+
+PROMPT 3: ta bem bugadas as texturas, os cilindros tao usando textura errada, um dos chaos tambem, o barco ta bem paia tb. Lembre que o modelo do barco é um gltf, n sei se muda algo na hora de renderizar
