@@ -144,6 +144,10 @@ struct ObjModel
                     current_selector = 3.0f; // bcck2.png => TextureImage3
                 else if (material_name.find("bcck1") != std::string::npos)
                     current_selector = 2.0f;
+                else if (material_name.find("paredes") != std::string::npos)
+                    current_selector = 10.0f; // Sinaliza que deve usar Concreto
+                else if (material_name.find("Material.001") != std::string::npos || material_name.find("wood") != std::string::npos)
+                    current_selector = 9.0f;  // Sinaliza que deve usar Madeira
                 continue;
             }
 
@@ -211,6 +215,35 @@ struct ObjModel
             this->aabb_vertices[6] = glm::vec3(this->aabb.max.x, this->aabb.max.y, this->aabb.max.z); // V6
             this->aabb_vertices[7] = glm::vec3(this->aabb.min.x, this->aabb.max.y, this->aabb.max.z); // V7
         }
+
+    AABB ComputeBoundingBoxForShape(size_t shape_index) {                                                                                                                                  
+        float min_x = std::numeric_limits<float>::max();                                                                                                                                   
+        float min_y = std::numeric_limits<float>::max();                                                                                                                                   
+        float min_z = std::numeric_limits<float>::max();                                                                                                                                   
+                                                                                                                                                                                           
+        float max_x = std::numeric_limits<float>::lowest();                                                                                                                                
+        float max_y = std::numeric_limits<float>::lowest();                                                                                                                                
+        float max_z = std::numeric_limits<float>::lowest();                                                                                                                                
+                                                                                                                                                                                           
+        // Iterate over the indices of this specific shape                                                                                                                                 
+        for (size_t i = 0; i < shapes[shape_index].mesh.indices.size(); i++) {                                                                                                             
+            tinyobj::index_t idx = shapes[shape_index].mesh.indices[i];                                                                                                                    
+                                                                                                                                                                                           
+            float vx = attrib.vertices[3 * idx.vertex_index + 0];                                                                                                                          
+            float vy = attrib.vertices[3 * idx.vertex_index + 1];                                                                                                                          
+            float vz = attrib.vertices[3 * idx.vertex_index + 2];                                                                                                                          
+                                                                                                                                                                                           
+            min_x = std::min(min_x, vx);                                                                                                                                                   
+            min_y = std::min(min_y, vy);                                                                                                                                                   
+            min_z = std::min(min_z, vz);                                                                                                                                                   
+                                                                                                                                                                                           
+            max_x = std::max(max_x, vx);                                                                                                                                                   
+            max_y = std::max(max_y, vy);                                                                                                                                                   
+            max_z = std::max(max_z, vz);                                                                                                                                                   
+        }                                                                                                                                                                                  
+                                                                                                                                                                                           
+        return AABB(glm::vec3(min_x, min_y, min_z), glm::vec3(max_x, max_y, max_z));                                                                                                       
+    }                     
 };
 
 
@@ -421,7 +454,7 @@ glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * 
 glm::vec3 bentennyson_size = glm::vec3(1.18f * player.characters[2].scale, 1.5f * player.characters[2].scale, 0.9f * player.characters[2].scale);
 
 Enemy g_enemies[MAX_ENEMIES] = {
-    Enemy(2.0f, -0.5f, 2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
+    Enemy(2.0f, 2.0f, -2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
 
 
@@ -517,6 +550,8 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
     LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
+    LoadTextureImage("../../data/map_ground/A5_WoodTextureSeamless.png"); // TextureImage9
+    LoadTextureImage("../../data/map_ground/concreto.jpeg"); // TextureImage10
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../../data/sphere.obj");
@@ -540,18 +575,45 @@ int main(int argc, char* argv[])
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
     blockmodel.ComputeBoundingBox();
-    for (int i = 0; i < MAX_PLATFORMS; i++) {
-        map[i].scale = glm::vec3(0.1f, 0.1f, 0.1f);
-        glm::vec3 pos = {i * 4.0f + 2.0f, -1.0f, i * 2.0f}; // Example positions for platforms
-        map[i].bbox = AABB(pos, blockmodel.aabb.min * map[i].scale, blockmodel.aabb.max * map[i].scale);
-        map[i].position = pos;
-        // printf("Platform %d -> Position: (%.2f, %.2f, %.2f), Scale: (%.2f, %.2f, %.2f)\n", 
-        //     i, map[i].position.x, map[i].position.y, map[i].position.z,
-        //     map[i].scale.x, map[i].scale.y, map[i].scale.z);
-        // printf("platform min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)\n", 
-        //     map[i].bbox.min.x, map[i].bbox.min.y, map[i].bbox.min.z,
-        //     map[i].bbox.max.x, map[i].bbox.max.y, map[i].bbox.max.z);
-    }
+    // for (int i = 0; i < MAX_PLATFORMS; i++) {
+    //     map[i].scale = glm::vec3(0.1f, 0.1f, 0.1f);
+    //     glm::vec3 pos = {i * 4.0f + 2.0f, -1.0f, i * 2.0f}; // Example positions for platforms
+    //     map[i].bbox = AABB(pos, blockmodel.aabb.min * map[i].scale, blockmodel.aabb.max * map[i].scale);
+    //     map[i].position = pos;
+    //     // printf("Platform %d -> Position: (%.2f, %.2f, %.2f), Scale: (%.2f, %.2f, %.2f)\n", 
+    //     //     i, map[i].position.x, map[i].position.y, map[i].position.z,
+    //     //     map[i].scale.x, map[i].scale.y, map[i].scale.z);
+    //     // printf("platform min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)\n", 
+    //     //     map[i].bbox.min.x, map[i].bbox.min.y, map[i].bbox.min.z,
+    //     //     map[i].bbox.max.x, map[i].bbox.max.y, map[i].bbox.max.z);
+    // }
+
+
+    // Load map model
+    ObjModel ground_model("../../data/map_ground/chao_mapa.obj");
+    ComputeNormals(&ground_model);
+    BuildTrianglesAndAddToVirtualScene(&ground_model);
+
+    int current_platform_index = 0;                                                                                                                                                        
+                                                                                                                                                                                           
+    // Loop through all shapes in the OBJ                                                                                                                                                  
+    for (size_t i = 0; i < ground_model.shapes.size(); ++i) {                                                                                                                                 
+        std::string shape_name = ground_model.shapes[i].name;                                                                                                                                 
+                                                                                                                                                                                           
+        // Check if this shape is meant to be a collider                                                                                                                                   
+        if (shape_name.find("Collider") != std::string::npos) {                                                                                                                            
+            if (current_platform_index < MAX_PLATFORMS) {                                                                                                                                  
+                // Add the shape's AABB to the collision map                                                                                                                               
+                map[current_platform_index].bbox = ground_model.ComputeBoundingBoxForShape(i);                                                                                                
+                current_platform_index++;                                                                                                                                                  
+            } else {                                                                                                                                                                       
+                printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
+            }                                                                                                                                                                              
+        }                                                                                                                                                                                  
+    }  
+
+    ground_model.ComputeBoundingBox();
+
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
@@ -696,6 +758,7 @@ int main(int argc, char* argv[])
         #define CASTLE 11
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
+        #define GROUND 12
 
         
         // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
@@ -938,41 +1001,75 @@ int main(int argc, char* argv[])
             DrawBoundingBox(g_enemies[i].bbox, BUNNY);
         }
 
-        // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f)
-                * Matrix_Scale(20.0f, 1.0f, 20.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, PLANE);
-        DrawVirtualObject("the_plane");
+
+        // 1. Matriz de Modelo (Posição, Escala e Rotação do mapa)
+        // Supondo que ele deve ficar na origem do mundo e com tamanho normal
+        model = Matrix_Translate(0.0f, 0.0f, 0.0f) * Matrix_Scale(1.0f, 1.0f, 1.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+    
+        // 2. Definir o ID do objeto para o Shader saber qual IF usar
+        glUniform1i(g_object_id_uniform, GROUND);
+    
+        // 3. Ativar e Bindar as texturas (as que você carregou para a unidade 9 e 10)
+        // Ativa a Texture Unit 9
+        glActiveTexture(GL_TEXTURE9);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[5]);
+        // Substitua `textura_id_9` pela variável/dicionário onde você salvou o ID da textura gerado pelo OpenGL
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage9"), 9);
+    
+        // Ativa a Texture Unit 10 (se precisar da segunda textura simultaneamente)
+        glActiveTexture(GL_TEXTURE10);
+        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[6]);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
+    
+        // 4. Desenhar o Objeto Visual
+        // Mude a string abaixo EXATAMENTE para o nome do objeto (mesh) salvo dentro do seu arquivo .obj
+        glDisable(GL_CULL_FACE); // Desabilita culling para o chão, que é duplo-face
+        DrawVirtualObject("Plane"); 
+        glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
+        // ==== DESENHAR OS COLLIDERS (MUITO ÚTIL PARA DEBUG) ====
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            // Desenha a caixa delimitadora usando a função existente
+            // O segundo parâmetro (GROUND) diz para a GPU voltar para o ID do chão após desenhar a linha
+            DrawBoundingBox(map[i].bbox, GROUND);
+        }
+
+
+        // // Desenhamos o plano do chão
+        // model = Matrix_Translate(0.0f, -1.0f, 0.0f)
+        //         * Matrix_Scale(20.0f, 1.0f, 20.0f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, PLANE);
+        // DrawVirtualObject("the_plane");
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
-        model = Matrix_Translate(0.0f, -1.0f, -15.0f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
-        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, CASTLE);
-        for (const auto& pair : g_VirtualScene) {
-            if (pair.first.find("the_castle_") == 0) {
-                glActiveTexture(GL_TEXTURE8);
-                glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-                glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+        // model = Matrix_Translate(0.0f, -1.0f, -15.0f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, CASTLE);
+        // for (const auto& pair : g_VirtualScene) {
+        //     if (pair.first.find("the_castle_") == 0) {
+        //         glActiveTexture(GL_TEXTURE8);
+        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
                 
-                // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
-                glDisable(GL_CULL_FACE);
-                DrawVirtualObject(pair.first.c_str());
-                glEnable(GL_CULL_FACE);
-            }
-        }
+        //         // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
+        //         glDisable(GL_CULL_FACE);
+        //         DrawVirtualObject(pair.first.c_str());
+        //         glEnable(GL_CULL_FACE);
+        //     }
+        // }
 
 
-        // Desenhamos os blocos do mapa
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
-                  * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, BLOCO);
-            DrawVirtualObject("TNT");
-            DrawBoundingBox(map[i].bbox, BLOCO);
-        }
+        // // Desenhamos os blocos do mapa
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        //     model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
+        //           * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
+        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        //     glUniform1i(g_object_id_uniform, BLOCO);
+        //     DrawVirtualObject("TNT");
+        //     DrawBoundingBox(map[i].bbox, BLOCO);
+        // }
 
 
         // Draw particles (after opaque geometry)
@@ -1006,7 +1103,7 @@ int main(int argc, char* argv[])
                 for (int i = 0; i < MAX_ENEMIES; i++) {
                     g_enemies[i].visible = false;
                 }
-                SpawnEnemy(glm::vec3(5.0f, -0.5f, 5.0f));
+                SpawnEnemy(glm::vec3(5.0f, 2.0f, -5.0f));
             }
         } else if (player.is_flinching) {
             player.flinch_timer += delta_t;

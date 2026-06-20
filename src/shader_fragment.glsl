@@ -28,6 +28,7 @@ uniform mat4 projection;
 #define SWAMPFIRE 4
 #define BLOCO 5
 uniform int object_id;
+#define GROUND 12
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 aabb_min;
@@ -43,6 +44,8 @@ uniform sampler2D TextureImage5;
 uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
+uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
@@ -196,6 +199,19 @@ void main()
         U = texcoords.x;
         V = texcoords.y;
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb; 
+    } else if (object_id == GROUND) {
+        U = texcoords.x;
+        V = texcoords.y;
+        
+        // Se o identificador for maior que 9.5, é o 10.0 (Paredes de Concreto)
+        if (material_id > 9.5) {
+            Kd0 = texture(TextureImage10, vec2(U,V)).rgb;
+        } 
+        // Caso contrário, é o 9.0 (Chão de Madeira)
+        else { 
+            Kd0 = texture(TextureImage9, vec2(U,V)).rgb;
+        }                                                                                                                                   
+
     }
     
         // Override color when requested (per-particle color via uniform)
@@ -220,6 +236,8 @@ void main()
 
     color.rgb = Kd0 * (lambert + 0.01);
 
+    // Força a cor final para VERMELHO NEON se for o seu mapa, ignorando toda a escuridão
+    
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
     // necessário:
     // 1) Habilitar a operação de "blending" de OpenGL logo antes de realizar o

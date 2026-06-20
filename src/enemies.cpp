@@ -48,6 +48,18 @@ void UpdateEnemies() {
         // Reset per-frame flag
         g_enemies[i].punch_active = false;
 
+        // ===== GRAVITY =====
+        float fall_y = gravidade * delta_t;
+        for (int j = 0; j < MAX_PLATFORMS; j++) {
+            fall_y = g_enemies[i].bbox.GetClipY(map[j].bbox, fall_y);
+        }
+        g_enemies[i].position.y += fall_y;
+
+        // Safety net for enemies
+        if (g_enemies[i].position.y <= -10.0f) {
+            g_enemies[i].position.y = -10.0f;
+        }
+
         // ===== ATTACK COOLDOWN =====
         if (g_enemies[i].attack_cooldown > 0.0f) {
             g_enemies[i].attack_cooldown -= delta_t;
@@ -179,11 +191,11 @@ void ApplyDamageToEnemy(int enemy_id, float damage) {
 
         for(int k=0; k<2; ++k) {
             float angle = (rand() % 360) * (M_PI / 180.0f);
-            float distance = 10.0f + (rand() % 100) / 10.0f; // 10 to 20 units away
+            float distance = 2.0f + (rand() % 100) / 10.0f; // 10 to 20 units away
             glm::vec3 spawn_pos;
             spawn_pos.x = player.position.x + cos(angle) * distance;
-            spawn_pos.y = -0.5f;
-            spawn_pos.z = player.position.z + sin(angle) * distance;
+            spawn_pos.y = 2.0f;
+            spawn_pos.z = player.position.z + std::abs(sin(angle) * distance);
             SpawnEnemy(spawn_pos);
         }
     } else {

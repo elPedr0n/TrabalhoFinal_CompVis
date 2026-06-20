@@ -10,7 +10,7 @@
 #define AXIS_Y 1
 #define AXIS_Z 2
 
-#define MAX_PLATFORMS 1
+#define MAX_PLATFORMS 15
 #define MAX_ENEMIES 100
 #define MAX_CHARACTERS 3
 

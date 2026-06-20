@@ -976,3 +976,18 @@ PROMPT 11: Atualize o motor de movimentação e física. Garanta que a gravidade
 ### Commit com IA: Adicionei o modelo do castelo assim como a renderizacao dele
 
 PROMPT: I added a new model in the data directory, it is a gltf castle. I believe it does not have any animation. I need to put it in the game, create me an implementation plan to put it into my game and implement it.
+
+
+
+### Commit com IA: Finalmente temos um mapa mais decente, ajustes de spawn de inimigos, player e projeteis
+
+PROMPT 1: I want now to create the map for the game. we already have some asstes in the data folder, but the idea is as the follows:       
+   1. I will use blender to put some elements in a scene.
+   2. I need to not just render all in one obj, i was thinking of making some sort of mapping in a file (txt, json whatever) to render in my scene during the game.           
+How can I do that? give me a implementation plan
+
+PROMPT 2: little change of plans, I will first make a model for the ground of my game. I need tyou to create a implementation plan for the part where I already have a model in blender, export, and put into my game. The game needs to have the collisions with it
+
+PROMPT 3: eu adicionei la o meu modelo, agora preciso que me direcione para renderizar ele na tela, mexendo na parte do opengl caso necessario, ja instanciei as novas texturas que ele devera usar q sao duas, TextureImage 9 e 10. Nao mude nada nos arquivos, me diga oq deve mudar
+
+PROMPT 4: eles estao spawnando errado, coloque os para spawnar apenas no Z negativo, me diga onde tera que mudar e n mude nd
