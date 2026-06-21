@@ -9,7 +9,7 @@
 #include "matrices.h"
 
 namespace {
-    struct Particle { glm::vec3 pos; glm::vec3 vel; float age=0.0f; float life=1.0f; float scale=0.1f; glm::vec3 color = glm::vec3(1.0f); };
+    struct Particle { glm::vec3 pos; glm::vec3 vel; float age=0.0f; float life=1.0f; float scale=0.1f; glm::vec3 color = glm::vec3(1.0f); bool additive = true; };
     std::vector<Particle> s_particles;
 }
 
@@ -28,6 +28,31 @@ void Particles_Spawn(const glm::vec3 &pos, const ParticleOptions &opts)
         p.life = opts.life * (0.8f + ((float)std::rand() / RAND_MAX) * 0.4f);
         p.scale = opts.scale * (0.8f + ((float)std::rand() / RAND_MAX) * 0.4f);
         p.color = opts.color;
+        p.additive = opts.additive;
+        s_particles.push_back(p);
+    }
+}
+
+void Particles_SpawnDirectional(const glm::vec3 &pos, const glm::vec3 &dir, float spread, const ParticleOptions &opts)
+{
+    int count = std::max(1, opts.count);
+    glm::vec3 n_dir = glm::length(dir) > 0.0f ? glm::normalize(dir) : glm::vec3(1,0,0);
+    for (int i = 0; i < count; ++i) {
+        Particle p;
+        float x_noise = (((float)std::rand() / RAND_MAX) * 2.0f - 1.0f) * spread;
+        float y_noise = (((float)std::rand() / RAND_MAX) * 2.0f - 1.0f) * spread;
+        float z_noise = (((float)std::rand() / RAND_MAX) * 2.0f - 1.0f) * spread;
+        
+        glm::vec3 final_dir = glm::normalize(n_dir + glm::vec3(x_noise, y_noise, z_noise));
+        float speed = opts.speed * (((float)std::rand() / RAND_MAX) * 0.4f + 0.8f);
+        
+        p.pos = pos + glm::vec3(((float)(std::rand()%100)/100.0f - 0.5f) * 0.2f, ((float)(std::rand()%100)/100.0f - 0.5f) * 0.2f, ((float)(std::rand()%100)/100.0f - 0.5f) * 0.2f);
+        p.vel = final_dir * speed;
+        p.age = 0.0f;
+        p.life = opts.life * (0.8f + ((float)std::rand() / RAND_MAX) * 0.4f);
+        p.scale = opts.scale * (0.8f + ((float)std::rand() / RAND_MAX) * 0.4f);
+        p.color = opts.color;
+        p.additive = opts.additive;
         s_particles.push_back(p);
     }
 }
@@ -51,9 +76,8 @@ void Particles_Draw(const std::map<std::string, SceneObject> &scene,
 {
     auto it = scene.find("the_sphere");
     if (it == scene.end()) return;
-    // Use additive blending and disable depth writes for fiery particles
+    
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
     glDepthMask(GL_FALSE);
 
     // Prepare override uniform locations (shader will use OverrideKd when UseOverrideKd==1)
@@ -69,6 +93,12 @@ void Particles_Draw(const std::map<std::string, SceneObject> &scene,
         // Set override color for this particle
         if (useOverrideLoc >= 0) glUniform1i(useOverrideLoc, 1);
         if (overrideKdLoc >= 0) glUniform3fv(overrideKdLoc, 1, glm::value_ptr(p.color));
+
+        if (p.additive) {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+        } else {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
 
         // Set a default object id (FIREBALL-like) so shader branches with textures behave
         glUniform1i(objectIdUniform, 6);

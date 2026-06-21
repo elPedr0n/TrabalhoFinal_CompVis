@@ -10,12 +10,12 @@
     #define M_PI 3.14159265358979323846
 #endif
 
-void UpdatePosition(bool can_move) {
+void UpdatePosition(bool can_move, bool can_rotate = false) {
 
     float input_x = 0.0f;
     float input_z = 0.0f;
 
-    if (can_move) {
+    if (can_move || can_rotate) {
         if (keys[GLFW_KEY_A]) input_x -= 1.0f;
         if (keys[GLFW_KEY_D]) input_x += 1.0f;
         if (keys[GLFW_KEY_S]) input_z += 1.0f;
@@ -37,9 +37,9 @@ void UpdatePosition(bool can_move) {
         move_x =  input_x * cos(g_CameraTheta) + input_z * sin(g_CameraTheta);
         move_z = -input_x * sin(g_CameraTheta) + input_z * cos(g_CameraTheta);
 
-
-        // Calcular a orientação (rotação) do modelo 3D do personagem
-        float target_angle = atan2(move_x, move_z);
+        if (can_move || can_rotate) {
+            // Calcular a orientação (rotação) do modelo 3D do personagem
+            float target_angle = atan2(move_x, move_z);
         
         // Calcula a diferença entre o ângulo alvo e o ângulo atual
         float diff = target_angle - player.rotate;
@@ -64,8 +64,14 @@ void UpdatePosition(bool can_move) {
         }
 
         // Mantém o ângulo final dentro de -π a π para evitar estourar o limite numérico do float com o tempo
-        while (player.rotate <= -M_PI) player.rotate += (2.0f * M_PI);
-        while (player.rotate >  M_PI) player.rotate -= (2.0f * M_PI);
+            while (player.rotate <= -M_PI) player.rotate += (2.0f * M_PI);
+            while (player.rotate >  M_PI) player.rotate -= (2.0f * M_PI);
+        }
+    }
+    
+    if (!can_move) {
+        move_x = 0.0f;
+        move_z = 0.0f;
     }
     
     
@@ -213,6 +219,62 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
                 printf("Punch 2 hit enemy %d!\n", i);
                 state.punch2_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
+            }
+        }
+    }
+}
+
+void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id) {
+    if (!animRes.punch_active && !animRes.magic_active) return;
+
+    glm::vec3 forward(sin(player.rotate), 0.0f, cos(player.rotate));
+    float reach = 0.4f;
+    float height = 0.5f;
+
+    if (animRes.punch_active) {
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
+
+        for (int i = 0; i < 20; i++) {
+            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+            if (state.punch_hit_enemies.count(i)) continue;
+
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                state.punch_hit_enemies.insert(i);
+                ApplyDamageToEnemy(i, 20.0f);
+            }
+        }
+    }
+
+    if (animRes.magic_active) {
+        // Lower the center
+        glm::vec3 center = player.position + forward * 0.8f + glm::vec3(0.0f, 0.5f, 0.0f);
+        
+        // Calculate dynamic AABB extents based on rotation
+        float local_x = 0.4f; // Half of 0.8 width
+        float local_y = 0.5f; // Half of 1.0 height
+        float local_z = 0.75f; // Half of 1.5 length
+        
+        float abs_sin = std::abs(sin(player.rotate));
+        float abs_cos = std::abs(cos(player.rotate));
+        
+        float world_x = local_x * abs_cos + local_z * abs_sin;
+        float world_z = local_x * abs_sin + local_z * abs_cos;
+        
+        glm::vec3 dynamic_hitbox_size(world_x * 2.0f, local_y * 2.0f, world_z * 2.0f);
+        
+        AABB magic_box = MakeAABBFromCenterSize(center, dynamic_hitbox_size);
+        DrawBoundingBox(magic_box, restore_object_id);
+
+        for (int i = 0; i < 20; i++) {
+            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+            if (magic_box.Intersects(g_enemies[i].bbox)) {
+                g_enemies[i].is_frozen = true;
+                g_enemies[i].frozen_timer = 3.0f;
+                // continuous low damage without triggering flinch
+                ApplyDamageToEnemy(i, 15.0f * delta_t, false); 
             }
         }
     }

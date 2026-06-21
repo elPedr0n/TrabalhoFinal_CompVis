@@ -50,12 +50,13 @@ extern glm::vec3 bigchill_size;
 extern glm::vec3 swampfire_size;
 extern glm::vec3 bentennyson_size;
 
-void ApplyDamageToEnemy(int enemy_id, float damage);
+void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch = true);
 void SpawnEnemy(glm::vec3 pos);
 void DrawBoundingBox(struct AABB& aabb, int restore_object_id);
 
 void ProcessEnemyMeleeHitboxes();
 void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
 void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id);
+void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id);
 
 #endif

@@ -13,10 +13,14 @@ struct ParticleOptions {
     float scale = 0.02f;
     float speed = 1.0f;
     int count = 4;
+    bool additive = true; // Use additive blending (e.g. for fire)
 };
 
 // Single spawn with options: specify `ParticleOptions` to control color, life, scale, speed and count.
 void Particles_Spawn(const glm::vec3 &pos, const ParticleOptions &opts);
+
+// Directional spawn: spawns particles moving primarily in `dir` direction with some `spread`
+void Particles_SpawnDirectional(const glm::vec3 &pos, const glm::vec3 &dir, float spread, const ParticleOptions &opts);
 
 // Convert 0xRRGGBB hex color to normalized glm::vec3
 inline glm::vec3 HexToRgb(unsigned int hex) {

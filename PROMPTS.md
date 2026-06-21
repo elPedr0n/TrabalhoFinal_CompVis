@@ -943,7 +943,6 @@ PROMPT: Now we are going to do a new thing, add some logic to the enemies.
 3. For now the enemy is just the bunny, but keep in mind that later we will have a model gltf for them, so keep in mind this for future implementations
 Do not change any of the files, give me the changes necessary and i will add them to the code.  
 
-
 ### Commit com IA: Cavaleiros Eternos adicionados como inimigos, assim como estrutura geral de combate, com saúde, dano e morte
 
 PROMPT 1: faça o inimigo carregado ser o testforeverknight.glb em data. Carregue suas animações e textura também.
@@ -971,13 +970,9 @@ PROMPT 9: O ataque inimigo agora dá dano no jogador, aplicando um knockback, to
 PROMPT 10: Crie a mecânica de morte do jogador. Ao ter a vida zerada, independentemente de qual alien esteja ativo, o personagem deve forçar uma transformação de volta para o Ben (emitindo partículas na tela). O Ben tocará sua animação de morte (cancelando eventuais forças de pulo) e o jogo exibirá uma tela de "Você morreu!", esperando alguns segundos antes de resetar os inimigos e dar respawn no jogador.
 
 PROMPT 11: Atualize o motor de movimentação e física. Garanta que a gravidade continue atuando mesmo enquanto o jogador está preso no ar em animações como flinch ou morte (não o deixando congelado voando). Adicione também uma varredura instantânea de colisões que "empurre" automaticamente o jogador para fora de blocos/paredes do cenário caso ele se transforme e sua nova hitbox acabe engolindo uma estrutura.
-
                           
 ### Commit com IA: Adicionei o modelo do castelo assim como a renderizacao dele
-
 PROMPT: I added a new model in the data directory, it is a gltf castle. I believe it does not have any animation. I need to put it in the game, create me an implementation plan to put it into my game and implement it.
-
-
 
 ### Commit com IA: Finalmente temos um mapa mais decente, ajustes de spawn de inimigos, player e projeteis
 
@@ -1001,3 +996,96 @@ Nao cometa erros
 PROMPT 2: nao quero que me desenhe os colliders inclusive, somente os cilindros, barco, Plane e Plane2. Fui rodar e deu erro para o modelo do barco
 
 PROMPT 3: ta bem bugadas as texturas, os cilindros tao usando textura errada, um dos chaos tambem, o barco ta bem paia tb. Lembre que o modelo do barco é um gltf, n sei se muda algo na hora de renderizar
+
+
+### Commit com IA: Ajuste na gravidade, versão protótipo da barra de saúde adicionada, saúde corrigida para ser equivalente entre transformações e coletáveis de saúde adicionados
+
+PROMPT 1: atualmente, delta não está sendo executado da maneira correta, levando aos movimentos do jogador (incluindo pulo) serem dependentes da taxa de quadros do sistema. Conserte isso
+
+PROMPT 2: adicione coletáveis, pequenos orbes vermelhos que serão dropados por inimigos e curarão a vida do jogador. na verdade devem ser várias bolinhas pequenas que caem no chão, e não podem curar o jogador acima de sua vida máxima. Elas devem ter um efeito magnético se o jogador chegar perto, e começar a piscar para depois sumir se o jogador não pegar elas a tempo. Elas devem ser meio transparentes .os coletáveis não precisam cair TÃO Longe. mova a lógica para collectibles.cpp
+
+PROMPT 3:adicione uma barra de vida vermelha na esquerda. Ela que acompanhará a vida do jogador. Use o modelo nesse png, a barra vermelha
+
+### Commit com IA: Ajuste na barra de vida, ajuste no posicionamento do swampfire, protótipo do modelo animado do big chill, adição e melhoria de ataques, mudança nas partículas
+
+PROMPT 1: a barra de vida não está sendo exibida corretamente
+
+PROMPT 2: adicione splash damage na bola de fogo do swampfire - ela dá dano em área agora.
+também permita que o jogador gire o swampfire enquanto está atirando bolas de fogo. Também não permita que o jogador inicie outra bola de fogo enquanto não tiver lançado a primeira
+
+PROMPT 3: carregue o modelo bigchillcloaked.glb  no mapa
+
+PROMPT 4: Aplique as animações atuais no modelo para cada uma das suas funções. 
+
+PROMPT 5: ao invés da grande hitbox em área para o ataque especial do big chill, ele deverá, conforme o jogador segura q, lançar uma ice breath usando o sistema de partículas
+a ice breath vai dar dano baixo, mas vai principalmente fazer o seguinte com os inimigos:
+- deixá-los mais lentos por um período, tanto em movimento quanto ataque
+- deixá-los com um leve hue shift azul claro para indicar que estão congelados
+
+PROMPT 6: as partículas, no geral, parecem bolhas. aqui vão algumas sugestões:
+1. You’re drawing spheres (or point sprites with depth lighting)
+
+If you render particles as:
+
+small 3D spheres, or
+GL_POINTS with lighting enabled
+
+they will naturally look like shiny bubbles.
+
+Fix
+
+Use billboards (quads facing camera) instead of 3D geometry:
+
+Each particle = 2 triangles (a quad)
+Always rotate to face the camera
+2. Blending mode is wrong
+
+Bad blending makes particles look like glass beads.
+
+Common mistake:
+glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+This is fine for UI, but can look “bubbly” if lighting is also on.
+
+Better for particles (fire/smoke/light):
+glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+(Additive blending often removes the “bubble glass” look)
+
+3. Lighting is affecting particles
+
+If you forgot to disable lighting for particle shaders:
+
+specular highlights = bubble look
+Fix:
+Disable lighting in particle shader
+Or set:
+specular = 0
+shininess = 0
+4. Using GL_POINTS with default point sprites
+
+If you use:
+
+glEnable(GL_POINT_SPRITE);
+
+and don’t control texture + attenuation properly, points can look like shiny beads.
+
+Fix:
+Use a proper quad mesh instead of GL_POINTS
+Or control point size attenuation:
+glPointParameterf(GL_POINT_FADE_THRESHOLD_SIZE, ...);
+5. Texture issue (very common)
+
+If your particle texture is:
+
+a white circle
+too sharp edge
+no soft falloff
+
+it will look like soap bubbles.
+
+Fix:
+
+Use a soft radial gradient texture (faded edges, not solid circle)
+
+PROMPT 7: faça com que, quando o big chill estiver no ar, ele troque pro modelo big_chill_uaf.glb. Durante a troca de modelo, gere uma nuvem de partículas como se fosse fumaça, para a transição

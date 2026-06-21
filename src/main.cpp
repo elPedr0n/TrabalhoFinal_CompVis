@@ -300,7 +300,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 //Movimentação do player 
-void UpdatePosition(bool can_move);
+void UpdatePosition(bool can_move, bool can_rotate = false);
 void ResolvePlayerMapCollisions();
 
 // Faz a logica de criacao do ataque do swampfire
@@ -578,11 +578,6 @@ int main(int argc, char* argv[])
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
-    ObjModel bigchillmodel("../../data/big_chill_cloaked.obj");
-    ComputeNormals(&bigchillmodel);
-    BuildTrianglesAndAddToVirtualScene(&bigchillmodel);
-    bigchillmodel.ComputeBoundingBox();
-
     ObjModel blockmodel("../../data/TNT/TNT.obj");
     ComputeNormals(&blockmodel);
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
@@ -632,6 +627,8 @@ int main(int argc, char* argv[])
     tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
     tinygltf::Model foreverknight_model = loadGltfModelAndBuildScene("../../data/forever_knight.glb", "the_foreverknight");
     tinygltf::Model castle_model = loadGltfModelAndBuildScene("../../data/castelin/scene.gltf", "the_castle");
+    tinygltf::Model bigchill_model = loadGltfModelAndBuildScene("../../data/big_chill_cloaked.glb", "the_bigchill");
+    tinygltf::Model bigchill_uaf_model = loadGltfModelAndBuildScene("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -661,6 +658,7 @@ int main(int argc, char* argv[])
     // Swampfire animation local state (preserves timers and flags)
     SwampfireAnimState swampfire_state;
     BenAnimState ben_state;
+    BigChillAnimState bigchill_state;
 
     int current_enemy_anim = 36;
     bool t_key_was_down = false;
@@ -670,6 +668,9 @@ int main(int argc, char* argv[])
     GltfAnimator fireballAnimator(emptyModel);
     GltfAnimator bentennysonAnimator(bentennyson_model);
     GltfAnimator foreverknightAnimator(foreverknight_model);
+    GltfAnimator bigchillAnimator(bigchill_model);
+    GltfAnimator bigchill_uaf_Animator(bigchill_uaf_model);
+    bool bigchill_was_jumping = false;
     // keep swampfire_state alive for the main loop (defined above)
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -771,26 +772,57 @@ int main(int argc, char* argv[])
         #define BENTENNYSON 8
         #define FOREVERKNIGHT 9
         #define CASTLE 11
+        #define UAF_CHILL 15
         #define AXES_DEBUG 100
         #define BBOX_DEBUG 101
         #define COLLECT_OBJ 10
         #define GROUND 13
 
         
-        // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
-        bool can_move = !is_attacking && !player.is_dead && !player.is_flinching;
-        UpdatePosition(can_move);
-
-        UpdateEnemies();
-        UpdateCollectibles();
-        ProcessEnemyMeleeHitboxes();
-
         // Re-bind all previously loaded textures/samplers to their texture units
         for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
         {
             glActiveTexture(GL_TEXTURE0 + tu);
             glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
             glBindSampler(tu, g_LoadedSamplerIDs[tu]);
+        }
+
+        // Compute animations for all characters at the top
+        BigChillAnimResult bigchillRes = computeBigChillAnimation(bigchill_model, keys, player.jumping, delta_t, agora, bigchill_state);
+        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
+        BenAnimResult benRes = computeBenAnimation(bentennyson_model, keys, player.jumping, delta_t, agora, ben_state);
+
+        is_attacking = false;
+        if (player.active_character == 0) is_attacking = bigchill_state.is_attacking || bigchill_state.is_q_attacking;
+        else if (player.active_character == 1) is_attacking = swampfire_state.is_e_attacking || swampfire_state.q_state > 0;
+        else if (player.active_character == 2) is_attacking = ben_state.is_attacking;
+
+        // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
+        bool can_move = !is_attacking && !player.is_dead && !player.is_flinching;
+        bool can_rotate = false;
+        if ((player.active_character == 1 && swampfire_state.q_state > 0) || 
+            (player.active_character == 0 && bigchill_state.is_q_attacking)) {
+            can_rotate = true;
+        }
+        UpdatePosition(can_move, can_rotate);
+
+        UpdateEnemies();
+        UpdateCollectibles();
+        ProcessEnemyMeleeHitboxes();
+        // Process Big Chill hitboxes if active
+        if (player.active_character == 0) {
+            ProcessBigChillMeleeHitboxes(bigchillRes, bigchill_state, CHILL);
+            if (bigchillRes.magic_active) {
+                glm::vec3 forward(sin(player.rotate), 0.0f, cos(player.rotate));
+                glm::vec3 spawn_pos = player.position + forward * 0.2f + glm::vec3(0.02f, 0.85f, 0.02f);
+                ParticleOptions popts;
+                popts.color = HexToRgb("#00FFFF"); // Vibrant Cyan
+                popts.life = 0.4f;
+                popts.scale = 0.08f;
+                popts.speed = 4.0f;
+                popts.count = 5;
+                Particles_SpawnDirectional(spawn_pos, forward, 0.4f, popts);
+            }
         }
 
         // Draw controlled BigChill if visible
@@ -811,22 +843,91 @@ int main(int argc, char* argv[])
                 glUniform1i(g_object_id_uniform, CHILL);
             }
             glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
-            DrawVirtualObject("the_bigchill");
+            bool loop_anim = (bigchillRes.current_anim_index != 1 && bigchillRes.current_anim_index != 0 && bigchillRes.current_anim_index != 5);
+            
+            static bool uaf_spawned = false;
+            static bool ground_spawned = true; // initially true so we don't spawn on frame 0
+            if (!player.jumping && !ground_spawned) {
+                // Landing
+                ground_spawned = true;
+                uaf_spawned = false;
+                ParticleOptions popts;
+                popts.color = HexToRgb("#888888"); // Smoke color
+                popts.life = 0.8f;
+                popts.scale = 0.8f; // Maior ainda
+                popts.speed = 3.0f;
+                popts.count = 50; // Poucas partículas
+                popts.additive = false;
+                Particles_SpawnDirectional(player.position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 1.5f, popts);
+            } else if (player.jumping && bigchill_state.jump_timer >= 0.2f && !uaf_spawned) {
+                // Before swapping to UAF (swap happens at 0.3f)
+                uaf_spawned = true;
+                ground_spawned = false;
+                ParticleOptions popts;
+                popts.color = HexToRgb("#888888");
+                popts.life = 0.8f;
+                popts.scale = 0.8f;
+                popts.speed = 3.0f;
+                popts.count = 50;
+                popts.additive = false;
+                Particles_SpawnDirectional(player.position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 1.5f, popts);
+            }
+            if (player.jumping) {
+                bigchill_uaf_Animator.update(bigchill_uaf_model, bigchillRes.current_anim_index, bigchillRes.anim_time_to_pass, loop_anim);
+                const auto& bigchillBones = bigchill_uaf_Animator.getBoneMatrices();
+                if (g_bone_matrices_uniform >= 0) {
+                    if (!bigchillBones.empty()) {
+                        glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillBones.size(), GL_FALSE, (const GLfloat*)bigchillBones.data());
+                    } else {
+                        std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                        glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                    }
+                }
+            } else {
+                bigchillAnimator.update(bigchill_model, bigchillRes.current_anim_index, bigchillRes.anim_time_to_pass, loop_anim);
+                const auto& bigchillBones = bigchillAnimator.getBoneMatrices();
+                if (g_bone_matrices_uniform >= 0) {
+                    if (!bigchillBones.empty()) {
+                        glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillBones.size(), GL_FALSE, (const GLfloat*)bigchillBones.data());
+                    } else {
+                        std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                        glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                    }
+                }
+            }
+
+            for (const auto& pair : g_VirtualScene) {
+                bool draw = false;
+                if (player.jumping && bigchill_state.jump_timer > 0.3f) {
+                    if (pair.first.find("the_bigchill_uaf_") == 0) draw = true;
+                } else {
+                    if (pair.first.find("the_bigchill_") == 0 && pair.first.find("the_bigchill_uaf_") != 0) draw = true;
+                }
+                
+                if (draw) {
+                    if (pair.first.find("the_bigchill_uaf_") == 0) {
+                        glUniform1i(g_object_id_uniform, UAF_CHILL);
+                    }
+                    glActiveTexture(GL_TEXTURE2);
+                    GLuint tex_to_use = pair.second.texture_id != 0 ? pair.second.texture_id : g_LoadedTextureIDs[2];
+                    glBindTexture(GL_TEXTURE_2D, tex_to_use);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+                    DrawVirtualObject(pair.first.c_str());
+                    if (pair.first.find("the_bigchill_uaf_") == 0) {
+                        glUniform1i(g_object_id_uniform, CHILL); // restore
+                    }
+                }
+            }
             DrawBoundingBox(player.characters[0].bbox, CHILL);
             glEnable(GL_CULL_FACE);
         }
 
-        // Compute swampfire animation via modular function (keeps local state in swampfire_state)
-        SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
-        
-        BenAnimResult benRes = computeBenAnimation(bentennyson_model, keys, player.jumping, delta_t, agora, ben_state);
-
+        // Swampfire and Ben computations are now done above
 
         // Draw Swampfire instances if visible
         if (player.active_character == 1)
         {
             int current_anim_index = animRes.current_anim_index;
-            is_attacking = animRes.is_attacking;
             ProcessMeleeHitboxes(animRes, swampfire_state, SWAMPFIRE);
             float anim_time_to_pass = animRes.anim_time_to_pass;
 
@@ -845,17 +946,26 @@ int main(int argc, char* argv[])
             for (int i = 0; i < 20; i++) {
                 std::string name = "the_swampfire_" + std::to_string(i);
                 if (g_VirtualScene.find(name) != g_VirtualScene.end()) {
-                    // ----- CORREÇÃO DE DESNÍVEL DO IDLE -----
                     float anim_y_offset = 0.0f;
-                    // Se for a animação Idle (6), aplicamos a compensação.
-                    if (current_anim_index == 6) {
-                        anim_y_offset = 0.085f; 
+                    float anim_x_offset = 0.0f;
+                    float anim_z_offset = 0.0f;
+
+                    // Idle, Walk, Charging, Launching Fireball
+                    if (current_anim_index == 6 ||
+                        current_anim_index == 8 ||
+                        current_anim_index == 2 ||
+                        current_anim_index == 3)
+                    {
+                        anim_y_offset = 0.085f;
+                        anim_x_offset = 0.0f;
+                        anim_z_offset = -0.275f;
                     }
 
-                    // A matriz model agora soma o offset no eixo Y
+                    // A matriz model aplica offset em X (eixo lateral local) após a rotação!
                     model = Matrix_Translate(player.position.x, player.position.y + anim_y_offset, player.position.z)
-                          * Matrix_Scale(player.characters[1].scale, player.characters[1].scale, player.characters[1].scale)
                           * Matrix_Rotate_Y(player.rotate - (3.14159265f / 6))
+                          * Matrix_Translate(anim_x_offset, 0.0f, anim_z_offset)
+                          * Matrix_Scale(player.characters[1].scale, player.characters[1].scale, player.characters[1].scale)
                           * Matrix_Rotate_X(0.175f);
                     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
                     glActiveTexture(GL_TEXTURE5);
@@ -880,9 +990,11 @@ int main(int argc, char* argv[])
         // Draw Ben Tennyson instances if visible
         if (player.active_character == 2)
         {
-            is_attacking = benRes.is_attacking;
             ProcessBenMeleeHitboxes(benRes, ben_state, BENTENNYSON);
-            float ben_y_offset = player.is_flinching ? -0.110f : 0.0f;
+            float ben_y_offset = 0.0f;
+            if (player.is_flinching) {
+                ben_y_offset = -0.110f;
+            }
             model = Matrix_Translate(player.position.x, player.position.y + ben_y_offset, player.position.z)
                   * Matrix_Scale(player.characters[2].scale, player.characters[2].scale, player.characters[2].scale)
                   * Matrix_Rotate_Y(player.rotate);
@@ -944,7 +1056,7 @@ int main(int argc, char* argv[])
             }
 
             // Calcula a rotação LÓGICA (exata para o jogador) que será usada pela Hitbox de ataque.
-            if (!g_enemies[i].is_dead) {
+            if (!g_enemies[i].is_dead && !g_enemies[i].is_attacking && !g_enemies[i].is_flinching) {
                 float dx = player.position.x - g_enemies[i].position.x;
                 float dz = player.position.z - g_enemies[i].position.z;
                 g_enemies[i].rotate = atan2(dx, dz);
@@ -1010,7 +1122,9 @@ int main(int argc, char* argv[])
                     
                     // Desabilitar culling para esse modelo para corrigir faces viradas do avesso
                     glDisable(GL_CULL_FACE);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), g_enemies[i].is_frozen ? 1 : 0);
                     DrawVirtualObject(pair.first.c_str());
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), 0);
                     glEnable(GL_CULL_FACE);
                 }
             }
@@ -1139,7 +1253,7 @@ int main(int argc, char* argv[])
               * Matrix_Scale(scale_x, scale_y, 1.0f)
               * Matrix_Rotate_X(M_PI / 2.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, 11); // HUD_BAR_BG
+        glUniform1i(g_object_id_uniform, 20); // HUD_BAR_BG
         DrawVirtualObject("the_plane");
 
         // FG (Red)
@@ -1151,7 +1265,7 @@ int main(int argc, char* argv[])
                   * Matrix_Scale(scale_x, scale_y * h_ratio, 1.0f)
                   * Matrix_Rotate_X(M_PI / 2.0f);
             glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, 12); // HUD_BAR_FG
+            glUniform1i(g_object_id_uniform, 21); // HUD_BAR_FG
             DrawVirtualObject("the_plane");
         }
 

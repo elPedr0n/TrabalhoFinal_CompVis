@@ -94,3 +94,33 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
                                  float agora,
                                  BenAnimState& state);
 
+// Big Chill animation state and result
+struct BigChillAnimState {
+    int last_applied_anim_index = -1;
+    float anim_start_time = 0.0f;
+    float jump_timer = 0.0f;
+    float attack_timer = 0.0f;
+    bool is_attacking = false;
+    bool in_fighting_stance = false;
+    bool e_key_was_down = false;
+    bool q_key_was_down = false;
+    bool is_q_attacking = false;
+    float q_attack_timer = 0.0f;
+    std::set<int> punch_hit_enemies;
+    std::set<int> magic_hit_enemies;
+};
+
+struct BigChillAnimResult {
+    int current_anim_index = 8; // Idle_9
+    float anim_time_to_pass = 0.0f;
+    bool is_attacking = false;
+    bool punch_active = false;
+    bool magic_active = false;
+};
+
+BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
+                                 const bool keys[1024],
+                                 bool jumping,
+                                 float delta_t,
+                                 float agora,
+                                 BigChillAnimState& state);
