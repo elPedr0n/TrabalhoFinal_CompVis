@@ -75,6 +75,8 @@ uniform float hud_omnitrix_frame;
 uniform float current_time;
 uniform int is_frozen;
 uniform float enemy_alpha;
+uniform vec3 player_position;
+uniform int active_alien;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -500,9 +502,49 @@ void main()
             Kd0 = mix(Kd0, OverrideKd, 0.6); // Semi-transparent white over texture
         }
         
-        // Equação de Iluminação
-        float lambert = max(0,dot(n,l));
-        color.rgb = Kd0 * (lambert + 0.01);
+        // === ILUMINAÇÃO NOTURNA ===
+        
+        // Luz direcional fraca (luar) - bem escura para simular noite
+        float lambert = max(0.0, dot(n, l));
+        vec3 moonlight_color = vec3(0.08, 0.08, 0.15); // Tom azulado frio de luar
+        vec3 ambient_night = vec3(0.03, 0.03, 0.05);   // Ambiente mínimo para não ficar 100% preto
+        vec3 global_light = Kd0 * (moonlight_color * lambert + ambient_night);
+        
+        // === POINT LIGHT DO ALIEN (glow alienígena) ===
+        // Só ativa quando o personagem é um alien (0=BigChill, 1=Swampfire), não Ben (2)
+        vec3 point_light = vec3(0.0);
+        vec3 point_ambient = vec3(0.0);
+        
+        if (active_alien != 2) {
+            vec3 to_player = player_position - position_world.xyz;
+            float dist = length(to_player);
+            vec3 p_l = normalize(vec4(to_player, 0.0)).xyz;
+            
+            // Atenuação suave com raio de ~12 unidades
+            float light_radius = 12.0;
+            float attenuation = max(0.0, 1.0 - (dist / light_radius));
+            attenuation = attenuation * attenuation; // Falloff quadrático mais natural
+            
+            // Lambert para a point light
+            float lambert_player = max(0.0, dot(n.xyz, p_l));
+            
+            // Cor da luz dependendo do alien ativo
+            // Big Chill (Friagem) = 0 -> azul gelado | Swampfire (Fogo Fátuo) = 1 -> laranja/fogo
+            vec3 player_light_color;
+            if (active_alien == 0) {
+                player_light_color = vec3(0.2, 0.55, 1.0); // Azul gelado
+            } else {
+                player_light_color = vec3(1.0, 0.45, 0.08); // Laranja fogo
+            }
+            
+            // Componente difusa da point light
+            point_light = Kd0 * player_light_color * lambert_player * attenuation * 3.0;
+            
+            // Componente ambiente da point light (ilumina mesmo faces voltadas para longe)
+            point_ambient = Kd0 * player_light_color * attenuation * 0.3;
+        }
+        
+        color.rgb = global_light + point_light + point_ambient;
         
         // Simular brilho metálico (Specular) para as barricadas (material_id 17.0)
         if (object_id == GROUND && material_id > 16.5 && material_id <= 17.5) {

@@ -1089,6 +1089,10 @@ int main(int argc, char* argv[])
         // efetivamente aplicadas em todos os pontos.
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+        
+        // Pass player data for lighting
+        glUniform3f(glGetUniformLocation(g_GpuProgramID, "player_position"), player.position.x, player.position.y + 0.5f, player.position.z);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "active_alien"), player.active_character);
 
         #define SPHERE 0
         #define BUNNY  1
