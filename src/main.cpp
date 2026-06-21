@@ -845,6 +845,25 @@ int main(int argc, char* argv[])
     ground_model.ComputeBoundingBox();
 
 
+    std::vector<glm::vec3> barracas_positions = {
+        glm::vec3(-1.1f, 1.0f, -4.954f), 
+        glm::vec3(-1.2f, 1.0f, -7.9f),
+        glm::vec3(-4.7f, 1.0f, -10.4f),
+        glm::vec3(-1.1f, 1.0f, -13.7f),
+        glm::vec3(-1.2f, 1.0f, -16.5f),
+        glm::vec3(-4.7f, 1.0f, -19.0f),
+        glm::vec3(-0.8f, 1.0f, -22.5f),
+        glm::vec3(-0.2f, 1.0f, -25.3f),
+        glm::vec3(-3.4f, 1.0f, -28.7f),
+        glm::vec3(1.0f, 1.0f, -30.8f),
+        glm::vec3(1.3f, 1.0f, -33.8f),
+        glm::vec3(-1.6f, 1.0f, -37.4f),
+        glm::vec3(2.8f, 1.0f, -39.6f),
+        glm::vec3(3.4f, 1.0f, -42.5f),
+        glm::vec3(1.0f, 1.0f, -45.0f)
+    };
+
+
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = AsyncLoadGLTF("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = AsyncLoadGLTF("../../data/ben_tennyson.glb", "the_bentennyson");
@@ -1516,29 +1535,60 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
 
-        // Desenhamos a barraca
-        model = Matrix_Translate(0.0f, 1.0f, -10.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, 50);
-        for (const auto& shape : barraca_model.shapes) {
-            DrawVirtualObject(shape.name.c_str());
+
+        for (int i = 0; i < barracas_positions.size(); i++) {
+            if (i >= 7 && i < 14) {
+                model = Matrix_Rotate_Y(-0.3f);
+            } else {
+                model = Matrix_Identity();
+            }
+            if (i % 3 == 0) {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 50);
+                for (const auto& shape : barraca_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            } else if (i % 3 == 1) {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 51);
+                for (const auto& shape : macarrao_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            } else {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 52);
+                for (const auto& shape : banana_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            }
         }
 
-        // Desenhamos a barraca macarrao
-        model = Matrix_Translate(0.0f, 1.0f, -15.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, 51);
-        for (const auto& shape : macarrao_model.shapes) {
-            DrawVirtualObject(shape.name.c_str());
-        }
+        // // Desenhamos a barraca
+        // model = Matrix_Translate(2.8f, 1.0f, -39.6f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 50);
+        // for (const auto& shape : barraca_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
 
-        // Desenhamos a barraca banana
-        model = Matrix_Translate(0.0f, 1.0f, -20.0f);
-        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, 52);
-        for (const auto& shape : banana_model.shapes) {
-            DrawVirtualObject(shape.name.c_str());
-        }
+        // // Desenhamos a barraca macarrao
+        // model = Matrix_Translate(3.4f, 1.0f, -42.5f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 51);
+        // for (const auto& shape : macarrao_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
+
+        // // Desenhamos a barraca banana
+        // model = Matrix_Translate(1.0f, 1.0f, -45.4f) * Matrix_Scale(1.4f, 1.4f, 1.4f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 52);
+        // for (const auto& shape : banana_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
@@ -1558,9 +1608,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
-        }
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        // }
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
@@ -2762,6 +2812,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // DEBUG UI TOGGLE
     if (key == GLFW_KEY_U && action == GLFW_PRESS) {
         g_ui_debug_enabled = !g_ui_debug_enabled;
+    }
+
+    // DEBUG MAP COORDS
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        printf("========== MAP COORDS ==========\n");
+        printf("Player Position: x = %.3f, y = %.3f, z = %.3f\n", player.position.x, player.position.y, player.position.z);
+        // printf("Camera Look At : x = %.3f, y = %.3f, z = %.3f\n", camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z);
+        printf("================================\n");
+        fflush(stdout);
     }
     if (g_ui_debug_enabled && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
         if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
