@@ -10,7 +10,11 @@
 #include <map>
 #include <string>
 #include <cctype>
+#include <fstream>
+#include <sstream>
+#include <vector>
 
+#include "structs.h"
 #include "sceneobject.h"
 
 // texture loading should come from GLTF images; do not hardcode stbi_load here
@@ -355,3 +359,34 @@ tinygltf::Model loadGltfModelAndBuildScene(const std::string &path, const std::s
 
     return model;
 }
+
+std::vector<AABB> parseColliders(const std::string& filepath) {                                                                                                                        
+    std::vector<AABB> colliders;                                                                                                                                                       
+    std::ifstream file(filepath);                                                                                                                                                      
+                                                                                                                                                                                        
+    if (!file.is_open()) {                                                                                                                                                             
+        std::cerr << "Erro ao abrir o arquivo de colisores: " << filepath << std::endl;                                                                                                
+        return colliders;                                                                                                                                                              
+    }                                                                                                                                                                                  
+                                                                                                                                                                                        
+    std::string line;                                                                                                                                                                  
+    // Percorre cada linha do arquivo                                                                                                                                                  
+    while (std::getline(file, line)) {                                                                                                                                                 
+        if (line.empty()) continue; // Ignora linhas vazias                                                                                                                            
+                                                                                                                                                                                        
+        std::stringstream ss(line);                                                                                                                                                    
+        float minX, minY, minZ, maxX, maxY, maxZ;                                                                                                                                      
+                                                                                                                                                                                        
+        // Extrai os 6 floats separados por espaço                                                                                                                                     
+        if (ss >> minX >> minY >> minZ >> maxX >> maxY >> maxZ) {                                                                                                                      
+            glm::vec3 min_point(minX, minY, minZ);                                                                                                                                     
+            glm::vec3 max_point(maxX, maxY, maxZ);                                                                                                                                     
+                                                                                                                                                                                        
+            // Adiciona a bounding box na lista usando o construtor do seu AABB                                                                                                        
+            colliders.push_back(AABB(min_point, max_point));                                                                                                                           
+        }                                                                                                                                                                              
+    }                                                                                                                                                                                  
+                                                                                                                                                                                        
+    file.close();                                                                                                                                                                      
+    return colliders;                                                                                                                                                                  
+} 

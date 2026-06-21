@@ -1124,3 +1124,13 @@ Swampfire: "Light punch" e "Fireball"
 Big chill: "Light punch" e "Ice breath". Use a mesma fonte (com borda preta) da tela de title. O nome deve continuar lá enquanto o ataque estiver sendo usado, no caso do ice breath.  no caso do fireball, o nome só deve aparecer quando a bola de fogo for de fato lançada. O tamanho do nome de cima não precisa ser tão pequeno. Remova o texto em cima da cabeça dos cavaleiros
 
 PROMPT 12: pare de carregar holograms.png, e passe a carregar swampfire_hologram, big_chill_hologram e glow. Adicione sliders para TODOS os itens (incluindo os elementos da barra separadamente). Adicione um botão que manda todos os offsets e scales configurados atualmente para printar no terminal.
+
+
+### Commit com IA: Refatoração do mapeamento dos colliders do modelo obj para um colliders.txt
+
+PROMPT: crie um parser que percorra cada linha do meu @[data/map_ground/colliders.txt] e me de os numeros de cada linha convertidos para floats. Eles correspondem aos colisores do mapa, com seus min e max. Irei usar esses valores para criar as bbox do mapa
+
+
+### Commit com IA: Modificação da câmera e coloquei um mar brabo
+
+PROMPT: Eu quero modificar a camera, ela esta em 3a pessoa mas quero modificar ela pra ficar do jeito parecidodo meu jogo, consegue criar uma logica que me indique os parametros da camera em tempo real, q nem a posição do player no canto inferior esquerdo, para eu poder calibrar e mexer no codigo dps?
