@@ -835,7 +835,8 @@ int main(int argc, char* argv[])
                                                                                                                                 
         if (i < MAX_PLATFORMS) {                                                                                                                                  
             // Add the shape's AABB to the collision map                                                                                                                               
-            map[i].bbox = colliders[i];                                                                                                                                                   
+            map[i].bbox = colliders[i]; 
+            // printf("Collider %d: min(%.2f, %.2f, %.2f), max(%.2f, %.2f, %.2f)\n", i, colliders[i].min.x, colliders[i].min.y, colliders[i].min.z, colliders[i].max.x, colliders[i].max.y, colliders[i].max.z);                                                                                                                                        
         } else {                                                                                                                                                                       
             printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
         }                                                                                                                                                                              
@@ -1557,6 +1558,10 @@ int main(int argc, char* argv[])
             }
         }
 
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        }
+
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
@@ -1682,6 +1687,9 @@ int main(int argc, char* argv[])
             glUniform1i(g_object_id_uniform, player.selected_alien == 0 ? 28 : 29); // 28: Big Chill, 29: Swampfire
             DrawVirtualObject("the_plane");
         }
+
+        DrawBoundingBox(player.characters[player.active_character].bbox, 0);
+        // ----------------------------
 
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
