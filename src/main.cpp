@@ -154,6 +154,8 @@ struct ObjModel
                     current_selector = 2.0f;
                 else if (material_name.find("paredes") != std::string::npos || material_name.find("concrete") != std::string::npos)
                     current_selector = 10.0f; // Sinaliza que deve usar Concreto
+                else if (material_name.find("Barrier") != std::string::npos || material_name.find("barrier") != std::string::npos)
+                    current_selector = 17.0f; // Orange color
                 else if (material_name.find("Material.001") != std::string::npos || material_name.find("wood") != std::string::npos)
                     current_selector = 9.0f;  // Sinaliza que deve usar Madeira
                 else if (material_name.find("phong") != std::string::npos || material_name.find("lambert") != std::string::npos)
@@ -265,6 +267,8 @@ struct ObjModel
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
 
+std::vector<AABB> parseColliders(const std::string& filepath);
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
@@ -347,8 +351,8 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float g_CameraTheta = 0.8f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.31f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
@@ -752,6 +756,8 @@ int main(int argc, char* argv[])
             RenderLoadingStep();
         }
         return fut.get();
+
+        
     };
 
     RenderLoadingStep();
@@ -775,23 +781,18 @@ int main(int argc, char* argv[])
 
     RenderLoadingStep();
 
-    int current_platform_index = 0;                                                                                                                                                        
+    std::vector<AABB> colliders = parseColliders("../../data/map_ground/colliders.txt");                                                                                                                                                      
                                                                                                                                                                                            
     // Loop through all shapes in the OBJ                                                                                                                                                  
-    for (size_t i = 0; i < ground_model.shapes.size(); ++i) {                                                                                                                                 
-        std::string shape_name = ground_model.shapes[i].name;                                                                                                                                 
-                                                                                                                                                                                           
-        // Check if this shape is meant to be a collider                                                                                                                                   
-        if (shape_name.find("Collider") != std::string::npos) {                                                                                                                            
-            if (current_platform_index < MAX_PLATFORMS) {                                                                                                                                  
-                // Add the shape's AABB to the collision map                                                                                                                               
-                map[current_platform_index].bbox = ground_model.ComputeBoundingBoxForShape(i);                                                                                                
-                current_platform_index++;                                                                                                                                                  
-            } else {                                                                                                                                                                       
-                printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
-            }                                                                                                                                                                              
-        }                                                                                                                                                                                  
-    }  
+    for (int i = 0; i < colliders.size(); i++) {                
+                                                                                                                                
+        if (i < MAX_PLATFORMS) {                                                                                                                                  
+            // Add the shape's AABB to the collision map                                                                                                                               
+            map[i].bbox = colliders[i];                                                                                                                                                   
+        } else {                                                                                                                                                                       
+            printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
+        }                                                                                                                                                                              
+    }
 
     ground_model.ComputeBoundingBox();
 
@@ -989,7 +990,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -200.0f; // Posição do "far plane"
+        float farplane  = -50.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -1384,41 +1385,30 @@ int main(int argc, char* argv[])
         glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
 
 
-        // // Desenhamos o plano do chão
-        // model = Matrix_Translate(0.0f, -1.0f, 0.0f)
-        //         * Matrix_Scale(20.0f, 1.0f, 20.0f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, PLANE);
-        // DrawVirtualObject("the_plane");
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f, -2.0f, 0.0f)
+                * Matrix_Scale(130.0f, 1.0f, 130.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PLANE);
+        DrawVirtualObject("the_plane");
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
-        // model = Matrix_Translate(0.0f, -1.0f, -15.0f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
-        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, CASTLE);
-        // for (const auto& pair : g_VirtualScene) {
-        //     if (pair.first.find("the_castle_") == 0) {
-        //         glActiveTexture(GL_TEXTURE8);
-        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+         model = Matrix_Translate(-4.693f, 0.0f, -90.1f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CASTLE);
+        for (const auto& pair : g_VirtualScene) {
+            if (pair.first.find("the_castle_") == 0) {
+                glActiveTexture(GL_TEXTURE8);
+                glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
                 
-        //         // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
-        //         glDisable(GL_CULL_FACE);
-        //         DrawVirtualObject(pair.first.c_str());
-        //         glEnable(GL_CULL_FACE);
-        //     }
-        // }
-
-
-        // // Desenhamos os blocos do mapa
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
-        //     model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
-        //           * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
-        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //     glUniform1i(g_object_id_uniform, BLOCO);
-        //     DrawVirtualObject("TNT");
-        //     DrawBoundingBox(map[i].bbox, BLOCO);
-        // }
+                // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
+                glDisable(GL_CULL_FACE);
+                DrawVirtualObject(pair.first.c_str());
+                glEnable(GL_CULL_FACE);
+            }
+        }
 
 
         // Draw particles (after opaque geometry)
@@ -2214,6 +2204,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_selector = 2.0f;
                 else if (mat_name.find("paredes") != std::string::npos || mat_name.find("concrete") != std::string::npos)
                     texture_selector = 10.0f;
+                else if (mat_name.find("Barrier") != std::string::npos || mat_name.find("barrier") != std::string::npos)
+                    texture_selector = 17.0f;
                 else if (mat_name.find("Material.001") != std::string::npos || mat_name.find("wood") != std::string::npos)
                     texture_selector = 9.0f;
                 else if (mat_name.find("sides") != std::string::npos)
@@ -2940,8 +2932,7 @@ void TextRendering_ShowModelViewProjection(
     TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f-26*pad, 1.0f);
 }
 
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
+// Escrevemos na tela os ângulos de Euler e dados da câmera.
 void TextRendering_ShowEulerAngles(GLFWwindow* window)
 {
     if ( !g_ShowInfoText )
@@ -2950,9 +2941,12 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player.position.z, player.position.y, player.position.x);
+    // snprintf(buffer, 80, "Player Pos = X(%.2f) Y(%.2f) Z(%.2f)\n", player.position.x, player.position.y, player.position.z);
+    // TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
+    char cam_buf[120];
+    snprintf(cam_buf, 120, "Camera = Dist(%.2f) Phi(%.2f) Theta(%.2f)", g_CameraDistance, g_CameraPhi, g_CameraTheta);
+    TextRendering_PrintString(window, cam_buf, -1.0f+pad/10, -1.0f+4*pad/10, 1.0f);
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.

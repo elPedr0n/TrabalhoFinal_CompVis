@@ -1160,3 +1160,12 @@ caixa - amarelo ou verde (25/75)
 ursinho - vermelho ou amarelo (25/75)
 
 PROMPT 11: impeça a colisão da bola de fogo com o chão (no tamanho máximo ela estava sendo destruída)
+
+### Commit com IA: Refatoração do mapeamento dos colliders do modelo obj para um colliders.txt
+
+PROMPT: crie um parser que percorra cada linha do meu @[data/map_ground/colliders.txt] e me de os numeros de cada linha convertidos para floats. Eles correspondem aos colisores do mapa, com seus min e max. Irei usar esses valores para criar as bbox do mapa
+
+
+### Commit com IA: Modificação da câmera e coloquei um mar brabo
+
+PROMPT: Eu quero modificar a camera, ela esta em 3a pessoa mas quero modificar ela pra ficar do jeito parecidodo meu jogo, consegue criar uma logica que me indique os parametros da camera em tempo real, q nem a posição do player no canto inferior esquerdo, para eu poder calibrar e mexer no codigo dps?
