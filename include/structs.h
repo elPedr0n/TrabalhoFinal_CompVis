@@ -267,8 +267,9 @@ struct Collectible {
     AABB bbox;
     float scale;
     bool visible_this_frame;
+    int type; // 0 = health, 1 = transform, 2 = special
 
-    Collectible() : active(false), timer(0.0f), duration(10.0f), blink_time(7.0f), scale(0.15f), visible_this_frame(true) {}
+    Collectible() : active(false), timer(0.0f), duration(10.0f), blink_time(7.0f), scale(0.15f), visible_this_frame(true), type(0) {}
 };
 
 #endif

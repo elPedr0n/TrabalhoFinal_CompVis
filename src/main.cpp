@@ -57,6 +57,8 @@
 #include "sceneobject.h"
 #include "animation.h"
 #include "screens.h"
+#include "breakables.h"
+#include "fragments.h"
 
 #include <future>
 #include <chrono>
@@ -802,6 +804,11 @@ int main(int argc, char* argv[])
     tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
     tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
     
+    // Breakables
+    AsyncLoadGLTF("../../data/breakables/low_poly_asset_teddy_bear.glb", "the_teddy_bear");
+    AsyncLoadGLTF("../../data/breakables/wooden_box_low_poly.glb", "the_wooden_box");
+    AsyncLoadGLTF("../../data/breakables/simple_park_bench.glb", "the_park_bench");
+    
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -1088,6 +1095,8 @@ int main(int argc, char* argv[])
 
         UpdateEnemies();
         UpdateCollectibles();
+        UpdateBreakables();
+        UpdateFragments();
         ProcessEnemyMeleeHitboxes();
         // Process Big Chill hitboxes if active
         if (player.active_character == 0) {
@@ -1326,91 +1335,9 @@ int main(int argc, char* argv[])
         bool t_is_down = keys[GLFW_KEY_T];
 
 
-        // Desenhar o inimigo
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
+        // Desenhar o inimigo (MOVED BELOW)
 
-            // Se estiver piscando (morto), ignorar o draw em frames alternados
-            if (g_enemies[i].is_flashing && fmod(agora, 0.2f) < 0.1f) {
-                continue;
-            }
 
-            // Calcula a rotação LÓGICA (exata para o jogador) que será usada pela Hitbox de ataque.
-            if (!g_enemies[i].is_dead && !g_enemies[i].is_attacking && !g_enemies[i].is_flinching) {
-                float dx = player.position.x - g_enemies[i].position.x;
-                float dz = player.position.z - g_enemies[i].position.z;
-                g_enemies[i].rotate = atan2(dx, dz);
-            }
-
-            // Determina a animação baseada no estado do inimigo
-            int current_enemy_anim = 0; // 0 = Idle
-            float anim_time = agora;
-
-            if (g_enemies[i].is_dead) {
-                if (g_enemies[i].death_timer < g_enemies[i].death_anim_duration) {
-                    current_enemy_anim = 16; // Fall
-                    anim_time = std::min(g_enemies[i].death_timer, 2.65f);
-                } else {
-                    current_enemy_anim = 17; // Stand / Faint
-                    anim_time = 0.0f; // Pausa no primeiro frame
-                }
-            } else if (g_enemies[i].is_flinching) {
-                current_enemy_anim = g_enemies[i].flinch_anim; // 16 or 17
-                anim_time = g_enemies[i].flinch_timer;
-            } else if (g_enemies[i].is_attacking) {
-                current_enemy_anim = 21; // 21 = Taunt
-                anim_time = g_enemies[i].attack_timer; // Toca do começo
-            } else {
-                float dist_to_player = glm::distance(
-                    glm::vec3(g_enemies[i].position.x, 0.0f, g_enemies[i].position.z),
-                    glm::vec3(player.position.x, 0.0f, player.position.z));
-                if (dist_to_player > g_enemies[i].attack_range) {
-                    current_enemy_anim = 34; // ForeverKnight_Run
-                    anim_time = agora * 2.0f; // Speed up run animation
-                }
-            }
-
-            // Atualiza o animador para este inimigo específico
-            bool loop_anim = !(g_enemies[i].is_dead || g_enemies[i].is_flinching);
-            foreverknightAnimator.update(foreverknight_model, current_enemy_anim, anim_time, loop_anim);
-
-            // Aplica offset Y se estiver correndo (anim 34)
-            float y_offset = (current_enemy_anim == 34) ? 0.2f : 0.0f;
-            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y - 0.6f + y_offset, g_enemies[i].position.z)
-                  * Matrix_Scale(0.8f, 0.8f, 0.8f)
-                  * Matrix_Rotate_Y(g_enemies[i].rotate - 1.08f)
-                  * Matrix_Translate(-3.985f, 0.043f, -0.205f);
-
-            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, FOREVERKNIGHT);
-
-            const auto& fkBones = foreverknightAnimator.getBoneMatrices();
-            if (g_bone_matrices_uniform >= 0) {
-                if (!fkBones.empty()) {
-                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)fkBones.size(), GL_FALSE, (const GLfloat*)fkBones.data());
-                } else {
-                    std::vector<glm::mat4> idBones(100, Matrix_Identity());
-                    glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
-                }
-            }
-
-            for (const auto& pair : g_VirtualScene) {
-                if (pair.first.find("the_foreverknight_") == 0) {
-                    glActiveTexture(GL_TEXTURE7);
-                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
-                    
-                    // Desabilitar culling para esse modelo para corrigir faces viradas do avesso
-                    glDisable(GL_CULL_FACE);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), g_enemies[i].is_frozen ? 1 : 0);
-                    DrawVirtualObject(pair.first.c_str());
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), 0);
-                    glEnable(GL_CULL_FACE);
-                }
-            }
-
-            DrawBoundingBox(g_enemies[i].bbox, BUNNY);
-        }
 
 
         // 1. Matriz de Modelo (Posição, Escala e Rotação do mapa)
@@ -1497,19 +1424,147 @@ int main(int argc, char* argv[])
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
 
+        // Desenhar o inimigo
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+
+            float enemy_alpha = 1.0f;
+            if (g_enemies[i].is_flashing) {
+                enemy_alpha = 1.0f - (g_enemies[i].flash_timer / 1.0f);
+                if (enemy_alpha < 0.0f) enemy_alpha = 0.0f;
+            }
+            glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), enemy_alpha);
+
+            if (!g_enemies[i].is_dead && !g_enemies[i].is_attacking && !g_enemies[i].is_flinching) {
+                float dx = player.position.x - g_enemies[i].position.x;
+                float dz = player.position.z - g_enemies[i].position.z;
+                g_enemies[i].rotate = atan2(dx, dz);
+            }
+
+            int current_enemy_anim = 0; 
+            float anim_time = agora;
+
+            if (g_enemies[i].is_dead) {
+                if (g_enemies[i].death_timer < g_enemies[i].death_anim_duration) {
+                    current_enemy_anim = 16; 
+                    anim_time = std::min(g_enemies[i].death_timer, 2.65f);
+                } else {
+                    current_enemy_anim = 17; 
+                    anim_time = 0.0f; 
+                }
+            } else if (g_enemies[i].is_flinching) {
+                current_enemy_anim = g_enemies[i].flinch_anim; 
+                anim_time = g_enemies[i].flinch_timer;
+            } else if (g_enemies[i].is_attacking) {
+                current_enemy_anim = 21; 
+                anim_time = g_enemies[i].attack_timer; 
+            } else {
+                float dist_to_player = glm::distance(
+                    glm::vec3(g_enemies[i].position.x, 0.0f, g_enemies[i].position.z),
+                    glm::vec3(player.position.x, 0.0f, player.position.z));
+                if (dist_to_player > g_enemies[i].attack_range) {
+                    current_enemy_anim = 34; 
+                    anim_time = agora * 2.0f; 
+                }
+            }
+
+            bool loop_anim = !(g_enemies[i].is_dead || g_enemies[i].is_flinching);
+            foreverknightAnimator.update(foreverknight_model, current_enemy_anim, anim_time, loop_anim);
+
+            float y_offset = (current_enemy_anim == 34) ? 0.2f : 0.0f;
+            model = Matrix_Translate(g_enemies[i].position.x, g_enemies[i].position.y - 0.6f + y_offset, g_enemies[i].position.z)
+                  * Matrix_Scale(0.8f, 0.8f, 0.8f)
+                  * Matrix_Rotate_Y(g_enemies[i].rotate - 1.08f)
+                  * Matrix_Translate(-3.985f, 0.043f, -0.205f);
+
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, FOREVERKNIGHT);
+
+            const auto& fkBones = foreverknightAnimator.getBoneMatrices();
+            if (g_bone_matrices_uniform >= 0) {
+                if (!fkBones.empty()) {
+                    glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)fkBones.size(), GL_FALSE, (const GLfloat*)fkBones.data());
+                } else {
+                    std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                    glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                }
+            }
+
+            if (enemy_alpha < 1.0f) {
+                glEnable(GL_BLEND);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glDepthMask(GL_FALSE);
+            }
+
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_foreverknight_") == 0) {
+                    glActiveTexture(GL_TEXTURE7);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
+                    
+                    glDisable(GL_CULL_FACE);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), g_enemies[i].is_frozen ? 1 : 0);
+                    DrawVirtualObject(pair.first.c_str());
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "is_frozen"), 0);
+                    glEnable(GL_CULL_FACE);
+                }
+            }
+            
+            if (enemy_alpha < 1.0f) {
+                glDisable(GL_BLEND);
+                glDepthMask(GL_TRUE);
+            }
+
+            DrawBoundingBox(g_enemies[i].bbox, BUNNY);
+        }
+        glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), 1.0f);
+
+        GLint override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "OverrideKd");
+        GLint use_override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "UseOverrideKd");
+        DrawBreakables(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
+        DrawFragments(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
+
         // Draw Collectibles
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         for (int i = 0; i < MAX_COLLECTIBLES; i++) {
             if (g_collectibles[i].active && g_collectibles[i].visible_this_frame) {
+                float c_alpha = 1.0f;
+                if (g_collectibles[i].timer >= g_collectibles[i].blink_time) {
+                    c_alpha = 1.0f - (g_collectibles[i].timer - g_collectibles[i].blink_time) / (g_collectibles[i].duration - g_collectibles[i].blink_time);
+                    if (c_alpha < 0.0f) c_alpha = 0.0f;
+                }
+                
+                glEnable(GL_BLEND);
+                glDepthMask(GL_FALSE);
+                
+                // 1) Outer semi-transparent colored sphere (Transparência ajustada para 85% de opacidade)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), c_alpha * 0.85f); 
+
                 model = Matrix_Translate(g_collectibles[i].position.x, g_collectibles[i].position.y, g_collectibles[i].position.z)
                       * Matrix_Scale(g_collectibles[i].scale, g_collectibles[i].scale, g_collectibles[i].scale);
                 glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-                glUniform1i(g_object_id_uniform, COLLECT_OBJ); 
+                glUniform1i(g_object_id_uniform, 16 + g_collectibles[i].type); 
                 DrawVirtualObject("the_sphere");
+
+                // 2) Inner solid bright sphere (Pisca com alpha máximo 50%)
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE); // Mesclar com a de fora luminosamente
+                float blink_alpha = (sin(glfwGetTime() * 15.0f) + 1.0f) * 0.25f; // Oscillates from 0.0 to 0.5
+                glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), c_alpha * blink_alpha); 
+                
+                model = Matrix_Translate(g_collectibles[i].position.x, g_collectibles[i].position.y, g_collectibles[i].position.z)
+                      * Matrix_Scale(g_collectibles[i].scale * 0.4f, g_collectibles[i].scale * 0.4f, g_collectibles[i].scale * 0.4f);
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                
+                glUniform1i(g_object_id_uniform, 19); // INNER CORE WITH BLINK
+                DrawVirtualObject("the_sphere");
+
+                // Reset
+                glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), 1.0f);
+                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                glDisable(GL_BLEND);
+                glDepthMask(GL_TRUE);
             }
         }
-        glDisable(GL_BLEND);
 
         // Draw HUD
         glDisable(GL_DEPTH_TEST);
@@ -2644,6 +2699,23 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         keys[key] = true;
     else if (action == GLFW_RELEASE)
         keys[key] = false;
+
+    // In-game spawn breakables shortcuts
+    if (!g_ui_debug_enabled && action == GLFW_PRESS) {
+        if (key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_3) {
+            glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+            glm::vec3 spawn_pos = player.position + forward * 2.0f;
+            spawn_pos.y += 2.0f; // um pouco acima
+            
+            if (key == GLFW_KEY_1) {
+                SpawnBreakable(spawn_pos, 1.5f, "the_teddy_bear", 10.0f, 0.4f, 0.4f, 0.4f, glm::vec3(0.835f, 0.694f, 0.612f), 0.2f, 8, player.rotate + 3.14159265f);
+            } else if (key == GLFW_KEY_2) {
+                SpawnBreakable(spawn_pos, 0.4f, "the_wooden_box", 25.0f, 3.0f, 3.0f, 3.0f, glm::vec3(0.569f, 0.525f, 0.467f), 0.4f, 12, player.rotate + 3.14159265f);
+            } else if (key == GLFW_KEY_3) {
+                SpawnBreakable(spawn_pos, 0.08f, "the_park_bench", 30.0f, 9.0f, 10.0f, 20.0f, glm::vec3(0.318f, 0.259f, 0.216f), 0.2f, 15, player.rotate + 3.14159265f);
+            }
+        }
+    }
 
     // DEBUG UI TOGGLE
     if (key == GLFW_KEY_U && action == GLFW_PRESS) {

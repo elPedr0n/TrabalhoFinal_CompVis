@@ -1124,3 +1124,39 @@ Swampfire: "Light punch" e "Fireball"
 Big chill: "Light punch" e "Ice breath". Use a mesma fonte (com borda preta) da tela de title. O nome deve continuar lá enquanto o ataque estiver sendo usado, no caso do ice breath.  no caso do fireball, o nome só deve aparecer quando a bola de fogo for de fato lançada. O tamanho do nome de cima não precisa ser tão pequeno. Remova o texto em cima da cabeça dos cavaleiros
 
 PROMPT 12: pare de carregar holograms.png, e passe a carregar swampfire_hologram, big_chill_hologram e glow. Adicione sliders para TODOS os itens (incluindo os elementos da barra separadamente). Adicione um botão que manda todos os offsets e scales configurados atualmente para printar no terminal.
+
+## Commit com IA: Quebráveis adicionados, coletáveis modificados e outros aspectos de combate
+
+PROMPT 1: agora vamos implementar quebráveis. A partir de agora, qualquer objeto marcado como quebrável vai ter uma barra de vida e uma hurtbox, e poder ser destruída por ataques do jogador, podendo dropar coletáveis quando for destruída. Ao ser destruído, o objeto vai emitir fragmentos (polígonos quase 2, muito finos) proporcionais ao tamanho do objeto. Essas propriedades (vida do objeto, cor dos fragmentos, etc. são configuráveis por tipo de objeto. Implemente essas lógicas em novos arquivos, breakables.cpp e fragments.cpp
+
+
+PROMPT 2: change some things about combat:
+- when an enemy dies, instead of flashing it, make it slowly disappear (becoming transparent)
+- make the number of collectibles dropped random between 1-3 (also make them less transparent and a little bigger
+- add impact visual effects when attacks from the player or the enemy connect
+- make so the attacks still deal damage when the enemy is freezed
+- make so the enemies come closer before they attack
+
+PROMPT 3: - os coletáveis não estão respeitando a colisão, e entrando pra dentro do mapa.
+- os objetos quebráveis, o efeito de hit não deve deixar a caixa em si semi-transparente. o que eu quis dizer é que a cor branca aplicada sobre ele deve ser semi-transparente
+- os fragmentos dos objetos quebráveis não devem se dispersar tanto
+- quando um inimigo morrer, ele deve ficar transparente normalmente, não sem esse efeito granulado estranho
+
+PROMPT 4: os fragmentos, os coletáveis e os inimigos devem desaparecer lentamente, ficando mais transparentes até sumirem. Atualmente, os inimigos desaparecem instantaneamente, os coletáveis piscam e os quebráveis diminuem de tamanho.
+
+PROMPT 5: adicione partículas quando o quebrável quebrar. Adicione novos coletáveis, um verde que recarrega a barra de transformação e um amarelo que recarrega a barra de especial. 
+
+PROMPT 6: os coletáveis passarão a aparecer assim: todos tem uma bola branca brilhosa pequena dentro e uma bola da cor respectiva, semi transparente em volta dela. (ambas são concêntricas). além disso, a parte visível da caixa está desalinhada com a caixa de colisão, caindo e ficando abaixo dela.
+
+PROMPT 7: os quebráveis devem ter colisão com outros quebráveis. A orientação do quebrável deve ser correspondente a pra onde o ben estava olhando quando o invocou. A visualização do modelo da caixa está correta, mas o ursinho e o banco parecem estar flutuando. Não mude os valores de escala do modelo/caixa de colisão.
+
+PROMPT 8: o modelo deve estar apontando PRO jogador, não pro outro lado. Além disso, o banco agora está enterrado embaixo do chão. Os outros modelos estão corretos. Por fim, os coletáveis não devem piscar a parte de fora, apenas a de dentro (branca e luminosa)
+
+PROMPT 9: Antes de serem absorvidos, os orbes devem ir para o centro do modelo do personagem. Além disso, reduza levemente a transparência da parte de fora desses orbes, para 75%.
+
+PROMPT 10: os quebráveis devem invocar apenas um coletável quando quebrado cada:
+banco - amarelo ou verde (75/25)
+caixa - amarelo ou verde (25/75)
+ursinho - vermelho ou amarelo (25/75)
+
+PROMPT 11: impeça a colisão da bola de fogo com o chão (no tamanho máximo ela estava sendo destruída)
