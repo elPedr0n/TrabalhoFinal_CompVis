@@ -194,14 +194,18 @@ struct Enemy {
 	bool is_flashing;
 	float flash_timer;
 
-	Enemy() : visible(false), rotate(0.0f), scale(1.0f), speed(0.8f), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f) {}
+    // Freeze state
+    bool is_frozen;
+    float frozen_timer;
+
+	Enemy() : visible(false), rotate(0.0f), scale(1.0f), speed(0.8f), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
 
 	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
 		: rotate(rot), scale(sc), visible(vis), speed(0.8f),
 		is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f),
 		attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false),
 		health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16),
-		is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f)
+		is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f)
 	{
 		position.x = px; position.y = py; position.z = pz;
 		bbox = MakeAABBFromCenterSize(position, glm::vec3(bbox_w, bbox_h, bbox_d));

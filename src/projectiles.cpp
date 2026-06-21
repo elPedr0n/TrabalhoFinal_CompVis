@@ -56,11 +56,14 @@ void Projectiles_Update(float delta_t)
         p.pos += p.vel * delta_t;
         p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
 
+        bool exploded = false;
+
         // Hit map platforms
         for (int i = 0; i < MAX_PLATFORMS; i++) {
             if (p.bbox.Intersects(map[i].bbox)) {
                 printf("Projectile hit platform %d\n", i);
                 p.active = false;
+                exploded = true;
                 break;
             }
         }
@@ -70,13 +73,33 @@ void Projectiles_Update(float delta_t)
                 if (!g_enemies[i].visible) continue;
                 if (g_enemies[i].is_dead) continue;
                 if (p.bbox.Intersects(g_enemies[i].bbox)) {
-                    // Apply damage based on scale
-                    float damage = 20.0f + (p.scale - 0.4f) * 25.0f;
-                    ApplyDamageToEnemy(i, damage);
                     p.active = false;
+                    exploded = true;
                     break;
                 }
             }
+        }
+
+        if (exploded) {
+            float damage = 20.0f + (p.scale - 0.4f) * 25.0f;
+            float splash_radius = 2.0f + p.scale;
+            
+            for (int i = 0; i < MAX_ENEMIES; i++) {
+                if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+                
+                float dist = glm::distance(p.pos, g_enemies[i].position);
+                if (dist <= splash_radius) {
+                    ApplyDamageToEnemy(i, damage);
+                }
+            }
+            
+            ParticleOptions explode_opts;
+            explode_opts.color = HexToRgb("#ff8800");
+            explode_opts.life = 0.4f;
+            explode_opts.scale = 0.05f * p.scale;
+            explode_opts.speed = 3.0f * p.scale;
+            explode_opts.count = 40 * (int)std::max(1.0f, p.scale);
+            Particles_Spawn(p.pos, explode_opts);
         }
 
         p.age += delta_t;

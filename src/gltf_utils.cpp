@@ -145,6 +145,35 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model, co
                     }
                     indices.push_back(idx);
                 }
+            } else {
+                // Se não houver índices definidos (malha não-indexada), geramos eles sequencialmente!
+                for (uint32_t i = 0; i < positions.size(); ++i) {
+                    indices.push_back(i);
+                }
+            }
+
+            // COMPUTE NORMALS IF MISSING
+            if (normals.empty() && !positions.empty() && indices.size() >= 3) {
+                normals.resize(positions.size(), glm::vec3(0.0f));
+                for (size_t i = 0; i + 2 < indices.size(); i += 3) {
+                    uint32_t i0 = indices[i];
+                    uint32_t i1 = indices[i+1];
+                    uint32_t i2 = indices[i+2];
+                    glm::vec3 v0 = positions[i0];
+                    glm::vec3 v1 = positions[i1];
+                    glm::vec3 v2 = positions[i2];
+                    glm::vec3 n = glm::cross(v1 - v0, v2 - v0);
+                    normals[i0] += n;
+                    normals[i1] += n;
+                    normals[i2] += n;
+                }
+                for (auto& n : normals) {
+                    if (glm::length(n) > 0.000001f) {
+                        n = glm::normalize(n);
+                    } else {
+                        n = glm::vec3(0.0f, 1.0f, 0.0f);
+                    }
+                }
             }
 
             // OpenGL: Create VAO, VBOs, EBO

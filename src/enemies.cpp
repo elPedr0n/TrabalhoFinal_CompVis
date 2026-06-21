@@ -49,9 +49,19 @@ void UpdateEnemies() {
         // Reset per-frame flag
         g_enemies[i].punch_active = false;
 
+        float time_scale = 1.0f;
+        if (g_enemies[i].is_frozen) {
+            g_enemies[i].frozen_timer -= delta_t;
+            if (g_enemies[i].frozen_timer <= 0.0f) {
+                g_enemies[i].is_frozen = false;
+            } else {
+                time_scale = 0.3f;
+            }
+        }
+
         // ===== ATTACK COOLDOWN =====
         if (g_enemies[i].attack_cooldown > 0.0f) {
-            g_enemies[i].attack_cooldown -= delta_t;
+            g_enemies[i].attack_cooldown -= delta_t * time_scale;
         }
 
         // ===== DEATH STATE MACHINE =====
@@ -78,7 +88,7 @@ void UpdateEnemies() {
 
         // ===== ATTACK STATE MACHINE =====
         if (g_enemies[i].is_attacking) {
-            g_enemies[i].attack_timer += delta_t;
+            g_enemies[i].attack_timer += delta_t * time_scale;
 
             // Hitbox active window (tune these) - Ativa apenas nos 80% centrais da animação de 1.25s
             float elapsed = g_enemies[i].attack_timer;
@@ -143,8 +153,8 @@ void UpdateEnemies() {
             g_enemies[i].rotate = atan2(direction_to_player.x, direction_to_player.z);
 
             // Compute desired movement
-            float move_x = direction_to_player.x * g_enemies[i].speed * delta_t;
-            float move_z = direction_to_player.z * g_enemies[i].speed * delta_t;
+            float move_x = direction_to_player.x * g_enemies[i].speed * (delta_t * time_scale);
+            float move_z = direction_to_player.z * g_enemies[i].speed * (delta_t * time_scale);
 
             // Clip against map platforms (same pattern as player.cpp)
             for (int j = 0; j < MAX_PLATFORMS; j++) {
@@ -165,7 +175,7 @@ void UpdateEnemies() {
     }
 }
 
-void ApplyDamageToEnemy(int enemy_id, float damage) {
+void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
     if (g_enemies[enemy_id].is_dead) return;
     
     g_enemies[enemy_id].health -= damage;
@@ -188,7 +198,7 @@ void ApplyDamageToEnemy(int enemy_id, float damage) {
             spawn_pos.z = player.position.z + sin(angle) * distance;
             SpawnEnemy(spawn_pos);
         }
-    } else {
+    } else if (cause_flinch) {
         // Flinch
         g_enemies[enemy_id].is_flinching = true;
         g_enemies[enemy_id].flinch_timer = 0.0f;

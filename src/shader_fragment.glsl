@@ -48,6 +48,7 @@ uniform float hud_health_ratio;
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
 uniform float current_time;
+uniform int is_frozen;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -152,14 +153,15 @@ void main()
     }
     else if ( object_id == CHILL )
     {
-        // Coordenadas de textura do Big Chill, obtidas do arquivo OBJ.
         U = texcoords.x;
         V = texcoords.y;
-
-        // "material_id" aqui recebe diretamente a unidade de textura (2 ou 3).
-        Kd0 = (material_id > 2.5)
-            ? texture(TextureImage3, vec2(U,V)).rgb
-            : texture(TextureImage2, vec2(U,V)).rgb;
+        Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
+    }
+    else if ( object_id == 15 ) // UAF_CHILL
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y;  // Flip V for UAF Sketchfab model
+        Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
     }
     else if ( object_id == SWAMPFIRE )
     {
@@ -202,7 +204,7 @@ void main()
     {
         float blink = (sin(current_time * 15.0) + 1.0) * 0.5;
         Kd0 = mix(vec3(1.0, 0.0, 0.0), vec3(2.0, 2.0, 2.0), blink);
-    } else if ( object_id == 11 ) // HUD_BAR_BG
+    } else if ( object_id == 13 ) // HUD_BAR_BG
     {
         float bg_u_min = 0.047;
         float bg_u_max = 0.275;
@@ -214,7 +216,7 @@ void main()
         vec4 tex_color = texture(TextureImage8, vec2(U,V));
         if (tex_color.a < 0.5) discard;
         Kd0 = tex_color.rgb;
-    } else if ( object_id == 12 ) // HUD_BAR_FG
+    } else if ( object_id == 14 ) // HUD_BAR_FG
     {
         float fg_u_min = 0.342;
         float fg_u_max = 0.57;
@@ -246,12 +248,17 @@ void main()
         return;
     }
 
-    if (object_id == 11 || object_id == 12) {
+    if (object_id == 13 || object_id == 14 || UseOverrideKd == 1) {
         color.rgb = Kd0;
     } else {
         // Equação de Iluminação
         float lambert = max(0,dot(n,l));
         color.rgb = Kd0 * (lambert + 0.01);
+        
+        // Ice Breath Freeze Tint
+        if (is_frozen == 1) {
+            color.rgb = mix(color.rgb, vec3(0.4, 0.8, 1.0), 0.25);
+        }
     }
 
     // NOTE: Se você quiser fazer o rendering de objetos transparentes, é
@@ -267,7 +274,9 @@ void main()
     //    transparentes que estão mais longe da câmera).
     // Use lower alpha for additive particles so blending uses source alpha
     if (object_id == 6) {
-        color.a = 0.85;
+        // Procedural soft radial gradient for particles (no solid circle)
+        float edge_fade = max(0.0, dot(n, v));
+        color.a = 0.85 * pow(edge_fade, 1.5); // Soft falloff
     } else if (object_id == 10) {
         color.a = 0.3; // Mais transparente
     } else {

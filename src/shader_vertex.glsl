@@ -22,6 +22,8 @@ uniform int object_id;
 // BEN object id (match CPU-side)
 #define BEN 8
 #define FOREVERKNIGHT 9
+#define CHILL 3
+#define UAF_CHILL 15
 
 // Array de ossos
 const int MAX_BONES = 100;
@@ -41,8 +43,8 @@ void main()
     vec4 local_position = model_coefficients;
     vec4 local_normal = normal_coefficients;
 
-    // Se o objeto for o Swampfire (ID 4) ou Ben (ID BEN) ou ForeverKnight (ID FOREVERKNIGHT), aplicamos os ossos!
-    if (object_id == 4 || object_id == BEN || object_id == FOREVERKNIGHT) 
+    // Se o objeto for animado, aplicamos os ossos!
+    if (object_id == 4 || object_id == BEN || object_id == FOREVERKNIGHT || object_id == CHILL) 
     {
         float weightSum = weights[0] + weights[1] + weights[2] + weights[3];
         if (weightSum > 0.0) {
