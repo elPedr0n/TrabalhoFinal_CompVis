@@ -349,8 +349,8 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float g_CameraTheta = 0.8f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.31f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
@@ -983,7 +983,7 @@ int main(int argc, char* argv[])
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
         float nearplane = -0.1f;  // Posição do "near plane"
-        float farplane  = -200.0f; // Posição do "far plane"
+        float farplane  = -50.0f; // Posição do "far plane"
 
         if (g_UsePerspectiveProjection)
         {
@@ -2860,8 +2860,7 @@ void TextRendering_ShowModelViewProjection(
     TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f-26*pad, 1.0f);
 }
 
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
+// Escrevemos na tela os ângulos de Euler e dados da câmera.
 void TextRendering_ShowEulerAngles(GLFWwindow* window)
 {
     if ( !g_ShowInfoText )
@@ -2870,9 +2869,12 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
     float pad = TextRendering_LineHeight(window);
 
     char buffer[80];
-    snprintf(buffer, 80, "Position = Z(%.2f)*Y(%.2f)*X(%.2f)\n", player.position.z, player.position.y, player.position.x);
+    // snprintf(buffer, 80, "Player Pos = X(%.2f) Y(%.2f) Z(%.2f)\n", player.position.x, player.position.y, player.position.z);
+    // TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
+    char cam_buf[120];
+    snprintf(cam_buf, 120, "Camera = Dist(%.2f) Phi(%.2f) Theta(%.2f)", g_CameraDistance, g_CameraPhi, g_CameraTheta);
+    TextRendering_PrintString(window, cam_buf, -1.0f+pad/10, -1.0f+4*pad/10, 1.0f);
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
