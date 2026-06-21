@@ -63,6 +63,9 @@ uniform sampler2D TextureImage21;
 uniform sampler2D TextureImage22;
 uniform sampler2D TextureImage23;
 uniform sampler2D TextureImage24;
+uniform sampler2D TextureImage25;
+uniform sampler2D TextureImage26;
+uniform sampler2D TextureImage27;
 uniform float hud_omnitrix_frame;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
@@ -395,6 +398,37 @@ void main()
         } else {
             Kd0 = vec3(0.85, 0.8, 0.75); // Default
         }
+    } else if (object_id == 51) { // BARRACA MACARRAO
+        U = texcoords.x;
+        V = texcoords.y; // Removed flip since it might be pre-flipped
+        if (material_id > 25.5) {
+            Kd0 = texture(TextureImage26, vec2(U,V)).rgb; // lambert1
+        } else if (material_id > 24.5) {
+            Kd0 = texture(TextureImage25, vec2(U,V)).rgb; // Banner1
+        } else {
+            Kd0 = vec3(0.8, 0.8, 0.8);
+        }
+    } else if (object_id == 52) { // BARRACA BANANA
+        U = texcoords.x;
+        V = 1.0 - texcoords.y; // Corrected flip for the banana stall
+        if (material_id > 136.5) { Kd0 = vec3(0.000000, 0.800489, 0.002963); } // 137 Green
+        else if (material_id > 135.5) { Kd0 = vec3(0.800536, 0.586257, 0.000000); } // 136 Orange
+        else if (material_id > 134.5) { Kd0 = vec3(0.703898, 0.014190, 0.601211); } // 135 Purple/Pink
+        else if (material_id > 131.5) { Kd0 = vec3(0.8, 0.8, 0.8); } // 132
+        else if (material_id > 126.5) { Kd0 = vec3(0.800000, 0.652655, 0.109448); } // 127
+        else if (material_id > 125.5) { Kd0 = vec3(0.276299, 0.800000, 0.493059); } // 126 Mint
+        else if (material_id > 124.5) { Kd0 = vec3(0.800000, 0.352613, 0.690372); } // 125 Pink
+        else if (material_id > 123.5) { Kd0 = vec3(0.800000, 0.548766, 0.224314); } // 124 Orange
+        else if (material_id > 121.5) { Kd0 = vec3(0.363019, 0.326505, 0.151221); } // 122 Brown
+        else if (material_id > 120.5) { Kd0 = vec3(0.8, 0.8, 0.8); } // 121
+        else if (material_id > 119.5) { Kd0 = vec3(0.911397, 0.845363, 0.372078); } // 120 Yellow
+        else if (material_id > 118.5) { Kd0 = vec3(0.029059, 0.006006, 0.002365); } // 119 Dark Brown
+        else if (material_id > 117.5) { Kd0 = vec3(0.933090, 0.922529, 0.008153); } // 118 Yellow
+        else if (material_id > 108.5) { Kd0 = vec3(0.8, 0.8, 0.8); } // 109 White/Gray
+        else if (material_id > 103.5) { Kd0 = vec3(0.800000, 0.142353, 0.028348); } // 104 Red
+        else if (material_id > 26.5) { Kd0 = texture(TextureImage27, vec2(U,V)).rgb; } // 27 cb_0.png
+        else if (material_id > 19.5) { Kd0 = texture(TextureImage20, vec2(U,V)).rgb; } // 20 Machine
+        else { Kd0 = vec3(0.8, 0.8, 0.8); }
     } else if (object_id == GROUND) {
         U = texcoords.x;
         V = texcoords.y;

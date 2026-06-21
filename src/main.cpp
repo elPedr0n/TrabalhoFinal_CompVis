@@ -633,6 +633,9 @@ int main(int argc, char* argv[])
     LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrpicg_3.png", 22, g_GpuProgramID);
     LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrplmn_4.png", 23, g_GpuProgramID);
     LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgryn_0.png", 24, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese_noodle_stand/textures/Banner1_baseColor.jpeg", 25, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese_noodle_stand/textures/lambert1_baseColor.jpeg", 26, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese-chocolate-banana-stall/textures/cb_0.png", 27, g_GpuProgramID);
     
     // The save icon is now loaded as a 3D model
 
@@ -814,7 +817,14 @@ int main(int argc, char* argv[])
     BuildTrianglesAndAddToVirtualScene(&ground_model);
 
     ObjModel barraca_model = AsyncLoadOBJ("../../data/map_background/teste_barraca/teste_barraca.obj");
+    for (auto& shape : barraca_model.shapes) shape.name = "ice_" + shape.name;
     BuildTrianglesAndAddToVirtualScene(&barraca_model);
+    ObjModel macarrao_model = AsyncLoadOBJ("../../data/map_background/barraca_macarrao/barraca_macarrao.obj");
+    for (auto& shape : macarrao_model.shapes) shape.name = "noodle_" + shape.name;
+    BuildTrianglesAndAddToVirtualScene(&macarrao_model);
+    ObjModel banana_model = AsyncLoadOBJ("../../data/map_background/barraca_banana/barraca_banana.obj");
+    for (auto& shape : banana_model.shapes) shape.name = "banana_" + shape.name;
+    BuildTrianglesAndAddToVirtualScene(&banana_model);
 
     RenderLoadingStep();
 
@@ -1510,6 +1520,22 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, 50);
         for (const auto& shape : barraca_model.shapes) {
+            DrawVirtualObject(shape.name.c_str());
+        }
+
+        // Desenhamos a barraca macarrao
+        model = Matrix_Translate(0.0f, 1.0f, -15.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 51);
+        for (const auto& shape : macarrao_model.shapes) {
+            DrawVirtualObject(shape.name.c_str());
+        }
+
+        // Desenhamos a barraca banana
+        model = Matrix_Translate(0.0f, 1.0f, -20.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 52);
+        for (const auto& shape : banana_model.shapes) {
             DrawVirtualObject(shape.name.c_str());
         }
 
@@ -2215,6 +2241,27 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_selector = 17.0f; // Orange
                 else if (mat_name.find("lambert4") != std::string::npos || mat_name.find("phong28") != std::string::npos || mat_name.find("phongE3") != std::string::npos || mat_name.find("phongE8") != std::string::npos || mat_name == "phong10" || mat_name == "phong14" || mat_name == "phong19" || mat_name == "phong4" || mat_name == "phong5" || mat_name == "phong7" || mat_name == "phong8" || mat_name == "phong9" || mat_name.find("phongE1") != std::string::npos || mat_name.find("phongE2") != std::string::npos || mat_name == "phong17")
                     texture_selector = 18.0f; // Dark Gray / Black
+                else if (mat_name.find("Banner1") != std::string::npos) texture_selector = 25.0f;
+                else if (mat_name.find("lambert1") != std::string::npos) texture_selector = 26.0f;
+                // BANANA STALL
+                else if (mat_name.find("マテリアル.033") != std::string::npos || mat_name.find("マテリアル.034") != std::string::npos || mat_name.find("マテリアル.029") != std::string::npos || mat_name.find("マテリアル.030") != std::string::npos || mat_name.find("マテリアル.028") != std::string::npos) texture_selector = 27.0f; // cb_0.png
+                else if (mat_name.find("マテリアル.014") != std::string::npos) texture_selector = 20.0f; // kkgrmk_1.png
+                else if (mat_name.find("マテリアル.009") != std::string::npos) texture_selector = 109.0f;
+                else if (mat_name.find("マテリアル.019") != std::string::npos) texture_selector = 119.0f;
+                else if (mat_name.find("マテリアル.032") != std::string::npos) texture_selector = 132.0f;
+                else if (mat_name.find("マテリアル.021") != std::string::npos) texture_selector = 121.0f;
+                else if (mat_name.find("マテリアル.022") != std::string::npos) texture_selector = 122.0f;
+                else if (mat_name.find("マテリアル.036") != std::string::npos) texture_selector = 136.0f;
+                else if (mat_name.find("マテリアル.035") != std::string::npos) texture_selector = 135.0f;
+                else if (mat_name.find("マテリアル.037") != std::string::npos) texture_selector = 137.0f;
+                else if (mat_name.find("マテリアル.020") != std::string::npos) texture_selector = 120.0f;
+                else if (mat_name.find("マテリアル.024") != std::string::npos) texture_selector = 124.0f;
+                else if (mat_name.find("マテリアル.004") != std::string::npos) texture_selector = 104.0f;
+                else if (mat_name.find("マテリアル.018") != std::string::npos) texture_selector = 118.0f;
+                else if (mat_name.find("マテリアル.026") != std::string::npos) texture_selector = 126.0f;
+                else if (mat_name.find("マテリアル.027") != std::string::npos) texture_selector = 127.0f;
+                else if (mat_name.find("マテリアル.025") != std::string::npos) texture_selector = 125.0f;
+                // ICE STALL
                 else if (mat_name.find("kkgrpblhwi") != std::string::npos) texture_selector = 21.0f;
                 else if (mat_name.find("kkgrpicg") != std::string::npos) texture_selector = 22.0f;
                 else if (mat_name.find("kkgrplmn") != std::string::npos) texture_selector = 23.0f;
