@@ -56,6 +56,12 @@
 #include "globals.h"
 #include "sceneobject.h"
 #include "animation.h"
+#include "screens.h"
+
+#include <future>
+#include <chrono>
+#include <functional>
+
 // Projectiles and particles
 #include "projectiles.h"
 #include "particles.h"
@@ -263,6 +269,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação
 void ComputeNormals(ObjModel* model); // Computa normais de um ObjModel, caso não existam.
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 void LoadTextureImage(const char* filename, bool use_rgba = false); // Função que carrega imagens de textura
+void LoadUITexture(const char* filename, GLuint unit);
 void DrawVirtualObject(const char* object_name); // Desenha um objeto armazenado em g_VirtualScene
 void DrawBoundingBox(AABB& aabb, int restore_object_id); // Desenha AABB em wireframe
 GLuint LoadShader_Vertex(const char* filename);   // Carrega um vertex shader
@@ -276,7 +283,8 @@ void PrintObjModelInfo(ObjModel*); // Função para debugging
 void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
-void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
+void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f, glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+float TextRendering_GetStringWidth(GLFWwindow* window, const std::string &str, float scale = 1.0f);
 void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale = 1.0f);
 void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
@@ -365,7 +373,35 @@ GLint g_aabb_min_uniform;
 GLint g_aabb_max_uniform;
 GLint g_bone_matrices_uniform;
 GLint g_hud_health_ratio_uniform;
+GLint g_hud_bar2_ratio_uniform;
+GLint g_hud_bar3_ratio_uniform;
+GLint g_hud_omnitrix_frame_uniform;
+float g_omnitrix_anim_frame = 15.0f;
 GLint g_current_time_uniform;
+
+// HUD Debug Variables
+struct UiConfig {
+    float x, y, scale_x, scale_y;
+    const char* name;
+};
+UiConfig g_ui_items[13] = {
+    { -0.860f, -0.175f, 0.060f, 0.500f, "Health BG" },
+    { -0.860f, -0.175f, 0.060f, 0.500f, "Health FG" },
+    { -0.830f, -0.020f, 0.028f, 0.330f, "Grey Container" },
+    { -0.830f, 0.135f, 0.023f, 0.161f, "Green Bar" },
+    { -0.830f, -0.172f, 0.023f, 0.163f, "Yellow Bar" },
+    { -0.825f, 0.360f, 0.035f, 0.065f, "Cap Others" },
+    { -0.895f, 0.360f, 0.035f, 0.065f, "Cap Health" },
+    { -0.865f, 0.595f, 0.090f, 0.145f, "Omnitrix" },
+    { -0.845f, 0.735f, 0.090f, 0.150f, "Hologram Base" },
+    { -0.855f, 0.785f, 0.100f, 0.180f, "Big Chill Image" },
+    { -0.850f, 0.795f, 0.045f, 0.165f, "Swampfire Image" },
+    { -0.935f, -0.900f, 2.370f, 2.080f, "Recent Attack Text" },
+    { -0.935f, -0.800f, 2.370f, 1.670f, "Previous Attack Text" }
+};
+int g_ui_selected_elem = 0; // 0 to 12
+int g_ui_selected_param = 0; // 0: X, 1: Y, 2: Scale X, 3: Scale Y
+bool g_ui_debug_enabled = false;
 // Axes debug VAO/VBO
 GLuint g_AxesVAO = 0;
 GLuint g_AxesVBO = 0;
@@ -552,6 +588,144 @@ int main(int argc, char* argv[])
     InitAxes();
     InitBoundingBox();
 
+    // Carregamos imagens para as telas iniciais em unidades de textura fixas (15 e 16)
+    LoadUITexture("../../data/title.jpg", 15); // TextureImage15
+    LoadUITexture("../../data/Save Icon (Ben 10 Alien Force)/icon_ico.png", 16); // TextureImage16
+    LoadUITexture("../../data/omnitrix.png", 13); // TextureImage13
+    LoadUITexture("../../data/glow.png", 17); // TextureImage17
+    LoadUITexture("../../data/big_chill_hologram.png", 18); // TextureImage18
+    LoadUITexture("../../data/swampfire_hologram.png", 19); // TextureImage19
+    // The save icon is now loaded as a 3D model
+
+    ObjModel saveicon_model("../../data/Save Icon (Ben 10 Alien Force)/list_ico.obj");
+    ComputeNormals(&saveicon_model);
+    saveicon_model.ComputeBoundingBox();
+    glm::vec3 saveicon_center = (saveicon_model.aabb.min + saveicon_model.aabb.max) / 2.0f;
+    BuildTrianglesAndAddToVirtualScene(&saveicon_model);
+
+    // Inicializamos o código para renderização de texto.
+    glCheckError();
+    TextRendering_Init();
+
+    // ==========================================
+    // TITLE SCREEN LOOP
+    // ==========================================
+    while (!glfwWindowShouldClose(window)) {
+        if (keys[GLFW_KEY_ENTER]) {
+            break; // Proceed to loading
+        }
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(g_GpuProgramID);
+
+        DrawTitleScreen(g_model_uniform, g_view_uniform, g_projection_uniform, g_object_id_uniform);
+
+        // Blinking "Press the ENTER key"
+        float time_sec = glfwGetTime();
+        if (fmod(time_sec, 2.0f) < 1.0f) {
+            int w, h;
+            glfwGetWindowSize(window, &w, &h);
+            float text_scale = (float)h / 600.0f * 1.5f; // Scale proportional to screen height
+            
+            // Para mudar a posição, altere o text_y (vertical) ou adicione um offset no text_x (horizontal) abaixo:
+            float str_w = TextRendering_GetStringWidth(window, "Press the ENTER key", text_scale);
+            
+            float x_offset = 0.556f; // Deslocamento solicitado
+            float text_x = (-str_w / 2.0f) + x_offset; // Centralizado + deslocamento
+            float text_y = -0.731f;                    // Posição vertical solicitada
+            
+            // Draw black border
+            TextRendering_PrintString(window, "Press the ENTER key", text_x - 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, "Press the ENTER key", text_x + 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y - 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y + 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            // Draw yellow text
+            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y, text_scale, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+        }
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    }
+
+    if (glfwWindowShouldClose(window)) {
+        glfwTerminate();
+        return 0;
+    }
+
+    // ==========================================
+    // COOPERATIVE LOADING SEQUENCE
+    // ==========================================
+    auto RenderLoadingStep = [&]() {
+        if (glfwWindowShouldClose(window)) {
+            glfwTerminate();
+            std::exit(0);
+        }
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glUseProgram(g_GpuProgramID);
+        
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
+        float aspect = (float)width / (height > 0 ? (float)height : 1.0f);
+        
+        // Setup orthographic projection for the 3D icon
+        glm::mat4 proj = Matrix_Orthographic(-1.0f * aspect, 1.0f * aspect, -1.0f, 1.0f, -10.0f, 10.0f);
+        glm::mat4 view = Matrix_Identity();
+        glUniformMatrix4fv(g_view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(g_projection_uniform, 1, GL_FALSE, glm::value_ptr(proj));
+
+        // Position bottom left, scale appropriately, and rotate around Z axis
+        float icon_offset_x = 0.2f;
+        glm::mat4 model = Matrix_Translate(-aspect + icon_offset_x, -0.85f, 0.0f);
+        model = model * Matrix_Scale(0.05f, 0.05f, 0.05f); // Adjust scale to make it very small
+        model = model * Matrix_Rotate_X(M_PI / 12.0f); // Slightly tilt it to see it in 3D
+        model = model * Matrix_Rotate_Z(glfwGetTime() * 3.0f); // Smooth time-based rotation
+        model = model * Matrix_Translate(-saveicon_center.x, -saveicon_center.y, -saveicon_center.z); // Center the object before rotating
+        
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 31); // 31 = LOADING_SPINNER mapped to TextureImage16
+
+        // Iterate over shapes to draw the save icon
+        for (size_t i = 0; i < saveicon_model.shapes.size(); ++i) {
+            std::string shape_name = saveicon_model.shapes[i].name;
+            DrawVirtualObject(shape_name.c_str());
+        }
+
+        float text_scale = (float)height / 600.0f * 1.5f;
+        // Posiciona o texto relativo à posição do ícone, mantendo a distância proporcional à altura
+        float text_offset_x = icon_offset_x + 0.15f; 
+        float text_x = -1.0f + (text_offset_x / aspect);
+        TextRendering_PrintString(window, "Loading...", text_x, -0.87f, text_scale, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+    };
+
+    // Helper para carregar fluidamente
+    auto LoadGltfMemory = [](const std::string& path) {
+        tinygltf::TinyGLTF loader;
+        tinygltf::Model model;
+        std::string err, warn;
+        bool is_glb = (path.length() >= 4 && path.substr(path.length() - 4) == ".glb");
+        if (is_glb) loader.LoadBinaryFromFile(&model, &err, &warn, path);
+        else loader.LoadASCIIFromFile(&model, &err, &warn, path);
+        computeNormalsForGLTF<uint16_t>(model);
+        return model;
+    };
+
+    auto AsyncLoadGLTF = [&](const std::string& path, const std::string& base_name) {
+        auto fut = std::async(std::launch::async, LoadGltfMemory, path);
+        while (fut.wait_for(std::chrono::milliseconds(16)) != std::future_status::ready) {
+            RenderLoadingStep();
+        }
+        tinygltf::Model model = fut.get();
+        buildTrianglesAndAddToVirtualSceneFromGLTF(model, base_name);
+        return model;
+    };
+
+    RenderLoadingStep();
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
     LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
@@ -565,41 +739,39 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/map_ground/madeira_lados.png"); // TextureImage12 (idx 9)
     LoadTextureImage("../../data/map_ground/madeira_cima.png"); // TextureImage14 (idx 10)
 
+    RenderLoadingStep();
+    auto AsyncLoadOBJ = [&](const char* path) {
+        auto fut = std::async(std::launch::async, [path](){
+            ObjModel m(path);
+            ComputeNormals(&m);
+            return m;
+        });
+        while (fut.wait_for(std::chrono::milliseconds(16)) != std::future_status::ready) {
+            RenderLoadingStep();
+        }
+        return fut.get();
+    };
+
+    RenderLoadingStep();
     // Construímos a representação de objetos geométricos através de malhas de triângulos
-    ObjModel spheremodel("../../data/sphere.obj");
-    ComputeNormals(&spheremodel);
+    ObjModel spheremodel = AsyncLoadOBJ("../../data/sphere.obj");
     BuildTrianglesAndAddToVirtualScene(&spheremodel);
 
-    ObjModel bunnymodel("../../data/bunny.obj");
-    ComputeNormals(&bunnymodel);
+    ObjModel bunnymodel = AsyncLoadOBJ("../../data/bunny.obj");
     BuildTrianglesAndAddToVirtualScene(&bunnymodel);
 
-    ObjModel planemodel("../../data/plane.obj");
-    ComputeNormals(&planemodel);
+    ObjModel planemodel = AsyncLoadOBJ("../../data/plane.obj");
     BuildTrianglesAndAddToVirtualScene(&planemodel);
 
-    ObjModel blockmodel("../../data/TNT/TNT.obj");
-    ComputeNormals(&blockmodel);
+    ObjModel blockmodel = AsyncLoadOBJ("../../data/TNT/TNT.obj");
     BuildTrianglesAndAddToVirtualScene(&blockmodel);
     blockmodel.ComputeBoundingBox();
-    // for (int i = 0; i < MAX_PLATFORMS; i++) {
-    //     map[i].scale = glm::vec3(0.1f, 0.1f, 0.1f);
-    //     glm::vec3 pos = {i * 4.0f + 2.0f, -1.0f, i * 2.0f}; // Example positions for platforms
-    //     map[i].bbox = AABB(pos, blockmodel.aabb.min * map[i].scale, blockmodel.aabb.max * map[i].scale);
-    //     map[i].position = pos;
-    //     // printf("Platform %d -> Position: (%.2f, %.2f, %.2f), Scale: (%.2f, %.2f, %.2f)\n", 
-    //     //     i, map[i].position.x, map[i].position.y, map[i].position.z,
-    //     //     map[i].scale.x, map[i].scale.y, map[i].scale.z);
-    //     // printf("platform min: (%.2f, %.2f, %.2f), max: (%.2f, %.2f, %.2f)\n", 
-    //     //     map[i].bbox.min.x, map[i].bbox.min.y, map[i].bbox.min.z,
-    //     //     map[i].bbox.max.x, map[i].bbox.max.y, map[i].bbox.max.z);
-    // }
-
 
     // Load map model
-    ObjModel ground_model("../../data/map_ground/chao_mapa.obj");
-    ComputeNormals(&ground_model);
+    ObjModel ground_model = AsyncLoadOBJ("../../data/map_ground/chao_mapa.obj");
     BuildTrianglesAndAddToVirtualScene(&ground_model);
+
+    RenderLoadingStep();
 
     int current_platform_index = 0;                                                                                                                                                        
                                                                                                                                                                                            
@@ -623,12 +795,13 @@ int main(int argc, char* argv[])
 
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
-    tinygltf::Model gltfmodel = loadGltfModelAndBuildScene("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
-    tinygltf::Model bentennyson_model = loadGltfModelAndBuildScene("../../data/ben_tennyson.glb", "the_bentennyson");
-    tinygltf::Model foreverknight_model = loadGltfModelAndBuildScene("../../data/forever_knight.glb", "the_foreverknight");
-    tinygltf::Model castle_model = loadGltfModelAndBuildScene("../../data/castelin/scene.gltf", "the_castle");
-    tinygltf::Model bigchill_model = loadGltfModelAndBuildScene("../../data/big_chill_cloaked.glb", "the_bigchill");
-    tinygltf::Model bigchill_uaf_model = loadGltfModelAndBuildScene("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
+    tinygltf::Model gltfmodel = AsyncLoadGLTF("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
+    tinygltf::Model bentennyson_model = AsyncLoadGLTF("../../data/ben_tennyson.glb", "the_bentennyson");
+    tinygltf::Model foreverknight_model = AsyncLoadGLTF("../../data/forever_knight.glb", "the_foreverknight");
+    tinygltf::Model castle_model = AsyncLoadGLTF("../../data/castelin/scene.gltf", "the_castle");
+    tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
+    tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
+    
     // We no longer use a GLTF fireball; projectiles will use the static `the_sphere` mesh from OBJ imports.
     tinygltf::Model emptyModel; // placeholder when no GLTF is used for projectiles
     
@@ -639,8 +812,8 @@ int main(int argc, char* argv[])
     }
 
     // Inicializamos o código para renderização de texto.
-    glCheckError();
-    TextRendering_Init();
+    // glCheckError();
+    // TextRendering_Init(); // This is now done before the title screen
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
     glEnable(GL_DEPTH_TEST);
@@ -650,7 +823,22 @@ int main(int argc, char* argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
-    float anterior = (float)glfwGetTime();
+    bool game_is_running = true;
+    while (game_is_running && !glfwWindowShouldClose(window)) {
+        // RESET GAME STATE
+        player = Player();
+        player.start_time = (float)glfwGetTime();
+        for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].visible = false;
+        for (int i = 0; i < MAX_COLLECTIBLES; i++) g_collectibles[i].active = false;
+        SpawnEnemy(glm::vec3(5.0f, 2.0f, -5.0f));
+
+        // Fake loading screen for 2 seconds
+        float fake_load_start = (float)glfwGetTime();
+        while ((float)glfwGetTime() - fake_load_start < 2.0f && !glfwWindowShouldClose(window)) {
+            RenderLoadingStep();
+        }
+
+        float anterior = (float)glfwGetTime();
 
     // Variáveis de estado da máquina de animação
     bool is_attacking = false;
@@ -673,16 +861,79 @@ int main(int argc, char* argv[])
     bool bigchill_was_jumping = false;
     // keep swampfire_state alive for the main loop (defined above)
 
-    // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
-    while (!glfwWindowShouldClose(window))
+    bool inner_loop_running = true;
+    while (inner_loop_running && !glfwWindowShouldClose(window))
     {
         if (keys[GLFW_KEY_ESCAPE])
             glfwSetWindowShouldClose(window, GL_TRUE);
 
         // Update delta time
-        float agora = (float)glfwGetTime();
-        delta_t = agora - anterior;
-        anterior = agora;
+        double agora = glfwGetTime();
+        delta_t = (float)(agora - anterior);
+
+        // Atualizar energia de transformacao e especial
+        if (!player.is_dead) {
+            if (player.active_character == 2) {
+                g_omnitrix_anim_frame += delta_t * 60.0f;
+                if (g_omnitrix_anim_frame > 15.0f) g_omnitrix_anim_frame = 15.0f;
+            } else {
+                g_omnitrix_anim_frame -= delta_t * 60.0f;
+                if (g_omnitrix_anim_frame < 0.0f) g_omnitrix_anim_frame = 0.0f;
+            }
+
+            player.special_energy += (100.0f / 15.0f) * delta_t; // Recarrega em 15s
+            if (player.special_energy > player.max_special_energy) {
+                player.special_energy = player.max_special_energy;
+            }
+
+            if (player.active_character == 2) {
+                player.transform_energy += 10.0f * delta_t; // Recarrega em 10s
+                if (player.transform_energy > player.max_transform_energy) {
+                    player.transform_energy = player.max_transform_energy;
+                }
+            } else {
+                player.transform_energy -= (100.0f / 20.0f) * delta_t; // Dura 20s
+                if (player.transform_energy <= 0.0f) {
+                    player.transform_energy = 0.0f;
+                    
+                    // Force revert to Ben
+                    player.active_character = 2; // Ben
+                    glm::vec3 size = bentennyson_size;
+                    printf("Energy depleted! Reverting to Ben.\n");
+                    player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+                    ResolvePlayerMapCollisions();
+
+                    ParticleOptions popts;
+                    popts.color = HexToRgb("#ff0000"); // Red flash on forced revert
+                    popts.life = 0.25f + 0.15f * 1.0f;
+                    popts.scale = 0.15f + 0.01f * 6.0f;
+                    popts.speed = 0.1f + 0.8f * 3.0f;
+                    popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                    Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+                }
+            }
+        }
+        anterior = (float)agora;
+
+        // Update UI timers
+        auto updateAttackUI = [&](AttackUI& atk) {
+            if (!atk.active) return;
+            if (&atk == &player.recent_attack && player.active_character == 0 && bigchill_state.is_q_attacking && atk.text == "Ice breath") {
+                atk.timer = 0.0f;
+            } else {
+                atk.timer += delta_t;
+            }
+            if (atk.timer > 3.0f) { // wait 3 seconds before moving left
+                if (&atk == &player.recent_attack) {
+                    atk.x_offset -= 1.0f * delta_t; // move left
+                }
+                if (atk.x_offset < -2.0f || atk.timer > 4.0f) {
+                    atk.active = false;
+                }
+            }
+        };
+        updateAttackUI(player.previous_attack);
+        updateAttackUI(player.recent_attack);
 
         // Aqui executamos as operações de renderização
 
@@ -796,6 +1047,35 @@ int main(int argc, char* argv[])
         if (player.active_character == 0) is_attacking = bigchill_state.is_attacking || bigchill_state.is_q_attacking;
         else if (player.active_character == 1) is_attacking = swampfire_state.is_e_attacking || swampfire_state.q_state > 0;
         else if (player.active_character == 2) is_attacking = ben_state.is_attacking;
+
+        // Attack Detection logic
+        static bool prev_ben_attacking = false;
+        if (player.active_character == 2 && benRes.is_attacking && !prev_ben_attacking) {
+            player.pushAttack("Light punch"); 
+        }
+        prev_ben_attacking = benRes.is_attacking;
+
+        static bool prev_swamp_e = false;
+        if (player.active_character == 1 && swampfire_state.is_e_attacking && !prev_swamp_e) {
+            player.pushAttack("Beat up");
+        }
+        prev_swamp_e = swampfire_state.is_e_attacking;
+
+        if (player.active_character == 1 && animRes.spawn_fireball_strength > 0.0f) {
+            player.pushAttack("Fireball");
+        }
+
+        static bool prev_bc_e = false;
+        if (player.active_character == 0 && bigchill_state.is_attacking && !prev_bc_e) {
+            player.pushAttack("Cold boxing");
+        }
+        prev_bc_e = bigchill_state.is_attacking;
+
+        static bool prev_bc_q = false;
+        if (player.active_character == 0 && bigchill_state.is_q_attacking && !prev_bc_q) {
+            player.pushAttack("Ice breath");
+        }
+        prev_bc_q = bigchill_state.is_q_attacking;
 
         // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
         bool can_move = !is_attacking && !player.is_dead && !player.is_flinching;
@@ -1239,33 +1519,103 @@ int main(int argc, char* argv[])
         glm::mat4 id_mat = Matrix_Identity();
         glUniformMatrix4fv(g_view_uniform, 1, GL_FALSE, glm::value_ptr(id_mat));
         glUniformMatrix4fv(g_projection_uniform, 1, GL_FALSE, glm::value_ptr(id_mat));
-
-        float bar_x = -0.85f;
-        float bar_y = 0.0f; // center vertically
-        float scale_x = 0.05f;
-        float scale_y = 0.6f;
-
+        
         glActiveTexture(GL_TEXTURE8);
         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[7]);
 
-        // BG (Gray)
-        model = Matrix_Translate(bar_x, bar_y, 0.0f)
-              * Matrix_Scale(scale_x, scale_y, 1.0f)
-              * Matrix_Rotate_X(M_PI / 2.0f);
+        // Draw Element 0 (Health BG)
+        model = Matrix_Translate(g_ui_items[0].x, g_ui_items[0].y, 0.0f)
+                        * Matrix_Scale(g_ui_items[0].scale_x, g_ui_items[0].scale_y, 1.0f)
+                        * Matrix_Rotate_X(M_PI / 2.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, 20); // HUD_BAR_BG
         DrawVirtualObject("the_plane");
 
-        // FG (Red)
-        float h_ratio = player.health / player.max_health;
+        // Draw Element 1 (Health FG)
+        float h_ratio = player.health / 100.0f;
         glUniform1f(g_hud_health_ratio_uniform, h_ratio);
-
         if (h_ratio > 0.0f) {
-            model = Matrix_Translate(bar_x, bar_y - (1.0f - h_ratio)*scale_y, 0.0f)
-                  * Matrix_Scale(scale_x, scale_y * h_ratio, 1.0f)
+            model = Matrix_Translate(g_ui_items[1].x, g_ui_items[1].y - (1.0f - h_ratio)*g_ui_items[1].scale_y, 0.0f)
+                  * Matrix_Scale(g_ui_items[1].scale_x, g_ui_items[1].scale_y * h_ratio, 1.0f)
                   * Matrix_Rotate_X(M_PI / 2.0f);
             glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, 21); // HUD_BAR_FG
+            DrawVirtualObject("the_plane");
+        }
+
+        // Draw Element 2 (Grey Container)
+        model = Matrix_Translate(g_ui_items[2].x, g_ui_items[2].y, 0.0f)
+              * Matrix_Scale(g_ui_items[2].scale_x, g_ui_items[2].scale_y, 1.0f)
+              * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 24); // HUD_BAR_CONTAINER2
+        DrawVirtualObject("the_plane");
+
+        // Draw Element 3 (Green Bar)
+        float bar2_ratio = player.transform_energy / player.max_transform_energy;
+        glUniform1f(g_hud_bar2_ratio_uniform, bar2_ratio);
+        if (bar2_ratio > 0.0f) {
+            model = Matrix_Translate(g_ui_items[3].x, g_ui_items[3].y - (1.0f - bar2_ratio)*g_ui_items[3].scale_y, 0.0f)
+                  * Matrix_Scale(g_ui_items[3].scale_x, g_ui_items[3].scale_y * bar2_ratio, 1.0f)
+                  * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 22); // HUD_BAR_GREEN
+        DrawVirtualObject("the_plane");
+        }
+
+        // Draw Element 4 (Yellow Bar)
+        float bar3_ratio = player.special_energy / player.max_special_energy;
+        glUniform1f(g_hud_bar3_ratio_uniform, bar3_ratio);
+        if (bar3_ratio > 0.0f) {
+            model = Matrix_Translate(g_ui_items[4].x, g_ui_items[4].y - (1.0f - bar3_ratio)*g_ui_items[4].scale_y, 0.0f)
+                  * Matrix_Scale(g_ui_items[4].scale_x, g_ui_items[4].scale_y * bar3_ratio, 1.0f)
+                  * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 23); // HUD_BAR_YELLOW
+        DrawVirtualObject("the_plane");
+        }
+
+        // Draw Element 5 (Cap Top)
+        model = Matrix_Translate(g_ui_items[5].x, g_ui_items[5].y, 0.0f)
+              * Matrix_Scale(g_ui_items[5].scale_x, g_ui_items[5].scale_y, 1.0f)
+              * Matrix_Rotate_Z(M_PI)
+              * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 25); // HUD_BAR_CAP
+        DrawVirtualObject("the_plane");
+
+        // Draw Element 6 (Cap Bottom)
+        model = Matrix_Translate(g_ui_items[6].x, g_ui_items[6].y, 0.0f)
+              * Matrix_Scale(g_ui_items[6].scale_x, g_ui_items[6].scale_y, 1.0f)
+              * Matrix_Rotate_Z(M_PI)
+              * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 25); // HUD_BAR_CAP
+        DrawVirtualObject("the_plane");
+
+        // Draw Omnitrix Button
+        glUniform1f(g_hud_omnitrix_frame_uniform, g_omnitrix_anim_frame);
+        model = Matrix_Translate(g_ui_items[7].x, g_ui_items[7].y, 0.0f)
+              * Matrix_Scale(g_ui_items[7].scale_x, g_ui_items[7].scale_y, 1.0f)
+              * Matrix_Rotate_X(M_PI / 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 26); // HUD_OMNITRIX
+        DrawVirtualObject("the_plane");
+
+        if (player.active_character == 2 && !player.is_dead && g_omnitrix_anim_frame >= 15.0f) {
+            model = Matrix_Translate(g_ui_items[8].x, g_ui_items[8].y, 0.0f)
+                  * Matrix_Scale(g_ui_items[8].scale_x, g_ui_items[8].scale_y, 1.0f)
+                  * Matrix_Rotate_X(M_PI / 2.0f);
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 27); // HUD_HOLOGRAM_LIGHT
+            DrawVirtualObject("the_plane");
+
+            int ui_idx = (player.selected_alien == 0) ? 9 : 10;
+            model = Matrix_Translate(g_ui_items[ui_idx].x, g_ui_items[ui_idx].y, 0.0f) // Draw hologram slightly above the light base
+                  * Matrix_Scale(g_ui_items[ui_idx].scale_x, g_ui_items[ui_idx].scale_y, 1.0f)
+                  * Matrix_Rotate_X(M_PI / 2.0f);
+            glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, player.selected_alien == 0 ? 28 : 29); // 28: Big Chill, 29: Swampfire
             DrawVirtualObject("the_plane");
         }
 
@@ -1286,19 +1636,43 @@ int main(int argc, char* argv[])
         // Draw Health (removido, usando apenas a barra)
 
         // Respawn Logic & Death Message
-        if (player.is_dead) {
-            TextRendering_PrintString(window, "Voce morreu!", -0.2f, 0.0f, 3.0f);
+        if (player.is_dead || player.has_won) {
             player.death_timer += delta_t;
-            if (player.death_timer >= 3.0f) {
-                player.position = glm::vec3(0.0f, -1.0f, 0.0f);
-                player.health = player.max_health;
-                player.is_dead = false;
-                player.death_timer = 0.0f;
+            if (player.final_time == 0.0f) {
+                player.final_time = (float)glfwGetTime();
+            }
 
-                for (int i = 0; i < MAX_ENEMIES; i++) {
-                    g_enemies[i].visible = false;
+            if (player.death_timer > 2.5f) {
+                glUseProgram(g_GpuProgramID);
+                DrawTextWindowBox(g_model_uniform, g_view_uniform, g_projection_uniform, g_object_id_uniform);
+
+            int w, h;
+            glfwGetWindowSize(window, &w, &h);
+            float text_scale_title = (float)h / 600.0f * 1.5f;
+            float text_scale_body = (float)h / 600.0f * 1.0f;
+            
+            const char* title_text = player.has_won ? "You win!" : "You died!";
+            
+            int elapsed = (int)(player.final_time - player.start_time);
+            char stats_time[64]; snprintf(stats_time, sizeof(stats_time), "Time - %02d:%02d", elapsed / 60, elapsed % 60);
+            char stats_enemies[64]; snprintf(stats_enemies, sizeof(stats_enemies), "Enemies slain - %d", player.enemies_slain);
+            char stats_objs[64]; snprintf(stats_objs, sizeof(stats_objs), "Objects destroyed - %d", player.objects_destroyed);
+
+            float title_w = TextRendering_GetStringWidth(window, title_text, text_scale_title);
+            float time_w = TextRendering_GetStringWidth(window, stats_time, text_scale_body);
+            float enemies_w = TextRendering_GetStringWidth(window, stats_enemies, text_scale_body);
+            float objs_w = TextRendering_GetStringWidth(window, stats_objs, text_scale_body);
+            float enter_w = TextRendering_GetStringWidth(window, "Press ENTER to respawn", text_scale_body);
+
+            TextRendering_PrintString(window, title_text, -title_w/2.0f, 0.25f, text_scale_title, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+            TextRendering_PrintString(window, stats_time, -time_w/2.0f, 0.10f, text_scale_body, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+            TextRendering_PrintString(window, stats_enemies, -enemies_w/2.0f, 0.00f, text_scale_body, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+            TextRendering_PrintString(window, stats_objs, -objs_w/2.0f, -0.10f, text_scale_body, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f)); 
+            TextRendering_PrintString(window, "Press ENTER to respawn", -enter_w/2.0f, -0.25f, text_scale_body, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+                if (keys[GLFW_KEY_ENTER]) {
+                    inner_loop_running = false;
                 }
-                SpawnEnemy(glm::vec3(5.0f, 2.0f, -5.0f));
             }
         } else if (player.is_flinching) {
             player.flinch_timer += delta_t;
@@ -1307,21 +1681,62 @@ int main(int argc, char* argv[])
             }
         }
 
-        // Imprimimos a vida dos inimigos em cima das suas cabeças
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
-            glm::vec4 enemy_pos_world = glm::vec4(g_enemies[i].position.x, g_enemies[i].position.y + 1.2f, g_enemies[i].position.z, 1.0f);
-            glm::vec4 enemy_pos_ndc = projection * view * enemy_pos_world;
-            if (enemy_pos_ndc.w > 0.0f) {
-                enemy_pos_ndc /= enemy_pos_ndc.w;
-                // Só desenha se estiver na frente da câmera (z NDC entre -1 e 1)
-                if (enemy_pos_ndc.z >= -1.0f && enemy_pos_ndc.z <= 1.0f) {
-                    char hp_buf[32];
-                    snprintf(hp_buf, sizeof(hp_buf), "%.0f", g_enemies[i].health);
-                    // Desloca um pouco o X para centralizar melhor
-                    TextRendering_PrintString(window, hp_buf, enemy_pos_ndc.x - 0.05f, enemy_pos_ndc.y, 1.5f);
-                }
+
+        auto drawBorderText = [&](const std::string& text, float x, float y, float scale, float alpha) {
+            TextRendering_PrintString(window, text, x - 0.002f, y, scale, glm::vec4(0.0f, 0.0f, 0.0f, alpha));
+            TextRendering_PrintString(window, text, x + 0.002f, y, scale, glm::vec4(0.0f, 0.0f, 0.0f, alpha));
+            TextRendering_PrintString(window, text, x, y - 0.002f, scale, glm::vec4(0.0f, 0.0f, 0.0f, alpha));
+            TextRendering_PrintString(window, text, x, y + 0.002f, scale, glm::vec4(0.0f, 0.0f, 0.0f, alpha));
+            TextRendering_PrintString(window, text, x, y, scale, glm::vec4(1.0f, 1.0f, 1.0f, alpha));
+        };
+
+        // Draw Attack UI
+        auto getAttackAlpha = [&](const AttackUI& atk) {
+            float alpha = 1.0f;
+            if (atk.timer > 1.0f) {
+                // fade to 0.4f alpha between 1.0s and 3.0s
+                alpha = 1.0f - 0.6f * ((atk.timer - 1.0f) / 2.0f);
+                if (alpha < 0.4f) alpha = 0.4f;
             }
+            if (atk.timer > 3.0f) {
+                // fade out completely while moving
+                alpha = 0.4f - 0.4f * ((atk.timer - 3.0f) / 1.0f);
+                if (alpha < 0.0f) alpha = 0.0f;
+            }
+            return alpha;
+        };
+
+        if (player.previous_attack.active) {
+            float alpha = getAttackAlpha(player.previous_attack);
+            float x_pos = g_ui_items[12].x + player.previous_attack.x_offset;
+            drawBorderText(player.previous_attack.text, x_pos, g_ui_items[12].y, g_ui_items[12].scale_x, alpha);
+        }
+        if (player.recent_attack.active) {
+            float alpha = getAttackAlpha(player.recent_attack);
+            float x_pos = g_ui_items[11].x + player.recent_attack.x_offset;
+            drawBorderText(player.recent_attack.text, x_pos, g_ui_items[11].y, g_ui_items[11].scale_x, alpha);
+        }
+
+        // Draw Debug UI
+        if (g_ui_debug_enabled) {
+            float start_y = 0.8f;
+            TextRendering_PrintString(window, "=== UI CONFIG ===", -0.95f, start_y, 1.0f, glm::vec4(0,0,0,1));
+            start_y -= 0.05f;
+            for (int i = 0; i < 13; i++) {
+                char buf[256];
+                snprintf(buf, sizeof(buf), "%c %s  [X: %.3f, Y: %.3f, SX: %.3f, SY: %.3f]", 
+                    (i == g_ui_selected_elem) ? '>' : ' ',
+                    g_ui_items[i].name,
+                    g_ui_items[i].x, g_ui_items[i].y, g_ui_items[i].scale_x, g_ui_items[i].scale_y);
+                
+                glm::vec4 color = (i == g_ui_selected_elem) ? glm::vec4(0.2f,0.2f,0.2f,1.0f) : glm::vec4(0.0f,0.0f,0.0f,1.0f);
+                TextRendering_PrintString(window, buf, -0.95f, start_y, 0.65f, color);
+                start_y -= 0.035f;
+            }
+            char inst[256];
+            snprintf(inst, sizeof(inst), "Selected Param: %s. Keys: U(toggle) P(print) 1/2(elem) 3/4(param) -/+(val)", 
+                (g_ui_selected_param == 0) ? "X Offset" : ((g_ui_selected_param == 1) ? "Y Offset" : ((g_ui_selected_param == 2) ? "Scale X" : "Scale Y")));
+            TextRendering_PrintString(window, inst, -0.95f, start_y - 0.02f, 0.8f, glm::vec4(0,0,0,1));
         }
 
         // O framebuffer onde OpenGL executa as operações de renderização não
@@ -1338,7 +1753,8 @@ int main(int argc, char* argv[])
         // pela biblioteca GLFW.
         glfwPollEvents();
 
-    }
+    } // end of inner loop
+    } // end of outer loop
 
     // Finalizamos o uso dos recursos do sistema operacional
     glfwTerminate();
@@ -1510,6 +1926,9 @@ void LoadShadersFromFiles()
     g_aabb_max_uniform   = glGetUniformLocation(g_GpuProgramID, "aabb_max");
     g_bone_matrices_uniform = glGetUniformLocation(g_GpuProgramID, "boneMatrices[0]");
     g_hud_health_ratio_uniform = glGetUniformLocation(g_GpuProgramID, "hud_health_ratio");
+    g_hud_bar2_ratio_uniform = glGetUniformLocation(g_GpuProgramID, "hud_bar2_ratio");
+    g_hud_bar3_ratio_uniform = glGetUniformLocation(g_GpuProgramID, "hud_bar3_ratio");
+    g_hud_omnitrix_frame_uniform = glGetUniformLocation(g_GpuProgramID, "hud_omnitrix_frame");
     g_current_time_uniform = glGetUniformLocation(g_GpuProgramID, "current_time");
 
     // Variáveis em "shader_fragment.glsl" para acesso das imagens de textura
@@ -1523,7 +1942,36 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage6"), 6);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage7"), 7);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage15"), 15);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage16"), 16);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage13"), 13);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage17"), 17);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage18"), 18);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage19"), 19);
     glUseProgram(0);
+}
+
+void LoadUITexture(const char* filename, GLuint unit) {
+    printf("Carregando UI imagem \"%s\"... ", filename);
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, channels;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, 4);
+    if (!data) {
+        fprintf(stderr, "ERROR: Cannot open UI image file \"%s\".\n", filename);
+        std::exit(EXIT_FAILURE);
+    }
+    printf("OK (%dx%d).\n", width, height);
+
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    stbi_image_free(data);
 }
 
 // Função que pega a matriz M e guarda a mesma no topo da pilha
@@ -2095,6 +2543,8 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 {
+    if (player.is_dead || player.has_won) return;
+
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
     // instante de tempo, e usamos esta movimentação para atualizar os
@@ -2195,6 +2645,48 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     else if (action == GLFW_RELEASE)
         keys[key] = false;
 
+    // DEBUG UI TOGGLE
+    if (key == GLFW_KEY_U && action == GLFW_PRESS) {
+        g_ui_debug_enabled = !g_ui_debug_enabled;
+    }
+    if (g_ui_debug_enabled && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+        if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
+            g_ui_selected_elem = (g_ui_selected_elem - 1 + 13) % 13;
+        }
+        if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
+            g_ui_selected_elem = (g_ui_selected_elem + 1) % 13;
+        }
+        if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
+            g_ui_selected_param = (g_ui_selected_param - 1 + 4) % 4;
+        }
+        if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
+            g_ui_selected_param = (g_ui_selected_param + 1) % 4;
+        }
+        
+        if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+            printf("\n--- Current UI Config ---\n");
+            for (int i = 0; i < 13; i++) {
+                printf("    { %.3ff, %.3ff, %.3ff, %.3ff, \"%s\" },\n", 
+                    g_ui_items[i].x, g_ui_items[i].y, g_ui_items[i].scale_x, g_ui_items[i].scale_y, g_ui_items[i].name);
+            }
+            printf("-------------------------\n");
+        }
+        
+        float step = (g_ui_selected_param >= 2) ? 0.005f : 0.005f;
+        if (key == GLFW_KEY_MINUS || key == GLFW_KEY_KP_SUBTRACT) {
+            if (g_ui_selected_param == 0) g_ui_items[g_ui_selected_elem].x -= step;
+            if (g_ui_selected_param == 1) g_ui_items[g_ui_selected_elem].y -= step;
+            if (g_ui_selected_param == 2) g_ui_items[g_ui_selected_elem].scale_x -= step;
+            if (g_ui_selected_param == 3) g_ui_items[g_ui_selected_elem].scale_y -= step;
+        }
+        if (key == GLFW_KEY_EQUAL || key == GLFW_KEY_KP_ADD) {
+            if (g_ui_selected_param == 0) g_ui_items[g_ui_selected_elem].x += step;
+            if (g_ui_selected_param == 1) g_ui_items[g_ui_selected_elem].y += step;
+            if (g_ui_selected_param == 2) g_ui_items[g_ui_selected_elem].scale_x += step;
+            if (g_ui_selected_param == 3) g_ui_items[g_ui_selected_elem].scale_y += step;
+        }
+    }
+
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -2211,7 +2703,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
     if (key == GLFW_KEY_X && action == GLFW_PRESS)
     {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+        if (mod == 0 && !(mod & GLFW_MOD_SHIFT) && player.active_character == 2 && !player.is_dead) {
+            player.selected_alien = (player.selected_alien == 0) ? 1 : 0;
+            printf("Selected alien: %d\n", player.selected_alien);
+        } else {
+            g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+        }
     }
 
     if (key == GLFW_KEY_Y && action == GLFW_PRESS)
@@ -2223,26 +2720,44 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         if (mod & GLFW_MOD_SHIFT)
             g_AngleZ -= delta;
         else if (mod == 0 && !(mod & GLFW_MOD_SHIFT) && !player.is_dead) {
-            // Swap active character
-            player.active_character = (player.active_character + 1) % 3;
-            // Sync position to current player position
-            glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
-            printf("Switched to character %d\n", player.active_character);
-            player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
-            ResolvePlayerMapCollisions();
+            if (player.active_character == 2) {
+                // Try to transform
+                if (player.transform_energy < player.max_transform_energy) {
+                    printf("Energy not full! Cannot transform.\n");
+                } else if (g_omnitrix_anim_frame < 15.0f) {
+                    printf("Omnitrix is not fully opened! Cannot transform.\n");
+                } else {
+                    // Start transformation
+                    player.active_character = player.selected_alien;
+                    glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
+                    printf("Switched to character %d\n", player.active_character);
+                    player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+                    ResolvePlayerMapCollisions();
 
-            for (int i = 0; i < 3; ++i)
-                // g_characters[g_active_character].pos[i] = player_pos[i];
-                    // Spawn green transform particles at player position (use ParticleOptions)
-                    {
-                        ParticleOptions popts;
-                        popts.color = HexToRgb("#06b800");
-                        popts.life = 0.25f + 0.15f * 1.0f;
-                        popts.scale = 0.15f + 0.01f * 6.0f;
-                        popts.speed = 0.1f + 0.8f * 3.0f;
-                        popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
-                        Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
-                    }
+                    ParticleOptions popts;
+                    popts.color = HexToRgb("#06b800"); // Green flash for voluntary transform
+                    popts.life = 0.25f + 0.15f * 1.0f;
+                    popts.scale = 0.15f + 0.01f * 6.0f;
+                    popts.speed = 0.1f + 0.8f * 3.0f;
+                    popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                    Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+                }
+            } else {
+                // Voluntary revert back to Ben
+                player.active_character = 2;
+                glm::vec3 size = bentennyson_size;
+                printf("Switched back to character 2\n");
+                player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+                ResolvePlayerMapCollisions();
+
+                ParticleOptions popts;
+                popts.color = HexToRgb("#06b800"); // GREEN flash for voluntary revert
+                popts.life = 0.25f + 0.15f * 1.0f;
+                popts.scale = 0.15f + 0.01f * 6.0f;
+                popts.speed = 0.1f + 0.8f * 3.0f;
+                popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+            }
         }
     }
 

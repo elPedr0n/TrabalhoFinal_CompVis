@@ -132,8 +132,22 @@ struct Character {
 		: model_name(name), scale(scale), bbox(makeAABBFromGround(pos, glm::vec3(bbox_w * scale, bbox_h * scale, bbox_d * scale))), jump_speed(jump) {}
 };
 
+struct AttackUI {
+    std::string text;
+    float timer;
+    float x_offset;
+    bool active;
+    AttackUI() : text(""), timer(0.0f), x_offset(0.0f), active(false) {}
+};
+
 struct Player {
-	int active_character; // 0 = BigChill, 1 = Swampfire
+	int active_character; // 0 = SWAMPFIRE, 1 = BIGCHILL, 2 = BENTENNYSON
+	int enemies_slain;
+	int objects_destroyed;
+	bool has_won;
+	float start_time;
+	float final_time;
+
 	Character characters[MAX_CHARACTERS];
 
 	glm::vec3 position;
@@ -152,13 +166,37 @@ struct Player {
 	bool is_flinching;
 	float flinch_timer;
 
+	float transform_energy;
+	float max_transform_energy;
+	float special_energy;
+	float max_special_energy;
+	int selected_alien;
+
+	AttackUI recent_attack;
+	AttackUI previous_attack;
+
+	void pushAttack(const std::string& name) {
+		if (recent_attack.active) {
+			previous_attack = recent_attack;
+		}
+		recent_attack.text = name;
+		recent_attack.timer = 0.0f;
+		recent_attack.x_offset = 0.0f;
+		recent_attack.active = true;
+	}
+
 	Player()
-		: active_character(2), position(-1.0f, 0.0f, -7.0f), speed(12.0f, 0.0f, 12.0f), rotate(0.0f), scale(1.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f)
+		: active_character(2), position(-1.0f, 0.0f, -7.0f), speed(12.0f, 0.0f, 12.0f), rotate(0.0f), scale(1.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f), transform_energy(100.0f), max_transform_energy(100.0f), special_energy(100.0f), max_special_energy(100.0f), selected_alien(0)
 	{
 		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f, bigchill_jump_speed); // Calafrio pula mais alto
 		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f, swampfire_jump_speed); // Fogo Fátuo pula mais baixo
 		characters[2] = Character("the_bentennyson", position, 1.38f, 1.5f, 0.27f, 0.6f, bentennyson_jump_speed); // Ben salto médio
 
+		enemies_slain = 0;
+		objects_destroyed = 0;
+		has_won = false;
+		start_time = 0.0f;
+		final_time = 0.0f;
 	}
 };
 
@@ -198,7 +236,7 @@ struct Enemy {
     bool is_frozen;
     float frozen_timer;
 
-	Enemy() : visible(false), rotate(0.0f), scale(1.0f), speed(0.8f), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
+	Enemy() : rotate(0.0f), scale(1.0f), visible(false), speed(0.8f), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
 
 	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
 		: rotate(rot), scale(sc), visible(vis), speed(0.8f),

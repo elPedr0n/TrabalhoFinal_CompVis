@@ -45,11 +45,20 @@ uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
 uniform float hud_health_ratio;
+uniform float hud_bar2_ratio;
+uniform float hud_bar3_ratio;
 uniform sampler2D TextureImage9;
 uniform sampler2D TextureImage10;
 uniform sampler2D TextureImage11;
 uniform sampler2D TextureImage12;
+uniform sampler2D TextureImage13;
 uniform sampler2D TextureImage14;
+uniform sampler2D TextureImage15;
+uniform sampler2D TextureImage16;
+uniform sampler2D TextureImage17;
+uniform sampler2D TextureImage18;
+uniform sampler2D TextureImage19;
+uniform float hud_omnitrix_frame;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
@@ -235,6 +244,109 @@ void main()
         vec4 tex_color = texture(TextureImage8, vec2(U,V));
         if (tex_color.a < 0.5) discard;
         Kd0 = tex_color.rgb;
+    } else if ( object_id == 22 ) // HUD_BAR_GREEN
+    {
+        float fg_u_min = 0.885;
+        float fg_u_max = 0.967;
+        float v_min = 0.456;
+        float v_max = 0.824;
+
+        float scaled_y = texcoords.y * hud_bar2_ratio;
+        U = texcoords.x * (fg_u_max - fg_u_min) + fg_u_min;
+        V = scaled_y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 23 ) // HUD_BAR_YELLOW
+    {
+        float fg_u_min = 0.885;
+        float fg_u_max = 0.967;
+        float v_min = 0.055;
+        float v_max = 0.418;
+
+        float scaled_y = texcoords.y * hud_bar3_ratio;
+        U = texcoords.x * (fg_u_max - fg_u_min) + fg_u_min;
+        V = scaled_y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 24 ) // HUD_BAR_CONTAINER2
+    {
+        float fg_u_min = 0.688;
+        float fg_u_max = 0.795;
+        float v_min = 0.071;
+        float v_max = 0.819;
+
+        U = texcoords.x * (fg_u_max - fg_u_min) + fg_u_min;
+        V = texcoords.y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 25 ) // HUD_BAR_CAP
+    {
+        float fg_u_min = 0.672;
+        float fg_u_max = 0.811;
+        float v_min = 0.851;
+        float v_max = 0.972;
+
+        U = texcoords.x * (fg_u_max - fg_u_min) + fg_u_min;
+        V = texcoords.y * (v_max - v_min) + v_min;
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 26 ) // HUD_OMNITRIX
+    {
+        int cols = 4;
+        int rows = 4;
+        int frame = int(hud_omnitrix_frame);
+        int frame_x = frame % cols;
+        int frame_y = frame / cols;
+        
+        U = (texcoords.x + float(frame_x)) / float(cols);
+        V = (texcoords.y + float(3 - frame_y)) / float(rows);
+        
+        vec4 tex_color = texture(TextureImage13, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 27 ) // HUD_HOLOGRAM_LIGHT
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        vec4 tex_color = texture(TextureImage17, vec2(U,V));
+        if (tex_color.a < 0.05) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 28 ) // HUD_HOLOGRAM_BIGCHILL
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        vec4 tex_color = texture(TextureImage18, vec2(U,V));
+        if (tex_color.a < 0.05) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 29 ) // HUD_HOLOGRAM_SWAMPFIRE
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        vec4 tex_color = texture(TextureImage19, vec2(U,V));
+        if (tex_color.a < 0.05) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 30 ) // TITLE_SCREEN
+    {
+        U = texcoords.x;
+        V = texcoords.y; // removed 1.0 - texcoords.y
+        Kd0 = texture(TextureImage15, vec2(U,V)).rgb;
+    } else if ( object_id == 31 ) // SAVE_ICON (3D)
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        vec4 tex_color = texture(TextureImage16, vec2(U,V));
+        if (tex_color.a < 0.5) discard;
+        Kd0 = tex_color.rgb;
+    } else if ( object_id == 40 ) // UI_WINDOW_BG
+    {
+        Kd0 = vec3(0.05, 0.15, 0.05); // Dark Green
+    } else if ( object_id == 41 ) // UI_WINDOW_BORDER
+    {
+        Kd0 = vec3(0.6, 1.0, 0.6); // Light Green
     } else if (object_id == GROUND) {
         U = texcoords.x;
         V = texcoords.y;
@@ -280,7 +392,7 @@ void main()
         return;
     }
 
-    if (object_id == 20 || object_id == 21 || UseOverrideKd == 1) {
+    if ((object_id >= 20 && object_id <= 29) || object_id == 30 || object_id == 31 || object_id == 40 || object_id == 41 || UseOverrideKd == 1) {
         color.rgb = Kd0;
     } else {
         // Equação de Iluminação
@@ -311,6 +423,10 @@ void main()
         color.a = 0.85 * pow(edge_fade, 1.5); // Soft falloff
     } else if (object_id == 10) {
         color.a = 0.3; // Mais transparente
+    } else if (object_id >= 27 && object_id <= 29) {
+        color.a = 0.75; // Semi-transparent hologram
+    } else if (object_id == 40) {
+        color.a = 0.85; // Semi-transparent for UI background
     } else {
         color.a = 1.0;
     }
