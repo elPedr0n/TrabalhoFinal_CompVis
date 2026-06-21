@@ -19,6 +19,7 @@ set(SOURCES
   src/particles.cpp
   src/enemies.cpp
   src/collectibles.cpp
+  src/screens.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)

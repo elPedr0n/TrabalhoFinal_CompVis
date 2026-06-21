@@ -27,11 +27,12 @@ const GLchar* const textvertexshader_source = ""
 const GLchar* const textfragmentshader_source = ""
 "#version 330\n"
 "uniform sampler2D tex;\n"
+"uniform vec4 textColor;\n"
 "in vec2 texCoords;\n"
 "out vec4 fragColor;\n"
 "void main()\n"
 "{\n"
-    "fragColor = vec4(0, 0, 0, texture(tex, texCoords).r);\n"
+"    fragColor = vec4(textColor.rgb, textColor.a * texture(tex, texCoords).r);\n"
 "}\n"
 "\0";
 
@@ -86,6 +87,7 @@ GLuint textVAO;
 GLuint textVBO;
 GLuint textprogram_id;
 GLuint texttexture_id;
+GLuint textcolor_uniform;
 
 void TextRendering_Init()
 {
@@ -115,6 +117,7 @@ void TextRendering_Init()
 
     GLuint texttex_uniform;
     texttex_uniform = glGetUniformLocation(textprogram_id, "tex");
+    textcolor_uniform = glGetUniformLocation(textprogram_id, "textColor");
     glCheckError();
 
     GLuint textureunit = 31;
@@ -144,7 +147,7 @@ void TextRendering_Init()
 
 float textscale = 1.5f;
 
-void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f)
+void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f, glm::vec4 color = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f))
 {
     scale *= textscale;
     int width, height;
@@ -197,6 +200,7 @@ void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         glUseProgram(textprogram_id);
+        glUniform4f(textcolor_uniform, color.r, color.g, color.b, color.a);
         glBindVertexArray(textVAO);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -209,6 +213,33 @@ void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float
 
         x += (glyph->advance_x * sx);
     }
+}
+
+float TextRendering_GetStringWidth(GLFWwindow* window, const std::string &str, float scale = 1.0f)
+{
+    scale *= textscale;
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    float sx = scale / width;
+
+    float total_width = 0.0f;
+    for (size_t i = 0; i < str.size(); i++)
+    {
+        texture_glyph_t *glyph = 0;
+        for (size_t j = 0; j < dejavufont.glyphs_count; ++j)
+        {
+            if (dejavufont.glyphs[j].codepoint == (uint32_t)str[i])
+            {
+                glyph = &dejavufont.glyphs[j];
+                break;
+            }
+        }
+        if (!glyph) continue;
+        
+        total_width += glyph->kerning[0].kerning * sx;
+        total_width += (glyph->advance_x * sx);
+    }
+    return total_width;
 }
 
 float TextRendering_LineHeight(GLFWwindow* window)

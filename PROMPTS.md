@@ -1089,3 +1089,38 @@ Fix:
 Use a soft radial gradient texture (faded edges, not solid circle)
 
 PROMPT 7: faça com que, quando o big chill estiver no ar, ele troque pro modelo big_chill_uaf.glb. Durante a troca de modelo, gere uma nuvem de partículas como se fosse fumaça, para a transição
+
+### Commit com IA: UI completa, menu principal, barras de vida, especial e transformação, histórico de ataques, tela de morte/vitória e carregamento
+
+PROMPT 1: No arquivo usado para gerar a health bar, temos outras duas barras. Adicione-as na interface. Depois implementaremos para o que elas serão usadas
+a barra cinza ao lado serve de container para essas duas barras amarela e verde. arrume isso
+
+
+PROMPT 2: as novas barras farão o seguinte:
+- VERDE - barra de transformação. Essa barra diminuirá lentamente enquanto ben estiver transformado em um alien. Essa barra subirá rapidamente quando ben não estiver transformado. Ben só pode se transformar se ela estiver cheia. Quando a barra esgotar enquanto ben for alien, ele voltará a ser humano imediatamente.
+
+PROMPT 3: modifique a lógica de transformação! a todo tempo, um alien estará selecionado ( indicado em texto no canto superior direito - remova toda a lógica de sliders). Apertar "x" trocará entre esses aliens. Quando ben se transformar, vai virar o alien selecionado. Se apertar "z" enquanto transformado, volta a ser o ben. O botão "x" só vai funcionar enquanto você for o ben.
+
+PROMPT 4: a fumaça vermelha só deve aparecer quando ben for transformado forçacamente - em outros casos deve ser a verde. Além disso, a transformação /destransformação deve funcionar da seguinte forma - primeiro as partículas são emitidas, aí o jogador fica parado e se transforma, depois continua seu movimento.
+
+PROMPT 5: a segunda barra - amarela, é a barra de especial. Cada ação de "Q" tem um custo. Por exemplo, cada bola de fogo lançada deve gastar 10% do especial. Começar o "Ice breath" deve gastar 10% do especial e continuar gastando devagar enquanto o jogador ainda tem "Q" segurado. O jogador não deve ser capaz de usar especiais se não tiver a porcentagem necessária. A barra de especial deve carregar em velocidade média constantemente
+
+PROMPT 6: ao iniciar o jogo, nada deve ser carregado. O jogador deve ser apresentado a imagem "title.jpg" que servirá de fundo. Após apertar "enter" o programa começará a carregar o mapa e modelos, exibindo o "Save icon" girando na tela enquanto carrega.
+
+PROMPT 7: carregue a imagem "omnitrix.png". Ela deve ficar no primeiro quadro de animação quando ben estiver transformado. Entretanto, quando ele for humano, deve estar no último. As mudanças entre esses quadros devem passar por todos os do meio. Exiba esse botão acima da barra de saúde
+
+PROMPT 8: na tela inicial, adicione um texto com fonte amarela com borda preta no canto inferior direito que pisca, dizendo "Press the ENTER key"
+
+PROMPT 9: centralize o texto e deixe todo branco. Ao morrer, exiba novas estatísticas que serão rastreadas durante o jogo (algumas ainda não foram implementadas)
+Time - tempo desde que começou (em formato MM:SS)
+Enemies slain - número de inimigos mortos
+Objects destroyed - número de quebráveis destruídos, ainda não foram implementados. Crie uma versão dessa tela que ao invés de dizer "You died!" diga, "You win!". A vitória ainda não foi implementada, mas já deve existir essa tela. Depois de morrer ou vencer, o jogo deve ir pra tela de carregamento e reiniciar tudo. a contagem de tempo deve parar no momento que o personagem morre/ganha. A contagem de inimigos mortos e objetos quebrados está completamente quebrada, e não reinicia ao morrer/iniciar novamente. Use a mesma fonte do "loading" e centralize o texto horizontalmente por favor. antes de exibir a tela de morte, deixe a animação de morte do ben tocar. Então, tranque o movimento da câmera até que o jogador aperte enter.
+
+PROMPT 10: aplique a seção que parece uma luz circular no omnitrix de "holograms.png" quando o jogador estiver como "ben" em cima do omnitrix. quando o ben estiver com o swampfire selecionado, mostre a imagem do swampfire em cima dele. Quando for o big chill, mostre a imagem do big chill em cima dele
+
+PROMPT 11: quando o jogador usar um ataque, um texto com o nome do ataque deve aparecer no canto inferior esquerdo. Devem haver dois slots, um para o mais recente (abaixo) e outro para o anterior (menor e acima). Quando o jogador usar outro ataque enquanto algum estiver no mais recente, esse ataque subirá para o anterior e o novo substituirá seu lugar. Ataques no anterior vão ficando transparentes até sumir. Ataques no mais recente começam a ficar transparentes, mas se continuarem muito tempo no spot de mais recente (nenhum outro ataque foi usado), vão se deslocar pela esquerda até sair da tela. Os nomes dos ataques são:
+Ben: "Light punch" e "Jab" (jab é o ataque pesado, ainda não implementado)
+Swampfire: "Light punch" e "Fireball"
+Big chill: "Light punch" e "Ice breath". Use a mesma fonte (com borda preta) da tela de title. O nome deve continuar lá enquanto o ataque estiver sendo usado, no caso do ice breath.  no caso do fireball, o nome só deve aparecer quando a bola de fogo for de fato lançada. O tamanho do nome de cima não precisa ser tão pequeno. Remova o texto em cima da cabeça dos cavaleiros
+
+PROMPT 12: pare de carregar holograms.png, e passe a carregar swampfire_hologram, big_chill_hologram e glow. Adicione sliders para TODOS os itens (incluindo os elementos da barra separadamente). Adicione um botão que manda todos os offsets e scales configurados atualmente para printar no terminal.

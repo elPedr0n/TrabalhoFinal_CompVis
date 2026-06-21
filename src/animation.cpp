@@ -121,7 +121,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
         }
         // Attack with Q (hold = 3, release = 2) - support charging
         else {
-            if (player.active_character == 1 && key_down(GLFW_KEY_Q)) {
+            if (player.active_character == 1 && key_down(GLFW_KEY_Q) && player.special_energy >= 10.0f) {
                 // start holding
                 if (state.q_state != 1) {
                     state.q_state = 1;
@@ -135,6 +135,7 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
                 state.q_release_time = agora;
                 current_anim_index = 2; // release animation
                 is_attacking = true;
+                player.special_energy -= 10.0f; // Deduct energy on fireball release
 
                 // compute hold duration and normalized strength
                 const float max_hold = 1.5f; // seconds
@@ -610,9 +611,12 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
         }
         
         if (player.active_character == 0 && q_is_down && !jumping && !state.is_attacking && !state.is_q_attacking) {
-            state.is_q_attacking = true;
-            state.q_attack_timer = 0.0f;
-            state.in_fighting_stance = true;
+            if (player.special_energy >= 10.0f) {
+                state.is_q_attacking = true;
+                state.q_attack_timer = 0.0f;
+                state.in_fighting_stance = true;
+                player.special_energy -= 10.0f; // Deduct start cost
+            }
         }
     }
 
@@ -638,7 +642,10 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
         float frame_48 = 48.0f / 24.0f;
         // Clampa primeiro! E só clampa se não tiver escapado (janela de 0.15s)
         if (q_is_down && state.q_attack_timer >= frame_48 && state.q_attack_timer <= frame_48 + 0.15f) {
-            state.q_attack_timer = frame_48; // freeze
+            if (player.special_energy > 0.0f) {
+                state.q_attack_timer = frame_48; // freeze
+                player.special_energy -= 10.0f * delta_t; // Continuous drain
+            }
         }
         
         anim_time_to_pass = state.q_attack_timer;
