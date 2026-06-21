@@ -1188,3 +1188,8 @@ PROMPT 2: ta meio bugado ainda essa nova textura, parece meio cortada
 PROMPT 3: Now for the last one, I need you to do the same to @data/map_background/barraca_banana/
 
 PROMPT 4: almost ready, the bananas itself are nice, but there are some random bananas in pink being rendered near the origin and the banner of the stall is bugged too
+
+
+### Commit com IA: Adicionei uma iluminação mais legal no mapa, de acordo com a SPEC para cada alien
+
+PROMPT: so, I want to start working on some illuminations, read the files in s rc to understand the main objective. in @SPEC.md I have some prints of the ilumination i want to induce, can you read the files in this dir, and implement somthing like that? I want to have that glow from a alien and make my map look like its in the night
