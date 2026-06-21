@@ -1,5 +1,15 @@
-# Blender 5.1.2 MTL File: 'chao_mapa.blend'
+# Blender 5.1.2 MTL File: 'chao_mapa_neo.blend'
 # www.blender.org
+
+newmtl Front_Detail_MTL
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Front_Detail_MTL_baseColor.jpeg
 
 newmtl Material.001
 Ns 250.000000
@@ -10,6 +20,589 @@ Ni 1.500000
 d 1.000000
 illum 2
 map_Kd A5_WoodTextureSeamless.png
+
+newmtl Plastic-Traffic-Barrier
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.001
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.002
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.004
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.005
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.006
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.007
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.009
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.010
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.011
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.012
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.013
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.014
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.015
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.016
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.017
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.018
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.019
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.020
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.021
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.023
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.024
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.025
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.026
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.027
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.028
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.029
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.030
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.031
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.032
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.033
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.034
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.035
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.036
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.037
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.038
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.039
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.040
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.041
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.042
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.047
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.048
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.049
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.050
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.051
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.052
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.053
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.054
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.055
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.056
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.058
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.059
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
+
+newmtl Plastic-Traffic-Barrier.060
+Ns 250.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Plastic-Traffic-Barrier_baseColor.png
+map_Bump -bm 1.000000 Plastic-Traffic-Barrier_normal.png
 
 newmtl concrete
 Ns 250.000000

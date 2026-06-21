@@ -263,6 +263,8 @@ struct ObjModel
 void PushMatrix(glm::mat4 M);
 void PopMatrix(glm::mat4& M);
 
+std::vector<AABB> parseColliders(const std::string& filepath);
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void BuildTrianglesAndAddToVirtualScene(ObjModel*); // Constrói representação de um ObjModel como malha de triângulos para renderização
@@ -750,6 +752,8 @@ int main(int argc, char* argv[])
             RenderLoadingStep();
         }
         return fut.get();
+
+        
     };
 
     RenderLoadingStep();
@@ -773,23 +777,18 @@ int main(int argc, char* argv[])
 
     RenderLoadingStep();
 
-    int current_platform_index = 0;                                                                                                                                                        
+    std::vector<AABB> colliders = parseColliders("../../data/map_ground/colliders.txt");                                                                                                                                                      
                                                                                                                                                                                            
     // Loop through all shapes in the OBJ                                                                                                                                                  
-    for (size_t i = 0; i < ground_model.shapes.size(); ++i) {                                                                                                                                 
-        std::string shape_name = ground_model.shapes[i].name;                                                                                                                                 
-                                                                                                                                                                                           
-        // Check if this shape is meant to be a collider                                                                                                                                   
-        if (shape_name.find("Collider") != std::string::npos) {                                                                                                                            
-            if (current_platform_index < MAX_PLATFORMS) {                                                                                                                                  
-                // Add the shape's AABB to the collision map                                                                                                                               
-                map[current_platform_index].bbox = ground_model.ComputeBoundingBoxForShape(i);                                                                                                
-                current_platform_index++;                                                                                                                                                  
-            } else {                                                                                                                                                                       
-                printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
-            }                                                                                                                                                                              
-        }                                                                                                                                                                                  
-    }  
+    for (int i = 0; i < colliders.size(); i++) {                
+                                                                                                                                
+        if (i < MAX_PLATFORMS) {                                                                                                                                  
+            // Add the shape's AABB to the collision map                                                                                                                               
+            map[i].bbox = colliders[i];                                                                                                                                                   
+        } else {                                                                                                                                                                       
+            printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
+        }                                                                                                                                                                              
+    }
 
     ground_model.ComputeBoundingBox();
 
