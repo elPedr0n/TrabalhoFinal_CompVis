@@ -1094,6 +1094,29 @@ int main(int argc, char* argv[])
         glUniform3f(glGetUniformLocation(g_GpuProgramID, "player_position"), player.position.x, player.position.y + 0.5f, player.position.z);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "active_alien"), player.active_character);
 
+        // =============================================
+        // POSTES DE LUZ - Edite as posições aqui!
+        // Formato: {x, y, z} — y é a altura do poste
+        // Para adicionar um novo poste: adicione uma linha nova no array
+        // Para remover: delete a linha
+        // Máximo: 8 postes (MAX_LAMPS no shader)
+        // =============================================
+        static const glm::vec3 lamp_positions[] = {
+            {  4.820f, 4.0f, -13.884f },  // Poste 1
+            {  4.736f, 4.0f, -20.137f },  // Poste 2
+            {  5.691f, 4.0f, -25.550f },  // Poste 3
+            {  6.629f, 4.0f, -31.499f },  // Poste 4
+            {  8.429f, 4.0f, -38.928f },  // Poste 5
+            {  5.804f, 4.0f, -46.470f },  // Poste 6
+            {  9.581f, 4.0f, -53.897f },  // Poste 7 
+            {  19.522f, 4.0f, -51.211f },   // Poste 8 
+            {  21.224f, 4.0f, -59.004f },
+            {  11.633f, 4.0f, -65.781f }
+        };
+        static const int num_lamps = sizeof(lamp_positions) / sizeof(lamp_positions[0]);
+        glUniform1i(glGetUniformLocation(g_GpuProgramID, "num_lamps"), num_lamps);
+        glUniform3fv(glGetUniformLocation(g_GpuProgramID, "lamp_positions"), num_lamps, glm::value_ptr(lamp_positions[0]));
+
         #define SPHERE 0
         #define BUNNY  1
         #define PLANE  2
