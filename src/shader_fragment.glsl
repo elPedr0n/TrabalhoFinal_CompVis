@@ -210,7 +210,7 @@ void main()
     {
         float blink = (sin(current_time * 15.0) + 1.0) * 0.5;
         Kd0 = mix(vec3(1.0, 0.0, 0.0), vec3(2.0, 2.0, 2.0), blink);
-    } else if ( object_id == 13 ) // HUD_BAR_BG
+    } else if ( object_id == 20 ) // HUD_BAR_BG
     {
         float bg_u_min = 0.047;
         float bg_u_max = 0.275;
@@ -222,7 +222,7 @@ void main()
         vec4 tex_color = texture(TextureImage8, vec2(U,V));
         if (tex_color.a < 0.5) discard;
         Kd0 = tex_color.rgb;
-    } else if ( object_id == 14 ) // HUD_BAR_FG
+    } else if ( object_id == 21 ) // HUD_BAR_FG
     {
         float fg_u_min = 0.342;
         float fg_u_max = 0.57;
@@ -280,7 +280,7 @@ void main()
         return;
     }
 
-    if (object_id == 13 || object_id == 14 || UseOverrideKd == 1) {
+    if (object_id == 20 || object_id == 21 || UseOverrideKd == 1) {
         color.rgb = Kd0;
     } else {
         // Equação de Iluminação

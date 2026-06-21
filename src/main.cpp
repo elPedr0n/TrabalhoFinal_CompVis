@@ -1253,7 +1253,7 @@ int main(int argc, char* argv[])
               * Matrix_Scale(scale_x, scale_y, 1.0f)
               * Matrix_Rotate_X(M_PI / 2.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, 13); // HUD_BAR_BG
+        glUniform1i(g_object_id_uniform, 20); // HUD_BAR_BG
         DrawVirtualObject("the_plane");
 
         // FG (Red)
@@ -1265,7 +1265,7 @@ int main(int argc, char* argv[])
                   * Matrix_Scale(scale_x, scale_y * h_ratio, 1.0f)
                   * Matrix_Rotate_X(M_PI / 2.0f);
             glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            glUniform1i(g_object_id_uniform, 14); // HUD_BAR_FG
+            glUniform1i(g_object_id_uniform, 21); // HUD_BAR_FG
             DrawVirtualObject("the_plane");
         }
 
