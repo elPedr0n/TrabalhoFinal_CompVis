@@ -58,12 +58,14 @@ uniform sampler2D TextureImage16;
 uniform sampler2D TextureImage17;
 uniform sampler2D TextureImage18;
 uniform sampler2D TextureImage19;
+uniform sampler2D TextureImage20;
 uniform float hud_omnitrix_frame;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
 uniform float current_time;
 uniform int is_frozen;
+uniform float enemy_alpha;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -210,15 +212,31 @@ void main()
     {
         // Bright green emissive for transform particles
         Kd0 = vec3(0.25, 1.0, 0.35) * 1.8;
+    } else if (object_id == 50) // BREAKABLE
+    {
+        U = texcoords.x;
+        V = 1.0 - texcoords.y; // gltf V flip
+        Kd0 = texture(TextureImage20, vec2(U,V)).rgb;
     } else if (object_id == BLOCO) 
     {
         U = texcoords.x;
         V = texcoords.y;
         Kd0 = texture(TextureImage4, vec2(U,V)).rgb; 
-    } else if ( object_id == 10 ) // COLLECT_OBJ
+    } else if ( object_id == 16 ) // COLLECT_OBJ HEALTH
+    {
+        Kd0 = vec3(1.0, 0.0, 0.0);
+    } else if ( object_id == 17 ) // COLLECT_OBJ TRANSFORM
+    {
+        Kd0 = vec3(0.0, 1.0, 0.0);
+    } else if ( object_id == 18 ) // COLLECT_OBJ SPECIAL
+    {
+        Kd0 = vec3(1.0, 1.0, 0.0);
+    } else if ( object_id == 19 ) // COLLECT_OBJ INNER CORE
     {
         float blink = (sin(current_time * 15.0) + 1.0) * 0.5;
-        Kd0 = mix(vec3(1.0, 0.0, 0.0), vec3(2.0, 2.0, 2.0), blink);
+        // The inner part should blink to 50% transparency max
+        // Transparency is controlled by alpha in main.cpp, but here we can just set the color.
+        Kd0 = mix(vec3(1.5, 1.5, 1.5), vec3(4.0, 4.0, 4.0), blink);
     } else if ( object_id == 20 ) // HUD_BAR_BG
     {
         float bg_u_min = 0.047;
@@ -395,6 +413,10 @@ void main()
     if ((object_id >= 20 && object_id <= 29) || object_id == 30 || object_id == 31 || object_id == 40 || object_id == 41 || UseOverrideKd == 1) {
         color.rgb = Kd0;
     } else {
+        if (UseOverrideKd == 2) {
+            Kd0 = mix(Kd0, OverrideKd, 0.6); // Semi-transparent white over texture
+        }
+        
         // Equação de Iluminação
         float lambert = max(0,dot(n,l));
         color.rgb = Kd0 * (lambert + 0.01);
@@ -429,13 +451,17 @@ void main()
         float edge_fade = max(0.0, dot(n, v));
         color.a = 0.85 * pow(edge_fade, 1.5); // Soft falloff
     } else if (object_id == 10) {
-        color.a = 0.3; // Mais transparente
+        color.a = 0.8; // Mais transparente
     } else if (object_id >= 27 && object_id <= 29) {
         color.a = 0.75; // Semi-transparent hologram
     } else if (object_id == 40) {
         color.a = 0.85; // Semi-transparent for UI background
     } else {
         color.a = 1.0;
+    }
+
+    if (enemy_alpha < 1.0) {
+        color.a *= enemy_alpha;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.

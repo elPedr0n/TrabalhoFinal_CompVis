@@ -19,6 +19,8 @@ set(SOURCES
   src/particles.cpp
   src/enemies.cpp
   src/collectibles.cpp
+  src/breakables.cpp
+  src/fragments.cpp
   src/screens.cpp
 )
 
