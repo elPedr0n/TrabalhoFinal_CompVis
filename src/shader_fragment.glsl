@@ -334,7 +334,7 @@ void main()
         
         vec4 tex_color = texture(TextureImage13, vec2(U,V));
         if (tex_color.a < 0.5) discard;
-barracas        Kd0 = tex_color.rgb;
+           Kd0 = tex_color.rgb;
     } else if ( object_id == 27 ) // HUD_HOLOGRAM_LIGHT
     {
         U = texcoords.x;
