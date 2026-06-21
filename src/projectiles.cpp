@@ -1,6 +1,8 @@
 #include "projectiles.h"
 #include "particles.h"
 #include "globals.h"
+#include "globals.h"
+#include "breakables.h"
 
 #include <vector>
 #include <algorithm>
@@ -33,7 +35,7 @@ void Projectiles_Spawn(const std::string &modelBaseName, float strength, const g
     Projectile p;
     glm::vec3 forward = glm::vec3(sin(player_rotate), 0.0f, cos(player_rotate));
     p.model_name = modelBaseName;
-    p.pos = player_pos + forward * 1.0f + glm::vec3(0.0f, 0.25f, 0.0f);
+    p.pos = player_pos + forward * 0.5f + glm::vec3(0.0f, 0.5f, 0.0f);
     p.vel = forward * PROJECTILE_BASE_SPEED * (1.0f + 0.8f * strength);
     p.age = 0.0f;
     p.life = PROJECTILE_BASE_LIFE * (1.0f + 0.5f * strength);
@@ -58,15 +60,8 @@ void Projectiles_Update(float delta_t)
 
         bool exploded = false;
 
-        // Hit map platforms
-        for (int i = 1; i < MAX_PLATFORMS; i++) {
-            if (p.bbox.Intersects(map[i].bbox)) {
-                printf("Projectile hit platform %d\n", i);
-                p.active = false;
-                exploded = true;
-                break;
-            }
-        }
+        // Hit map platforms - Removed to prevent fireball from destroying itself on the ground
+        // The fireball will now travel through terrain and only explode on enemies/breakables or end of life.
         // Hit enemies
         if (p.active) {
             for (int i = 0; i < MAX_ENEMIES; i++) {
@@ -76,6 +71,16 @@ void Projectiles_Update(float delta_t)
                     p.active = false;
                     exploded = true;
                     break;
+                }
+            }
+            if (p.active) {
+                for (int i = 0; i < MAX_BREAKABLES; i++) {
+                    if (!g_breakables[i].active) continue;
+                    if (p.bbox.Intersects(g_breakables[i].bbox)) {
+                        p.active = false;
+                        exploded = true;
+                        break;
+                    }
                 }
             }
         }
@@ -90,6 +95,15 @@ void Projectiles_Update(float delta_t)
                 float dist = glm::distance(p.pos, g_enemies[i].position);
                 if (dist <= splash_radius) {
                     ApplyDamageToEnemy(i, damage);
+                }
+            }
+            
+            for (int i = 0; i < MAX_BREAKABLES; i++) {
+                if (!g_breakables[i].active) continue;
+                
+                float dist = glm::distance(p.pos, g_breakables[i].position);
+                if (dist <= splash_radius) {
+                    ApplyDamageToBreakable(i, damage);
                 }
             }
             

@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <vector>
 #include "animation.h"
+#include "breakables.h"
+#include "particles.h"
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
@@ -113,6 +115,11 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         // printf("DeltaY: %f\n", move_vector_y);
         
     }
+    for (int i = 0; i < MAX_BREAKABLES; ++i) {
+        if (g_breakables[i].active) {
+            move_vector_y = player_bbox.GetClipY(g_breakables[i].bbox, move_vector_y);
+        }
+    }
     // Move o jogador APENAS no Y antes de checar os outros eixos
     player.position.y += move_vector_y;
     // player_bbox.Move(0.0f, move_vector_y, 0.0f); 
@@ -122,6 +129,11 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         move_vector_x = player_bbox.GetClipX(item.bbox, move_vector_x);
         // printf("DeltaX: %f\n", move_vector_x);
     }
+    for (int i = 0; i < MAX_BREAKABLES; ++i) {
+        if (g_breakables[i].active) {
+            move_vector_x = player_bbox.GetClipX(g_breakables[i].bbox, move_vector_x);
+        }
+    }
     player.position.x += move_vector_x;
     // player_bbox.Move(move_vector_x, 0.0f, 0.0f);
 
@@ -129,6 +141,11 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     for (const auto& item : map) {
         move_vector_z = player_bbox.GetClipZ(item.bbox, move_vector_z);
         // printf("DeltaZ: %f\n", move_vector_z);
+    }
+    for (int i = 0; i < MAX_BREAKABLES; ++i) {
+        if (g_breakables[i].active) {
+            move_vector_z = player_bbox.GetClipZ(g_breakables[i].bbox, move_vector_z);
+        }
     }
     player.position.z += move_vector_z;
     // player_bbox.Move(0.0f, 0.0f, move_vector_z);
@@ -202,6 +219,19 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
                 printf("Punch 1 hit enemy %d!\n", i);
                 state.punch1_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
+                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
+                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
+                Particles_Spawn(contact, popts);
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (state.punch1_hit_enemies.count(1000 + i)) continue; // offset to reuse set
+            if (punch_box.Intersects(g_breakables[i].bbox)) {
+                state.punch1_hit_enemies.insert(1000 + i);
+                ApplyDamageToBreakable(i, 20.0f);
             }
         }
     }
@@ -219,6 +249,19 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
                 printf("Punch 2 hit enemy %d!\n", i);
                 state.punch2_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
+                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
+                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
+                Particles_Spawn(contact, popts);
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (state.punch2_hit_enemies.count(1000 + i)) continue;
+            if (punch_box.Intersects(g_breakables[i].bbox)) {
+                state.punch2_hit_enemies.insert(1000 + i);
+                ApplyDamageToBreakable(i, 20.0f);
             }
         }
     }
@@ -244,6 +287,19 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
             if (punch_box.Intersects(g_enemies[i].bbox)) {
                 state.punch_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
+                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
+                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
+                Particles_Spawn(contact, popts);
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (state.punch_hit_enemies.count(1000 + i)) continue;
+            if (punch_box.Intersects(g_breakables[i].bbox)) {
+                state.punch_hit_enemies.insert(1000 + i);
+                ApplyDamageToBreakable(i, 20.0f);
             }
         }
     }
@@ -275,6 +331,12 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
                 g_enemies[i].frozen_timer = 3.0f;
                 // continuous low damage without triggering flinch
                 ApplyDamageToEnemy(i, 15.0f * delta_t, false); 
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (magic_box.Intersects(g_breakables[i].bbox)) {
+                ApplyDamageToBreakable(i, 15.0f * delta_t); 
             }
         }
     }
@@ -330,10 +392,23 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
             printf("Ben punch hit enemy %d!\n", i);
             state.punch_hit_enemies.insert(i);
             ApplyDamageToEnemy(i, 5.0f);
+            glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
+            glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
+            glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+            ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=10;
+            Particles_Spawn(contact, popts);
             state.attack_speed_multiplier *= 2.0f; // Increase speed on hit
             if (state.attack_speed_multiplier > 6.0f) {
                 state.attack_speed_multiplier = 6.0f;
             }
+        }
+    }
+    for (int i = 0; i < MAX_BREAKABLES; i++) {
+        if (!g_breakables[i].active) continue;
+        if (state.punch_hit_enemies.count(1000 + i)) continue;
+        if (punch_box.Intersects(g_breakables[i].bbox)) {
+            state.punch_hit_enemies.insert(1000 + i);
+            ApplyDamageToBreakable(i, 5.0f);
         }
     }
 }

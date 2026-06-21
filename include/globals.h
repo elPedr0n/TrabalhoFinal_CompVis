@@ -29,7 +29,7 @@ extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
 extern struct MapItem map[MAX_PLATFORMS];
 
 extern struct Collectible g_collectibles[MAX_COLLECTIBLES];
-void SpawnCollectibles(glm::vec3 pos, int count);
+void SpawnCollectibles(glm::vec3 pos, int count, int specific_type = -1);
 void UpdateCollectibles();
 
 #include "map.h"

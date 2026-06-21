@@ -1,4 +1,5 @@
 #include "globals.h"
+#include "breakables.h"
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
@@ -23,7 +24,7 @@ void SpawnEnemy(glm::vec3 pos) {
             g_enemies[i].max_health = 100.0f;
             g_enemies[i].health = 100.0f;
             g_enemies[i].speed = 1.5f;
-            g_enemies[i].attack_range = 1.5f;
+            g_enemies[i].attack_range = 0.9f;
             g_enemies[i].is_attacking = false;
             g_enemies[i].attack_timer = 0.0f;
             g_enemies[i].attack_cooldown = 0.0f;
@@ -65,6 +66,11 @@ void UpdateEnemies() {
         for (int j = 0; j < MAX_PLATFORMS; j++) {
             fall_y = g_enemies[i].bbox.GetClipY(map[j].bbox, fall_y);
         }
+        for (int j = 0; j < MAX_BREAKABLES; j++) {
+            if (g_breakables[j].active) {
+                fall_y = g_enemies[i].bbox.GetClipY(g_breakables[j].bbox, fall_y);
+            }
+        }
         g_enemies[i].position.y += fall_y;
 
         // Safety net for enemies
@@ -93,7 +99,7 @@ void UpdateEnemies() {
 
         // ===== FLINCH STATE MACHINE =====
         if (g_enemies[i].is_flinching) {
-            g_enemies[i].flinch_timer += delta_t;
+            g_enemies[i].flinch_timer += delta_t * time_scale;
             if (g_enemies[i].flinch_timer >= g_enemies[i].flinch_duration) {
                 g_enemies[i].is_flinching = false;
             }
@@ -174,11 +180,21 @@ void UpdateEnemies() {
             for (int j = 0; j < MAX_PLATFORMS; j++) {
                 move_x = g_enemies[i].bbox.GetClipX(map[j].bbox, move_x);
             }
+            for (int j = 0; j < MAX_BREAKABLES; j++) {
+                if (g_breakables[j].active) {
+                    move_x = g_enemies[i].bbox.GetClipX(g_breakables[j].bbox, move_x);
+                }
+            }
             g_enemies[i].position.x += move_x;
             // g_enemies[i].bbox.Move(move_x, 0.0f, 0.0f);
 
             for (int j = 0; j < MAX_PLATFORMS; j++) {
                 move_z = g_enemies[i].bbox.GetClipZ(map[j].bbox, move_z);
+            }
+            for (int j = 0; j < MAX_BREAKABLES; j++) {
+                if (g_breakables[j].active) {
+                    move_z = g_enemies[i].bbox.GetClipZ(g_breakables[j].bbox, move_z);
+                }
             }
             g_enemies[i].position.z += move_z;
         }
@@ -203,7 +219,7 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
         
         player.enemies_slain++;
 
-        SpawnCollectibles(g_enemies[enemy_id].position, 5);
+        SpawnCollectibles(g_enemies[enemy_id].position, 1, 0);
 
         for(int k=0; k<2; ++k) {
             float angle = (rand() % 360) * (M_PI / 180.0f);
@@ -280,6 +296,17 @@ void ProcessEnemyMeleeHitboxes()
                 float damage = 50.0f * defense;
                 player.health -= damage;
                 
+                glm::vec3 overlap_min = glm::max(punch_box.min, player_bbox.min);
+                glm::vec3 overlap_max = glm::min(punch_box.max, player_bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts;
+                popts.color = HexToRgb("#ffffff");
+                popts.life = 0.3f;
+                popts.scale = 0.15f;
+                popts.speed = 2.0f;
+                popts.count = 15;
+                Particles_Spawn(contact, popts);
+
                 if (player.health <= 0.0f) {
                     player.health = 0.0f;
                     player.is_dead = true;
