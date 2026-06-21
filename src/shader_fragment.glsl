@@ -78,6 +78,11 @@ uniform float enemy_alpha;
 uniform vec3 player_position;
 uniform int active_alien;
 
+// === POSTES DE LUZ ===
+const int MAX_LAMPS = 11;
+uniform vec3 lamp_positions[MAX_LAMPS];
+uniform int num_lamps;
+
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
 
@@ -223,7 +228,7 @@ void main()
     {
         // Bright green emissive for transform particles
         Kd0 = vec3(0.25, 1.0, 0.35) * 1.8;
-    } else if (object_id == 50) // BREAKABLE
+    } else if (object_id == 60) // BREAKABLE
     {
         U = texcoords.x;
         V = 1.0 - texcoords.y; // gltf V flip
@@ -544,7 +549,24 @@ void main()
             point_ambient = Kd0 * player_light_color * attenuation * 0.3;
         }
         
-        color.rgb = global_light + point_light + point_ambient;
+        // === POSTES DE LUZ (luz amarelada fixa no mapa) ===
+        vec3 lamp_color = vec3(1.0, 0.85, 0.4); // Amarelo quente de poste
+        vec3 lamp_total = vec3(0.0);
+        for (int i = 0; i < num_lamps; i++) {
+            vec3 to_lamp = lamp_positions[i] - position_world.xyz;
+            float lamp_dist = length(to_lamp);
+            vec3 lamp_dir = normalize(to_lamp);
+            
+            float lamp_radius = 10.0;
+            float lamp_att = max(0.0, 1.0 - (lamp_dist / lamp_radius));
+            lamp_att = lamp_att * lamp_att; // Falloff quadrático
+            
+            float lamp_lambert = max(0.0, dot(n.xyz, lamp_dir));
+            lamp_total += Kd0 * lamp_color * lamp_lambert * lamp_att * 2.0;
+            lamp_total += Kd0 * lamp_color * lamp_att * 0.15; // Ambient suave do poste
+        }
+        
+        color.rgb = global_light + point_light + point_ambient + lamp_total;
         
         // Simular brilho metálico (Specular) para as barricadas (material_id 17.0)
         if (object_id == GROUND && material_id > 16.5 && material_id <= 17.5) {

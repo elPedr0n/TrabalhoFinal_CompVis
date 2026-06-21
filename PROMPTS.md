@@ -1193,3 +1193,8 @@ PROMPT 4: almost ready, the bananas itself are nice, but there are some random b
 ### Commit com IA: Adicionei uma iluminação mais legal no mapa, de acordo com a SPEC para cada alien
 
 PROMPT: so, I want to start working on some illuminations, read the files in s rc to understand the main objective. in @SPEC.md I have some prints of the ilumination i want to induce, can you read the files in this dir, and implement somthing like that? I want to have that glow from a alien and make my map look like its in the night
+
+
+## Commit com IA: Adicionei iluminações com postes e debuguei textura da barraca 
+
+PROMPT: quero fazer umas coisinhas, a fim do ben n ficar mt bucha sem luz, adicione em algumas posicoes do mapa uma luz meio amarelada, que simule postes. Me diga como esta feito para eu poder mudar a posicao depois caso eu queira

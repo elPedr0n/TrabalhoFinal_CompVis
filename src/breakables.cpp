@@ -152,7 +152,7 @@ void DrawBreakables(GLint model_uniform, GLint object_id_uniform, GLint override
                         * Matrix_Scale(g_breakables[i].scale, g_breakables[i].scale, g_breakables[i].scale);
         
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(object_id_uniform, 50); // BREAKABLE
+        glUniform1i(object_id_uniform, 60); // BREAKABLE
         
         if (g_breakables[i].is_flinching) {
             glUniform1i(use_override_kd_uniform, 2); // special blend mode
