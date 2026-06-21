@@ -1134,3 +1134,12 @@ PROMPT: crie um parser que percorra cada linha do meu @[data/map_ground/collider
 ### Commit com IA: Modificação da câmera e coloquei um mar brabo
 
 PROMPT: Eu quero modificar a camera, ela esta em 3a pessoa mas quero modificar ela pra ficar do jeito parecidodo meu jogo, consegue criar uma logica que me indique os parametros da camera em tempo real, q nem a posição do player no canto inferior esquerdo, para eu poder calibrar e mexer no codigo dps?
+
+
+### Commit com IA: Primeira barraca funcionando amém
+
+PROMPT 1: so, in @data/map_background/teste_barraca/ we have a obj file, try to render it in my scene, you can just use a translate matrix to (0, 1, -10)
+
+PROMPT 2: you broke the ui, the omnitrix part is wrong, the barraca is like stripped, some things are just not mapped right.It could be that the japanese name is referencing a texture that has it name broken and changed to ascii characters.
+
+PROMPT 3: okaaay,the roof part and the structure is set, but the things on top of the table are just white, they dont have the texture they need

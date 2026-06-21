@@ -58,6 +58,11 @@ uniform sampler2D TextureImage16;
 uniform sampler2D TextureImage17;
 uniform sampler2D TextureImage18;
 uniform sampler2D TextureImage19;
+uniform sampler2D TextureImage20;
+uniform sampler2D TextureImage21;
+uniform sampler2D TextureImage22;
+uniform sampler2D TextureImage23;
+uniform sampler2D TextureImage24;
 uniform float hud_omnitrix_frame;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
@@ -347,6 +352,49 @@ void main()
     } else if ( object_id == 41 ) // UI_WINDOW_BORDER
     {
         Kd0 = vec3(0.6, 1.0, 0.6); // Light Green
+    } else if (object_id == 50) { // BARRACA
+        U = texcoords.x;
+        V = 1.0 - texcoords.y; // Flip V to fix upside down posters
+        
+        if (material_id > 48.5) {
+            Kd0 = vec3(0.030713, 0.208633, 1.000000); // 049
+        } else if (material_id > 47.5) {
+            Kd0 = vec3(1.000000, 0.799107, 0.099897); // 048
+        } else if (material_id > 46.5) {
+            Kd0 = vec3(1.000000, 0.041879, 0.068113); // 047
+        } else if (material_id > 44.5) {
+            Kd0 = vec3(1.0, 1.0, 1.0); // 045, 046
+        } else if (material_id > 43.5) {
+            Kd0 = vec3(0.156194, 0.389759, 0.800000); // 044
+        } else if (material_id > 42.5) {
+            Kd0 = vec3(1.000000, 0.799107, 0.099897); // 043
+        } else if (material_id > 39.5) {
+            Kd0 = vec3(0.074214, 0.417885, 0.630757); // 040
+        } else if (material_id > 38.5) {
+            Kd0 = vec3(0.8, 0.8, 0.8); // 039
+        } else if (material_id > 37.5) {
+            Kd0 = vec3(0.800000, 0.142354, 0.028348); // 038
+        } else if (material_id > 36.5) {
+            Kd0 = vec3(0.8, 0.8, 0.8); // 037
+        } else if (material_id > 35.5) {
+            Kd0 = vec3(0.101023, 0.657837, 0.800000); // 036
+        } else if (material_id > 34.5) {
+            Kd0 = vec3(1.000000, 0.041879, 0.068113); // 035
+        } else if (material_id > 30.5) {
+            Kd0 = vec3(0.8, 0.8, 0.8); // 031
+        } else if (material_id > 23.5) {
+            Kd0 = texture(TextureImage24, vec2(U,V)).rgb; // 24 Roof
+        } else if (material_id > 22.5) {
+            Kd0 = texture(TextureImage23, vec2(U,V)).rgb; // 23
+        } else if (material_id > 21.5) {
+            Kd0 = texture(TextureImage22, vec2(U,V)).rgb; // 22
+        } else if (material_id > 20.5) {
+            Kd0 = texture(TextureImage21, vec2(U,V)).rgb; // 21
+        } else if (material_id > 19.5) {
+            Kd0 = texture(TextureImage20, vec2(U,V)).rgb; // 20 Machine
+        } else {
+            Kd0 = vec3(0.85, 0.8, 0.75); // Default
+        }
     } else if (object_id == GROUND) {
         U = texcoords.x;
         V = texcoords.y;

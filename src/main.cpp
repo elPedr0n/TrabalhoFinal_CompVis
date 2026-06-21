@@ -511,6 +511,34 @@ Enemy g_enemies[MAX_ENEMIES] = {
 MapItem map[MAX_PLATFORMS];
 
 
+void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, channels;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, 4);
+    if (!data) {
+        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        return;
+    }
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
+    // Bind uniform
+    glUseProgram(program);
+    char uniform_name[32];
+    sprintf(uniform_name, "TextureImage%u", unit);
+    glUniform1i(glGetUniformLocation(program, uniform_name), unit);
+    glUseProgram(0);
+}
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -599,6 +627,13 @@ int main(int argc, char* argv[])
     LoadUITexture("../../data/glow.png", 17); // TextureImage17
     LoadUITexture("../../data/big_chill_hologram.png", 18); // TextureImage18
     LoadUITexture("../../data/swampfire_hologram.png", 19); // TextureImage19
+
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrmk_1.png", 20, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrpblhwi_2.png", 21, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrpicg_3.png", 22, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrplmn_4.png", 23, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgryn_0.png", 24, g_GpuProgramID);
+    
     // The save icon is now loaded as a 3D model
 
     ObjModel saveicon_model("../../data/Save Icon (Ben 10 Alien Force)/list_ico.obj");
@@ -743,6 +778,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/map_ground/madeira_lados.png"); // TextureImage12 (idx 9)
     LoadTextureImage("../../data/map_ground/madeira_cima.png"); // TextureImage14 (idx 10)
 
+
     RenderLoadingStep();
     auto AsyncLoadOBJ = [&](const char* path) {
         auto fut = std::async(std::launch::async, [path](){
@@ -776,6 +812,9 @@ int main(int argc, char* argv[])
     // Load map model
     ObjModel ground_model = AsyncLoadOBJ("../../data/map_ground/chao_mapa.obj");
     BuildTrianglesAndAddToVirtualScene(&ground_model);
+
+    ObjModel barraca_model = AsyncLoadOBJ("../../data/map_background/teste_barraca/teste_barraca.obj");
+    BuildTrianglesAndAddToVirtualScene(&barraca_model);
 
     RenderLoadingStep();
 
@@ -1445,6 +1484,7 @@ int main(int argc, char* argv[])
         glActiveTexture(GL_TEXTURE14);
         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[10]);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage14"), 14);
+
     
         // 4. Desenhar o Objeto Visual
         // Mude a string abaixo EXATAMENTE para o nome do objeto (mesh) salvo dentro do seu arquivo .obj
@@ -1464,6 +1504,14 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
+
+        // Desenhamos a barraca
+        model = Matrix_Translate(0.0f, 1.0f, -10.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, 50);
+        for (const auto& shape : barraca_model.shapes) {
+            DrawVirtualObject(shape.name.c_str());
+        }
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
@@ -2167,6 +2215,26 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_selector = 17.0f; // Orange
                 else if (mat_name.find("lambert4") != std::string::npos || mat_name.find("phong28") != std::string::npos || mat_name.find("phongE3") != std::string::npos || mat_name.find("phongE8") != std::string::npos || mat_name == "phong10" || mat_name == "phong14" || mat_name == "phong19" || mat_name == "phong4" || mat_name == "phong5" || mat_name == "phong7" || mat_name == "phong8" || mat_name == "phong9" || mat_name.find("phongE1") != std::string::npos || mat_name.find("phongE2") != std::string::npos || mat_name == "phong17")
                     texture_selector = 18.0f; // Dark Gray / Black
+                else if (mat_name.find("kkgrpblhwi") != std::string::npos) texture_selector = 21.0f;
+                else if (mat_name.find("kkgrpicg") != std::string::npos) texture_selector = 22.0f;
+                else if (mat_name.find("kkgrplmn") != std::string::npos) texture_selector = 23.0f;
+                else if (mat_name.find("マテリアル.031") != std::string::npos) texture_selector = 31.0f;
+                else if (mat_name.find("マテリアル.035") != std::string::npos) texture_selector = 35.0f;
+                else if (mat_name.find("マテリアル.036") != std::string::npos) texture_selector = 36.0f;
+                else if (mat_name.find("マテリアル.037") != std::string::npos) texture_selector = 37.0f;
+                else if (mat_name.find("マテリアル.038") != std::string::npos) texture_selector = 38.0f;
+                else if (mat_name.find("マテリアル.039") != std::string::npos) texture_selector = 39.0f;
+                else if (mat_name.find("マテリアル.040") != std::string::npos) texture_selector = 40.0f;
+                else if (mat_name.find("マテリアル.041") != std::string::npos) texture_selector = 24.0f; // Textured Roof
+                else if (mat_name.find("マテリアル.042") != std::string::npos) texture_selector = 20.0f; // Textured Machine
+                else if (mat_name.find("マテリアル.043") != std::string::npos) texture_selector = 43.0f;
+                else if (mat_name.find("マテリアル.044") != std::string::npos) texture_selector = 44.0f;
+                else if (mat_name.find("マテリアル.045") != std::string::npos) texture_selector = 45.0f;
+                else if (mat_name.find("マテリアル.046") != std::string::npos) texture_selector = 46.0f;
+                else if (mat_name.find("マテリアル.047") != std::string::npos) texture_selector = 47.0f;
+                else if (mat_name.find("マテリアル.048") != std::string::npos) texture_selector = 48.0f;
+                else if (mat_name.find("マテリアル.049") != std::string::npos) texture_selector = 49.0f;
+                else if (mat_name.find("マテリアル") != std::string::npos) texture_selector = 31.0f; // Solid fallback color
                 else if (mat_name.find("phong") != std::string::npos || mat_name.find("lambert") != std::string::npos)
                     texture_selector = 19.0f; // White / Default
             }
