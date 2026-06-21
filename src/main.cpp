@@ -1562,7 +1562,6 @@ int main(int argc, char* argv[])
             DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
         }
 
-
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
 
