@@ -152,6 +152,8 @@ struct ObjModel
                     current_selector = 2.0f;
                 else if (material_name.find("paredes") != std::string::npos || material_name.find("concrete") != std::string::npos)
                     current_selector = 10.0f; // Sinaliza que deve usar Concreto
+                else if (material_name.find("Barrier") != std::string::npos || material_name.find("barrier") != std::string::npos)
+                    current_selector = 17.0f; // Orange color
                 else if (material_name.find("Material.001") != std::string::npos || material_name.find("wood") != std::string::npos)
                     current_selector = 9.0f;  // Sinaliza que deve usar Madeira
                 else if (material_name.find("phong") != std::string::npos || material_name.find("lambert") != std::string::npos)
@@ -1456,41 +1458,30 @@ int main(int argc, char* argv[])
         glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
 
 
-        // // Desenhamos o plano do chão
-        // model = Matrix_Translate(0.0f, -1.0f, 0.0f)
-        //         * Matrix_Scale(20.0f, 1.0f, 20.0f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, PLANE);
-        // DrawVirtualObject("the_plane");
+        // Desenhamos o plano do chão
+        model = Matrix_Translate(0.0f, -2.0f, 0.0f)
+                * Matrix_Scale(130.0f, 1.0f, 130.0f);
+        glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, PLANE);
+        DrawVirtualObject("the_plane");
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
-        // model = Matrix_Translate(0.0f, -1.0f, -15.0f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
-        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, CASTLE);
-        // for (const auto& pair : g_VirtualScene) {
-        //     if (pair.first.find("the_castle_") == 0) {
-        //         glActiveTexture(GL_TEXTURE8);
-        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+         model = Matrix_Translate(-4.693f, 0.0f, -90.1f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, CASTLE);
+        for (const auto& pair : g_VirtualScene) {
+            if (pair.first.find("the_castle_") == 0) {
+                glActiveTexture(GL_TEXTURE8);
+                glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
                 
-        //         // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
-        //         glDisable(GL_CULL_FACE);
-        //         DrawVirtualObject(pair.first.c_str());
-        //         glEnable(GL_CULL_FACE);
-        //     }
-        // }
-
-
-        // // Desenhamos os blocos do mapa
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
-        //     model = Matrix_Translate(map[i].position.x, map[i].position.y, map[i].position.z)
-        //           * Matrix_Scale(map[i].scale.x, map[i].scale.y, map[i].scale.z);
-        //     glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        //     glUniform1i(g_object_id_uniform, BLOCO);
-        //     DrawVirtualObject("TNT");
-        //     DrawBoundingBox(map[i].bbox, BLOCO);
-        // }
+                // Desabilitar culling para garantir que o castelo seja visível por dentro e por fora
+                glDisable(GL_CULL_FACE);
+                DrawVirtualObject(pair.first.c_str());
+                glEnable(GL_CULL_FACE);
+            }
+        }
 
 
         // Draw particles (after opaque geometry)
@@ -2158,6 +2149,8 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_selector = 2.0f;
                 else if (mat_name.find("paredes") != std::string::npos || mat_name.find("concrete") != std::string::npos)
                     texture_selector = 10.0f;
+                else if (mat_name.find("Barrier") != std::string::npos || mat_name.find("barrier") != std::string::npos)
+                    texture_selector = 17.0f;
                 else if (mat_name.find("Material.001") != std::string::npos || mat_name.find("wood") != std::string::npos)
                     texture_selector = 9.0f;
                 else if (mat_name.find("sides") != std::string::npos)

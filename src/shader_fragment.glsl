@@ -356,7 +356,7 @@ void main()
         } else if (material_id > 17.5) {
             Kd0 = vec3(0.1, 0.1, 0.1); // 18.0 - Dark/Black
         } else if (material_id > 16.5) {
-            Kd0 = vec3(0.9, 0.6, 0.03); // 17.0 - Orange
+            Kd0 = vec3(0.5, 0.5, 0.55); // 17.0 - Metal Gray for Barricades
         } else if (material_id > 15.5) {
             Kd0 = vec3(1.0, 0.1, 0.1); // 16.0 - Red
         } else if (material_id > 14.5) {
@@ -398,6 +398,13 @@ void main()
         // Equação de Iluminação
         float lambert = max(0,dot(n,l));
         color.rgb = Kd0 * (lambert + 0.01);
+        
+        // Simular brilho metálico (Specular) para as barricadas (material_id 17.0)
+        if (object_id == GROUND && material_id > 16.5 && material_id <= 17.5) {
+            vec4 h = normalize(v + l); // Half-vector
+            float specular = pow(max(0.0, dot(n, h)), 64.0); // Shininess alto para metal
+            color.rgb += vec3(0.7, 0.7, 0.7) * specular;
+        }
         
         // Ice Breath Freeze Tint
         if (is_frozen == 1) {
