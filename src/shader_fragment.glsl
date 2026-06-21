@@ -28,6 +28,7 @@ uniform mat4 projection;
 #define SWAMPFIRE 4
 #define BLOCO 5
 uniform int object_id;
+#define GROUND 13
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 aabb_min;
@@ -44,6 +45,11 @@ uniform sampler2D TextureImage6;
 uniform sampler2D TextureImage7;
 uniform sampler2D TextureImage8;
 uniform float hud_health_ratio;
+uniform sampler2D TextureImage9;
+uniform sampler2D TextureImage10;
+uniform sampler2D TextureImage11;
+uniform sampler2D TextureImage12;
+uniform sampler2D TextureImage14;
     // Optional override color for procedural particles
     uniform vec3 OverrideKd;
     uniform int UseOverrideKd;
@@ -229,6 +235,32 @@ void main()
         vec4 tex_color = texture(TextureImage8, vec2(U,V));
         if (tex_color.a < 0.5) discard;
         Kd0 = tex_color.rgb;
+    } else if (object_id == GROUND) {
+        U = texcoords.x;
+        V = texcoords.y;
+        
+        if (material_id > 18.5) {
+            Kd0 = vec3(0.9, 0.9, 0.9); // 19.0 - White
+        } else if (material_id > 17.5) {
+            Kd0 = vec3(0.1, 0.1, 0.1); // 18.0 - Dark/Black
+        } else if (material_id > 16.5) {
+            Kd0 = vec3(0.9, 0.6, 0.03); // 17.0 - Orange
+        } else if (material_id > 15.5) {
+            Kd0 = vec3(1.0, 0.1, 0.1); // 16.0 - Red
+        } else if (material_id > 14.5) {
+            Kd0 = vec3(0.1, 0.2, 0.9); // 15.0 - Blue
+        } else if (material_id > 13.5) {
+            Kd0 = texture(TextureImage14, vec2(U,V)).rgb;
+        } else if (material_id > 11.5) {
+            Kd0 = texture(TextureImage12, vec2(U,V)).rgb;
+        } else if (material_id > 10.5) {
+            Kd0 = texture(TextureImage11, vec2(U,V)).rgb;
+        } else if (material_id > 9.5) {
+            Kd0 = texture(TextureImage10, vec2(U,V)).rgb;
+        } else {
+            Kd0 = texture(TextureImage9, vec2(U,V)).rgb;
+        }                                                                                                                                   
+
     }
     
         // Override color when requested (per-particle color via uniform)

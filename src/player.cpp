@@ -139,8 +139,8 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     bool colidiu_com_chao = false;
 
     // 1. Checagem do "Chão de Segurança" (Hardcode)
-    if (player.position.y <= -1.0f) {
-        player.position.y = -1.0f;
+    if (player.position.y <= -10.0f) {
+        player.position.y = -10.0f;
         player.speed.y = 0.0f;
         colidiu_com_chao = true;
     }

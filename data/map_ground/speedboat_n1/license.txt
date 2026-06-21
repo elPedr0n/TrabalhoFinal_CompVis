@@ -1,0 +1,11 @@
+Model Information:
+* title:	Speedboat n°1
+* source:	https://sketchfab.com/3d-models/speedboat-n1-9c8400c0580b4deda9bd6ad2aa84e421
+* author:	Jonathan Geoffroy (https://sketchfab.com/jonathangeoffroy)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Speedboat n°1" (https://sketchfab.com/3d-models/speedboat-n1-9c8400c0580b4deda9bd6ad2aa84e421) by Jonathan Geoffroy (https://sketchfab.com/jonathangeoffroy) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)

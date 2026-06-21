@@ -1,0 +1,11 @@
+Model Information:
+* title:	Japanese Noodle Stand
+* source:	https://sketchfab.com/3d-models/japanese-noodle-stand-ee65b0c6b4184bd1942bab77ed681d2a
+* author:	matthewnixon (https://sketchfab.com/matthewnixon)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Japanese Noodle Stand" (https://sketchfab.com/3d-models/japanese-noodle-stand-ee65b0c6b4184bd1942bab77ed681d2a) by matthewnixon (https://sketchfab.com/matthewnixon) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

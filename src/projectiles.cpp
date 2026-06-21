@@ -59,7 +59,7 @@ void Projectiles_Update(float delta_t)
         bool exploded = false;
 
         // Hit map platforms
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
+        for (int i = 1; i < MAX_PLATFORMS; i++) {
             if (p.bbox.Intersects(map[i].bbox)) {
                 printf("Projectile hit platform %d\n", i);
                 p.active = false;
