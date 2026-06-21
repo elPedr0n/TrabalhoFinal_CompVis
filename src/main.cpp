@@ -513,6 +513,34 @@ Enemy g_enemies[MAX_ENEMIES] = {
 MapItem map[MAX_PLATFORMS];
 
 
+void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
+    stbi_set_flip_vertically_on_load(true);
+    int width, height, channels;
+    unsigned char *data = stbi_load(filename, &width, &height, &channels, 4);
+    if (!data) {
+        fprintf(stderr, "ERROR: Cannot open image file \"%s\".\n", filename);
+        return;
+    }
+    GLuint texture_id;
+    glGenTextures(1, &texture_id);
+    glActiveTexture(GL_TEXTURE0 + unit);
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    stbi_image_free(data);
+
+    // Bind uniform
+    glUseProgram(program);
+    char uniform_name[32];
+    sprintf(uniform_name, "TextureImage%u", unit);
+    glUniform1i(glGetUniformLocation(program, uniform_name), unit);
+    glUseProgram(0);
+}
+
 int main(int argc, char* argv[])
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -601,6 +629,16 @@ int main(int argc, char* argv[])
     LoadUITexture("../../data/glow.png", 17); // TextureImage17
     LoadUITexture("../../data/big_chill_hologram.png", 18); // TextureImage18
     LoadUITexture("../../data/swampfire_hologram.png", 19); // TextureImage19
+
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrmk_1.png", 20, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrpblhwi_2.png", 21, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrpicg_3.png", 22, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgrplmn_4.png", 23, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/teste_barraca/textures/kkgryn_0.png", 24, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese_noodle_stand/textures/Banner1_baseColor.jpeg", 25, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese_noodle_stand/textures/lambert1_baseColor.jpeg", 26, g_GpuProgramID);
+    LoadModelTextureFixed("../../data/map_background/japanese-chocolate-banana-stall/textures/cb_0.png", 27, g_GpuProgramID);
+    
     // The save icon is now loaded as a 3D model
 
     ObjModel saveicon_model("../../data/Save Icon (Ben 10 Alien Force)/list_ico.obj");
@@ -745,6 +783,7 @@ int main(int argc, char* argv[])
     LoadTextureImage("../../data/map_ground/madeira_lados.png"); // TextureImage12 (idx 9)
     LoadTextureImage("../../data/map_ground/madeira_cima.png"); // TextureImage14 (idx 10)
 
+
     RenderLoadingStep();
     auto AsyncLoadOBJ = [&](const char* path) {
         auto fut = std::async(std::launch::async, [path](){
@@ -779,6 +818,16 @@ int main(int argc, char* argv[])
     ObjModel ground_model = AsyncLoadOBJ("../../data/map_ground/chao_mapa.obj");
     BuildTrianglesAndAddToVirtualScene(&ground_model);
 
+    ObjModel barraca_model = AsyncLoadOBJ("../../data/map_background/teste_barraca/teste_barraca.obj");
+    for (auto& shape : barraca_model.shapes) shape.name = "ice_" + shape.name;
+    BuildTrianglesAndAddToVirtualScene(&barraca_model);
+    ObjModel macarrao_model = AsyncLoadOBJ("../../data/map_background/barraca_macarrao/barraca_macarrao.obj");
+    for (auto& shape : macarrao_model.shapes) shape.name = "noodle_" + shape.name;
+    BuildTrianglesAndAddToVirtualScene(&macarrao_model);
+    ObjModel banana_model = AsyncLoadOBJ("../../data/map_background/barraca_banana/barraca_banana.obj");
+    for (auto& shape : banana_model.shapes) shape.name = "banana_" + shape.name;
+    BuildTrianglesAndAddToVirtualScene(&banana_model);
+
     RenderLoadingStep();
 
     std::vector<AABB> colliders = parseColliders("../../data/map_ground/colliders.txt");                                                                                                                                                      
@@ -788,13 +837,33 @@ int main(int argc, char* argv[])
                                                                                                                                 
         if (i < MAX_PLATFORMS) {                                                                                                                                  
             // Add the shape's AABB to the collision map                                                                                                                               
-            map[i].bbox = colliders[i];                                                                                                                                                   
+            map[i].bbox = colliders[i]; 
+            // printf("Collider %d: min(%.2f, %.2f, %.2f), max(%.2f, %.2f, %.2f)\n", i, colliders[i].min.x, colliders[i].min.y, colliders[i].min.z, colliders[i].max.x, colliders[i].max.y, colliders[i].max.z);                                                                                                                                        
         } else {                                                                                                                                                                       
             printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
         }                                                                                                                                                                              
     }
 
     ground_model.ComputeBoundingBox();
+
+
+    std::vector<glm::vec3> barracas_positions = {
+        glm::vec3(-1.1f, 1.0f, -4.954f), 
+        glm::vec3(-1.2f, 1.0f, -7.9f),
+        glm::vec3(-4.7f, 1.0f, -10.4f),
+        glm::vec3(-1.1f, 1.0f, -13.7f),
+        glm::vec3(-1.2f, 1.0f, -16.5f),
+        glm::vec3(-4.7f, 1.0f, -19.0f),
+        glm::vec3(-0.8f, 1.0f, -22.5f),
+        glm::vec3(-0.2f, 1.0f, -25.3f),
+        glm::vec3(-3.4f, 1.0f, -28.7f),
+        glm::vec3(1.0f, 1.0f, -30.8f),
+        glm::vec3(1.3f, 1.0f, -33.8f),
+        glm::vec3(-1.6f, 1.0f, -37.4f),
+        glm::vec3(2.8f, 1.0f, -39.6f),
+        glm::vec3(3.4f, 1.0f, -42.5f),
+        glm::vec3(1.0f, 1.0f, -45.0f)
+    };
 
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
@@ -1372,6 +1441,7 @@ int main(int argc, char* argv[])
         glActiveTexture(GL_TEXTURE14);
         glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[10]);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage14"), 14);
+
     
         // 4. Desenhar o Objeto Visual
         // Mude a string abaixo EXATAMENTE para o nome do objeto (mesh) salvo dentro do seu arquivo .obj
@@ -1392,6 +1462,61 @@ int main(int argc, char* argv[])
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
 
+
+        for (int i = 0; i < barracas_positions.size(); i++) {
+            if (i >= 7 && i < 14) {
+                model = Matrix_Rotate_Y(-0.3f);
+            } else {
+                model = Matrix_Identity();
+            }
+            if (i % 3 == 0) {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 50);
+                for (const auto& shape : barraca_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            } else if (i % 3 == 1) {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 51);
+                for (const auto& shape : macarrao_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            } else {
+                model = Matrix_Translate(barracas_positions[i].x, 1.0f, barracas_positions[i].z) * Matrix_Scale(1.4f, 1.4f, 1.4f) * model;
+                glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+                glUniform1i(g_object_id_uniform, 52);
+                for (const auto& shape : banana_model.shapes) {
+                    DrawVirtualObject(shape.name.c_str());
+                }
+            }
+        }
+
+        // // Desenhamos a barraca
+        // model = Matrix_Translate(2.8f, 1.0f, -39.6f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 50);
+        // for (const auto& shape : barraca_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
+
+        // // Desenhamos a barraca macarrao
+        // model = Matrix_Translate(3.4f, 1.0f, -42.5f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 51);
+        // for (const auto& shape : macarrao_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
+
+        // // Desenhamos a barraca banana
+        // model = Matrix_Translate(1.0f, 1.0f, -45.4f) * Matrix_Scale(1.4f, 1.4f, 1.4f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 52);
+        // for (const auto& shape : banana_model.shapes) {
+        //     DrawVirtualObject(shape.name.c_str());
+        // }
+
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
          model = Matrix_Translate(-4.693f, 0.0f, -90.1f) * Matrix_Scale(0.01f, 0.01f, 0.01f);
@@ -1410,6 +1535,9 @@ int main(int argc, char* argv[])
             }
         }
 
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        // }
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
@@ -1663,6 +1791,9 @@ int main(int argc, char* argv[])
             glUniform1i(g_object_id_uniform, player.selected_alien == 0 ? 28 : 29); // 28: Big Chill, 29: Swampfire
             DrawVirtualObject("the_plane");
         }
+
+        DrawBoundingBox(player.characters[player.active_character].bbox, 0);
+        // ----------------------------
 
         glDisable(GL_BLEND);
         glEnable(GL_DEPTH_TEST);
@@ -2222,6 +2353,47 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
                     texture_selector = 17.0f; // Orange
                 else if (mat_name.find("lambert4") != std::string::npos || mat_name.find("phong28") != std::string::npos || mat_name.find("phongE3") != std::string::npos || mat_name.find("phongE8") != std::string::npos || mat_name == "phong10" || mat_name == "phong14" || mat_name == "phong19" || mat_name == "phong4" || mat_name == "phong5" || mat_name == "phong7" || mat_name == "phong8" || mat_name == "phong9" || mat_name.find("phongE1") != std::string::npos || mat_name.find("phongE2") != std::string::npos || mat_name == "phong17")
                     texture_selector = 18.0f; // Dark Gray / Black
+                else if (mat_name.find("Banner1") != std::string::npos) texture_selector = 25.0f;
+                else if (mat_name.find("lambert1") != std::string::npos) texture_selector = 26.0f;
+                // BANANA STALL
+                else if (mat_name.find("マテリアル.033") != std::string::npos || mat_name.find("マテリアル.034") != std::string::npos || mat_name.find("マテリアル.029") != std::string::npos || mat_name.find("マテリアル.030") != std::string::npos || mat_name.find("マテリアル.028") != std::string::npos) texture_selector = 27.0f; // cb_0.png
+                else if (mat_name.find("マテリアル.014") != std::string::npos) texture_selector = 20.0f; // kkgrmk_1.png
+                else if (mat_name.find("マテリアル.009") != std::string::npos) texture_selector = 109.0f;
+                else if (mat_name.find("マテリアル.019") != std::string::npos) texture_selector = 119.0f;
+                else if (mat_name.find("マテリアル.032") != std::string::npos) texture_selector = 132.0f;
+                else if (mat_name.find("マテリアル.021") != std::string::npos) texture_selector = 121.0f;
+                else if (mat_name.find("マテリアル.022") != std::string::npos) texture_selector = 122.0f;
+                else if (mat_name.find("マテリアル.036") != std::string::npos) texture_selector = 136.0f;
+                else if (mat_name.find("マテリアル.035") != std::string::npos) texture_selector = 135.0f;
+                else if (mat_name.find("マテリアル.037") != std::string::npos) texture_selector = 137.0f;
+                else if (mat_name.find("マテリアル.020") != std::string::npos) texture_selector = 120.0f;
+                else if (mat_name.find("マテリアル.024") != std::string::npos) texture_selector = 124.0f;
+                else if (mat_name.find("マテリアル.004") != std::string::npos) texture_selector = 104.0f;
+                else if (mat_name.find("マテリアル.018") != std::string::npos) texture_selector = 118.0f;
+                else if (mat_name.find("マテリアル.026") != std::string::npos) texture_selector = 126.0f;
+                else if (mat_name.find("マテリアル.027") != std::string::npos) texture_selector = 127.0f;
+                else if (mat_name.find("マテリアル.025") != std::string::npos) texture_selector = 125.0f;
+                // ICE STALL
+                else if (mat_name.find("kkgrpblhwi") != std::string::npos) texture_selector = 21.0f;
+                else if (mat_name.find("kkgrpicg") != std::string::npos) texture_selector = 22.0f;
+                else if (mat_name.find("kkgrplmn") != std::string::npos) texture_selector = 23.0f;
+                else if (mat_name.find("マテリアル.031") != std::string::npos) texture_selector = 31.0f;
+                else if (mat_name.find("マテリアル.035") != std::string::npos) texture_selector = 35.0f;
+                else if (mat_name.find("マテリアル.036") != std::string::npos) texture_selector = 36.0f;
+                else if (mat_name.find("マテリアル.037") != std::string::npos) texture_selector = 37.0f;
+                else if (mat_name.find("マテリアル.038") != std::string::npos) texture_selector = 38.0f;
+                else if (mat_name.find("マテリアル.039") != std::string::npos) texture_selector = 39.0f;
+                else if (mat_name.find("マテリアル.040") != std::string::npos) texture_selector = 40.0f;
+                else if (mat_name.find("マテリアル.041") != std::string::npos) texture_selector = 24.0f; // Textured Roof
+                else if (mat_name.find("マテリアル.042") != std::string::npos) texture_selector = 20.0f; // Textured Machine
+                else if (mat_name.find("マテリアル.043") != std::string::npos) texture_selector = 43.0f;
+                else if (mat_name.find("マテリアル.044") != std::string::npos) texture_selector = 44.0f;
+                else if (mat_name.find("マテリアル.045") != std::string::npos) texture_selector = 45.0f;
+                else if (mat_name.find("マテリアル.046") != std::string::npos) texture_selector = 46.0f;
+                else if (mat_name.find("マテリアル.047") != std::string::npos) texture_selector = 47.0f;
+                else if (mat_name.find("マテリアル.048") != std::string::npos) texture_selector = 48.0f;
+                else if (mat_name.find("マテリアル.049") != std::string::npos) texture_selector = 49.0f;
+                else if (mat_name.find("マテリアル") != std::string::npos) texture_selector = 31.0f; // Solid fallback color
                 else if (mat_name.find("phong") != std::string::npos || mat_name.find("lambert") != std::string::npos)
                     texture_selector = 19.0f; // White / Default
             }
@@ -2712,6 +2884,15 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // DEBUG UI TOGGLE
     if (key == GLFW_KEY_U && action == GLFW_PRESS) {
         g_ui_debug_enabled = !g_ui_debug_enabled;
+    }
+
+    // DEBUG MAP COORDS
+    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        printf("========== MAP COORDS ==========\n");
+        printf("Player Position: x = %.3f, y = %.3f, z = %.3f\n", player.position.x, player.position.y, player.position.z);
+        // printf("Camera Look At : x = %.3f, y = %.3f, z = %.3f\n", camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z);
+        printf("================================\n");
+        fflush(stdout);
     }
     if (g_ui_debug_enabled && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
         if (key == GLFW_KEY_1 && action == GLFW_PRESS) {

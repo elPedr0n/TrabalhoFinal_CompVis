@@ -1169,3 +1169,22 @@ PROMPT: crie um parser que percorra cada linha do meu @[data/map_ground/collider
 ### Commit com IA: Modificação da câmera e coloquei um mar brabo
 
 PROMPT: Eu quero modificar a camera, ela esta em 3a pessoa mas quero modificar ela pra ficar do jeito parecidodo meu jogo, consegue criar uma logica que me indique os parametros da camera em tempo real, q nem a posição do player no canto inferior esquerdo, para eu poder calibrar e mexer no codigo dps?
+
+### Commit com IA: Primeira barraca funcionando amém
+
+PROMPT 1: so, in @data/map_background/teste_barraca/ we have a obj file, try to render it in my scene, you can just use a translate matrix to (0, 1, -10)
+
+PROMPT 2: you broke the ui, the omnitrix part is wrong, the barraca is like stripped, some things are just not mapped right.It could be that the japanese name is referencing a texture that has it name broken and changed to ascii characters.
+
+PROMPT 3: okaaay,the roof part and the structure is set, but the things on top of the table are just white, they dont have the texture they need
+
+
+### Commit com IA: Coloquei os modelos das barraca tudo em obj ja
+
+PROMPT 1: I hope you remember what make thing work. I added a new obj using the same method, @data/map_background/barraca_macarrao/ so i want you to render it the same way as the teste_barraca. you can transate it to (0, 1, -15)
+
+PROMPT 2: ta meio bugado ainda essa nova textura, parece meio cortada
+
+PROMPT 3: Now for the last one, I need you to do the same to @data/map_background/barraca_banana/
+
+PROMPT 4: almost ready, the bananas itself are nice, but there are some random bananas in pink being rendered near the origin and the banner of the stall is bugged too
