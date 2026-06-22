@@ -1199,7 +1199,33 @@ PROMPT: so, I want to start working on some illuminations, read the files in s r
 
 PROMPT: quero fazer umas coisinhas, a fim do ben n ficar mt bucha sem luz, adicione em algumas posicoes do mapa uma luz meio amarelada, que simule postes. Me diga como esta feito para eu poder mudar a posicao depois caso eu queira
 
+### Commit com IA: Mapeamento para gamepad, novo ataque e dança pro ben
 
+PROMPT 1: a fireball está sem colisão horizontal com os objetos do cenário. conserte isso. 
+
+PROMPT 2: a tela de carregamento deve carregar todos os modelos antes, incluindo dos personagens, para que durante a transformação não hajam quedas de fps. Atualmente, no geral, o fps está muito baixo
+
+PROMPT 3: 
+Adicione suporte a controle do x360. O mapeamento será:
+- wasd = analógico esquerdo
+- câmera = analógico direito
+- q = botão y
+- e = botão x
+- x = direcional esquerdo e direito, gatilho esquerdo e direito
+- z = shoulder bump direito
+- espaço = botão a
+
+PROMPT 4: funcionou! Agora mude na tela de título para quando ele reconhecer um controle conectado, mudar o texto para "Press the START button"
+
+PROMPT 5: excelente. duas coisas:
+- o ataque especial do big chill não está mais permanecendo enquanto o jogador segura o botão correspondente
+- a bola de fogo do swampfire não deve colidir com o chão especificamente. Com todas as outras coisas, sim
+
+PROMPT 6: adicione as animações de retargeted_animations(3).glb também. ao apertar "Q", toque a animação overhand throwe mostre o ataque "Big slap" no histórico, crie uma hitbox e tudo relacionado ao ataque
+
+PROMPT 7: o "big slap" deve aparecer no histórico de ataques, o exibido na ui. implemente todas as lógicas relacionadas a ele, como não poder mover enquanto ataca, parar o movimento pra atacar. o big slap deve dar o dobro de dano do soco do ben, e deve gastar 10% da barra de especial. Mapeie um botão de "emote" para "G" no teclado e "clique do analógico direito" no controle. Ao clicar nesse botão como ben, ele deve tocar a animação de dança enquanto esse botão está segurado. as partículas do ataque big slap devem ser brancas como dos demais ataques.
+
+                          
 ### Commit com IA: Coloquei os modelos da parede e das torres do castelo e resolvi um bug de colisão
 
 PROMPT 1: seguinte, exportei como glb somente a parede, modele toda a logica que vc montou para renderizar somente a wall e tower em obj e adicione a logica para colocar a parede de glb usando as coisas de gltf

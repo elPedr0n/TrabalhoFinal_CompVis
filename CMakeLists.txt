@@ -23,6 +23,7 @@ set(SOURCES
   src/fragments.cpp
   src/screens.cpp
   src/ferris_wheel.cpp
+  src/gamepad.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)

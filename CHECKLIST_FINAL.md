@@ -18,6 +18,6 @@
   - [ ] Som
   - [X] Menu principal
   - [X] Hitbox swampfire e modelo centralizado
-  - [ ] Emotes
+  - [X] Emotes
   - [ ] OST de batalha mt foda pro castelo
-  - [ ] Mapeamento para controle
+  - [X] Mapeamento para controle

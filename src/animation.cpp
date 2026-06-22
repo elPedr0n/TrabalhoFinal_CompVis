@@ -304,12 +304,29 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         state.attack_speed_multiplier = 1.0f;
     }
 
+    bool q_is_down = key_down(GLFW_KEY_Q);
+    bool q_just_pressed = q_is_down && !state.q_key_was_down;
+    state.q_key_was_down = q_is_down;
+
     // Allow continuous punching if E is held down
-    if (player.active_character == 2 && e_is_down && !jumping && !state.is_attacking) {
+    if (player.active_character == 2 && e_is_down && !jumping && !state.is_attacking && !state.is_q_attacking) {
         state.is_attacking = true;
         state.attack_timer = 0.0f;
         state.in_fighting_stance = true;
         state.time_since_last_punch = 0.0f;
+    }
+
+    bool g_is_down = key_down(GLFW_KEY_G);
+    state.is_dancing = g_is_down && !jumping && !state.is_attacking && !state.is_q_attacking;
+
+    float big_slap_cost = player.max_special_energy * 0.10f;
+    // Big Slap (Overhand Throw) on Q
+    if (player.active_character == 2 && q_is_down && !jumping && !state.is_attacking && !state.is_q_attacking && player.special_energy >= big_slap_cost) {
+        player.special_energy -= big_slap_cost;
+        state.is_q_attacking = true;
+        state.q_attack_timer = 0.0f;
+        state.in_fighting_stance = true;
+        printf("Big slap!\n"); // History log per the user's request
     }
 
     if (state.is_attacking) {
@@ -335,10 +352,34 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         if (state.attack_timer >= max_attack_time) {
             state.is_attacking = false;
         }
+    } else if (state.is_q_attacking) {
+        current_anim_index = 21; // OverhandThrow
+        state.q_attack_timer += delta_t * 1.2f; // adjust speed if needed
+        
+        float max_attack_time = 1.0f;
+        if (model.animations.size() > 21) {
+            const tinygltf::Animation &anim = model.animations[21];
+            float max_t = 0.0f;
+            for (const auto &samp : anim.samplers) {
+                if (samp.input < 0) continue;
+                const tinygltf::Accessor &acc = model.accessors[samp.input];
+                const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+                const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+                const float *times = reinterpret_cast<const float*>(&(buf.data[bv.byteOffset + acc.byteOffset]));
+                if (acc.count > 0) max_t = std::max(max_t, times[acc.count - 1]);
+            }
+            if (max_t > 0.0f) max_attack_time = max_t;
+        }
+
+        if (state.q_attack_timer >= max_attack_time) {
+            state.is_q_attacking = false;
+        }
     }
 
-    if (!state.is_attacking) {
-        if (jumping) {
+    if (!state.is_attacking && !state.is_q_attacking) {
+        if (state.is_dancing) {
+            current_anim_index = 1; // Dance_Loop
+        } else if (jumping) {
             // Always use Jump_Loop (9) while in the air as requested
             current_anim_index = 9; 
         } else if (is_moving && player.active_character == 2) {
@@ -354,6 +395,7 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         state.last_applied_anim_index = current_anim_index;
         if (jumping && current_anim_index == 9) state.jump_timer = 0.0f;
         if (current_anim_index == 4) state.punch_hit_enemies.clear();
+        if (current_anim_index == 21) state.big_slap_hit_enemies.clear();
     }
 
     if (jumping && current_anim_index == 9) {
@@ -370,6 +412,12 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         // Tune these values by watching Ben's jab animation
         if (elapsed >= 0.25f && elapsed <= 0.45f)
             res.punch_active = true;
+    } else if (current_anim_index == 21) {
+        anim_time_to_pass = state.q_attack_timer;
+        float elapsed = anim_time_to_pass;
+        // Overhand Throw active window (tune this if needed, ~0.4 to 0.7 for an overhand)
+        if (elapsed >= 0.4f && elapsed <= 0.7f)
+            res.big_slap_active = true;
     }
 
     // Adjust speed for Sprint_Loop if needed, otherwise normal
@@ -379,7 +427,8 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
 
     res.current_anim_index = current_anim_index;
     res.anim_time_to_pass = anim_time_to_pass;
-    res.is_attacking = state.is_attacking;
+    res.is_attacking = state.is_attacking || state.is_q_attacking;
+    res.is_dancing = state.is_dancing;
     
     return res;
 }
@@ -389,11 +438,22 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
     const tinygltf::Skin &skin = model.skins[0];
 
     // 1) Extrai T, R, S base originais para TODOS os ossos
-    std::vector<glm::vec3> node_T(model.nodes.size(), glm::vec3(0.0f));
-    std::vector<glm::quat> node_R(model.nodes.size(), glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-    std::vector<glm::vec3> node_S(model.nodes.size(), glm::vec3(1.0f));
-    std::vector<bool> node_has_matrix(model.nodes.size(), false);
-    std::vector<glm::mat4> local_matrix(model.nodes.size(), glm::mat4(1.0f));
+    size_t num_nodes = model.nodes.size();
+    if (node_T.size() != num_nodes) {
+        node_T.resize(num_nodes);
+        node_R.resize(num_nodes);
+        node_S.resize(num_nodes);
+        node_has_matrix.resize(num_nodes);
+        local_matrix.resize(num_nodes);
+        global_matrix.resize(num_nodes);
+        matrix_computed.resize(num_nodes);
+    }
+    
+    std::fill(node_T.begin(), node_T.end(), glm::vec3(0.0f));
+    std::fill(node_R.begin(), node_R.end(), glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+    std::fill(node_S.begin(), node_S.end(), glm::vec3(1.0f));
+    std::fill(node_has_matrix.begin(), node_has_matrix.end(), false);
+    std::fill(local_matrix.begin(), local_matrix.end(), glm::mat4(1.0f));
 
     for (size_t ni = 0; ni < model.nodes.size(); ++ni) {
         const tinygltf::Node &n = model.nodes[ni];
@@ -413,20 +473,29 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
         const tinygltf::Animation &anim = model.animations[anim_index];
 
         float max_time = 0.0f;
-        std::vector<std::vector<float>> sampler_inputs(anim.samplers.size());
-        std::vector<int> sampler_output_accessor(anim.samplers.size(), -1);
+        
+        if (cached_anim_index != anim_index) {
+            sampler_inputs_cache.resize(anim.samplers.size());
+            sampler_output_accessor_cache.assign(anim.samplers.size(), -1);
+
+            for (size_t si = 0; si < anim.samplers.size(); ++si) {
+                const auto &samp = anim.samplers[si];
+                if (samp.input >= 0) {
+                    const tinygltf::Accessor &acc = model.accessors[samp.input];
+                    const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
+                    const tinygltf::Buffer &buf = model.buffers[bv.buffer];
+                    const float *times = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
+                    sampler_inputs_cache[si].assign(times, times + acc.count);
+                }
+                sampler_output_accessor_cache[si] = samp.output;
+            }
+            cached_anim_index = anim_index;
+        }
 
         for (size_t si = 0; si < anim.samplers.size(); ++si) {
-            const auto &samp = anim.samplers[si];
-            if (samp.input >= 0) {
-                const tinygltf::Accessor &acc = model.accessors[samp.input];
-                const tinygltf::BufferView &bv = model.bufferViews[acc.bufferView];
-                const tinygltf::Buffer &buf = model.buffers[bv.buffer];
-                const float *times = reinterpret_cast<const float*>(&buf.data[bv.byteOffset + acc.byteOffset]);
-                sampler_inputs[si].assign(times, times + acc.count);
-                if (!sampler_inputs[si].empty()) max_time = std::max(max_time, sampler_inputs[si].back());
+            if (!sampler_inputs_cache[si].empty()) {
+                max_time = std::max(max_time, sampler_inputs_cache[si].back());
             }
-            sampler_output_accessor[si] = samp.output;
         }
         if (max_time > 0.0f) {
             if (loop) {
@@ -439,7 +508,7 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
         for (const auto &ch : anim.channels) {
             int samp_idx = ch.sampler;
             if (samp_idx < 0 || samp_idx >= (int)anim.samplers.size()) continue;
-            const auto &inputs = sampler_inputs[samp_idx];
+            const auto &inputs = sampler_inputs_cache[samp_idx];
             if (inputs.empty()) continue;
 
             size_t k = 0; while (k + 1 < inputs.size() && anim_time > inputs[k+1]) ++k;
@@ -447,7 +516,7 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
             float t0 = inputs[k], t1 = inputs[k1];
             float local_t = (t1 - t0) > 0.0f ? (anim_time - t0) / (t1 - t0) : 0.0f;
 
-            int outAccIdx = sampler_output_accessor[samp_idx];
+            int outAccIdx = sampler_output_accessor_cache[samp_idx];
             if (outAccIdx < 0) continue;
             const tinygltf::Accessor &outAcc = model.accessors[outAccIdx];
             const tinygltf::BufferView &outBV = model.bufferViews[outAcc.bufferView];
@@ -489,21 +558,20 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
     }
 
     // 3) Ordem Topológica e Matrizes Globais
-    std::vector<glm::mat4> global_matrix(model.nodes.size(), glm::mat4(1.0f));
-    std::vector<bool> matrix_computed(model.nodes.size(), false);
+    std::fill(matrix_computed.begin(), matrix_computed.end(), false);
 
     for (size_t ni = 0; ni < model.nodes.size(); ++ni) {
         if (matrix_computed[ni]) continue;
 
-        std::vector<int> path;
+        path_cache.clear();
         int curr = ni;
         while (curr != -1 && !matrix_computed[curr]) {
-            path.push_back(curr);
+            path_cache.push_back(curr);
             curr = node_parent[curr];
         }
 
-        for (int i = (int)path.size() - 1; i >= 0; --i) {
-            int node = path[i];
+        for (int i = (int)path_cache.size() - 1; i >= 0; --i) {
+            int node = path_cache[i];
             int p = node_parent[node];
             if (p == -1) {
                 global_matrix[node] = local_matrix[node];
@@ -641,7 +709,7 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
     if (current_anim_index == 0) {
         float frame_48 = 48.0f / 24.0f;
         // Clampa primeiro! E só clampa se não tiver escapado (janela de 0.15s)
-        if (q_is_down && state.q_attack_timer >= frame_48 && state.q_attack_timer <= frame_48 + 0.15f) {
+        if (q_is_down && state.q_attack_timer >= frame_48 && state.q_attack_timer <= frame_48 + 0.5f) {
             if (player.special_energy > 0.0f) {
                 state.q_attack_timer = frame_48; // freeze
                 player.special_energy -= 10.0f * delta_t; // Continuous drain

@@ -571,6 +571,7 @@ bool IsSphereInFrustum(const glm::vec3& center, float radius, FrustumPlane* plan
     }
     return true;
 }
+#include "gamepad.h"
 
 int main(int argc, char* argv[])
 {
@@ -582,6 +583,8 @@ int main(int argc, char* argv[])
         fprintf(stderr, "ERROR: glfwInit() failed.\n");
         std::exit(EXIT_FAILURE);
     }
+
+    InitGamepadMappings();
 
     // Definimos o callback para impressão de erros da GLFW no terminal
     glfwSetErrorCallback(ErrorCallback);
@@ -703,24 +706,27 @@ int main(int argc, char* argv[])
             glfwGetWindowSize(window, &w, &h);
             float text_scale = (float)h / 600.0f * 1.5f; // Scale proportional to screen height
             
+            const char* prompt_text = IsGamepadConnected() ? "Press the START button" : "Press the ENTER key";
+
             // Para mudar a posição, altere o text_y (vertical) ou adicione um offset no text_x (horizontal) abaixo:
-            float str_w = TextRendering_GetStringWidth(window, "Press the ENTER key", text_scale);
+            float str_w = TextRendering_GetStringWidth(window, prompt_text, text_scale);
             
             float x_offset = 0.556f; // Deslocamento solicitado
             float text_x = (-str_w / 2.0f) + x_offset; // Centralizado + deslocamento
             float text_y = -0.731f;                    // Posição vertical solicitada
             
             // Draw black border
-            TextRendering_PrintString(window, "Press the ENTER key", text_x - 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-            TextRendering_PrintString(window, "Press the ENTER key", text_x + 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y - 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y + 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, prompt_text, text_x - 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, prompt_text, text_x + 0.005f, text_y, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, prompt_text, text_x, text_y - 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, prompt_text, text_x, text_y + 0.005f, text_scale, glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
             // Draw yellow text
-            TextRendering_PrintString(window, "Press the ENTER key", text_x, text_y, text_scale, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+            TextRendering_PrintString(window, prompt_text, text_x, text_y, text_scale, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
         }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        ProcessGamepadInput(window);
     }
 
     if (glfwWindowShouldClose(window)) {
@@ -776,6 +782,7 @@ int main(int argc, char* argv[])
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        ProcessGamepadInput(window);
     };
 
     // Helper para carregar fluidamente
@@ -962,6 +969,26 @@ int main(int argc, char* argv[])
         while ((float)glfwGetTime() - fake_load_start < 2.0f && !glfwWindowShouldClose(window)) {
             RenderLoadingStep();
         }
+
+        // --- WARM-UP PASS ---
+        // Desenha todos os modelos uma vez (sem exibir na tela) para forçar o driver OpenGL 
+        // a carregar as texturas e VAOs na VRAM, evitando quedas de FPS nas transformações.
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE); // Desabilita escrita de cor
+        glDisable(GL_DEPTH_TEST);
+        glUseProgram(g_GpuProgramID);
+        for (const auto& pair : g_VirtualScene) {
+            // Re-bind as texturas caso a malha tenha textura carregada
+            if (pair.second.texture_id != 0) {
+                glActiveTexture(GL_TEXTURE2);
+                glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+            }
+            DrawVirtualObject(pair.first.c_str());
+        }
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Limpa novamente
+        // --- END WARM-UP ---
 
         float anterior = (float)glfwGetTime();
 
@@ -1218,14 +1245,20 @@ int main(int argc, char* argv[])
         is_attacking = false;
         if (player.active_character == 0) is_attacking = bigchill_state.is_attacking || bigchill_state.is_q_attacking;
         else if (player.active_character == 1) is_attacking = swampfire_state.is_e_attacking || swampfire_state.q_state > 0;
-        else if (player.active_character == 2) is_attacking = ben_state.is_attacking;
+        else if (player.active_character == 2) is_attacking = ben_state.is_attacking || ben_state.is_q_attacking;
 
         // Attack Detection logic
         static bool prev_ben_attacking = false;
-        if (player.active_character == 2 && benRes.is_attacking && !prev_ben_attacking) {
+        if (player.active_character == 2 && ben_state.is_attacking && !prev_ben_attacking) {
             player.pushAttack("Light punch"); 
         }
-        prev_ben_attacking = benRes.is_attacking;
+        prev_ben_attacking = ben_state.is_attacking;
+
+        static bool prev_ben_q = false;
+        if (player.active_character == 2 && ben_state.is_q_attacking && !prev_ben_q) {
+            player.pushAttack("Big slap");
+        }
+        prev_ben_q = ben_state.is_q_attacking;
 
         static bool prev_swamp_e = false;
         if (player.active_character == 1 && swampfire_state.is_e_attacking && !prev_swamp_e) {
@@ -1250,7 +1283,7 @@ int main(int argc, char* argv[])
         prev_bc_q = bigchill_state.is_q_attacking;
 
         // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
-        bool can_move = !is_attacking && !player.is_dead && !player.is_flinching;
+        bool can_move = !is_attacking && !player.is_dead && !player.is_flinching && !(player.active_character == 2 && ben_state.is_dancing);
         bool can_rotate = false;
         if ((player.active_character == 1 && swampfire_state.q_state > 0) || 
             (player.active_character == 0 && bigchill_state.is_q_attacking)) {
@@ -2045,6 +2078,7 @@ int main(int argc, char* argv[])
         // definidas anteriormente usando glfwSet*Callback() serão chamadas
         // pela biblioteca GLFW.
         glfwPollEvents();
+        ProcessGamepadInput(window);
 
     } // end of inner loop
     } // end of outer loop
