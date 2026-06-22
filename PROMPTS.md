@@ -1224,3 +1224,32 @@ PROMPT 5: excelente. duas coisas:
 PROMPT 6: adicione as animações de retargeted_animations(3).glb também. ao apertar "Q", toque a animação overhand throwe mostre o ataque "Big slap" no histórico, crie uma hitbox e tudo relacionado ao ataque
 
 PROMPT 7: o "big slap" deve aparecer no histórico de ataques, o exibido na ui. implemente todas as lógicas relacionadas a ele, como não poder mover enquanto ataca, parar o movimento pra atacar. o big slap deve dar o dobro de dano do soco do ben, e deve gastar 10% da barra de especial. Mapeie um botão de "emote" para "G" no teclado e "clique do analógico direito" no controle. Ao clicar nesse botão como ben, ele deve tocar a animação de dança enquanto esse botão está segurado. as partículas do ataque big slap devem ser brancas como dos demais ataques.
+
+                          
+### Commit com IA: Coloquei os modelos da parede e das torres do castelo e resolvi um bug de colisão
+
+PROMPT 1: seguinte, exportei como glb somente a parede, modele toda a logica que vc montou para renderizar somente a wall e tower em obj e adicione a logica para colocar a parede de glb usando as coisas de gltf
+ 
+PROMPT 2: bacanaaaa, coloquei o da tower la, consegue fazer a msm coisa?
+
+PROMPT 3: eu tenho um bug n de renderização mas de colisao agora, por algum motivo, o colisor da ultima parte do mapa, dps que eu faço um parkou de plataforma, to entrando no chao. Acho que eh o collider 15 se n me engano
+
+
+### Commit com IA: Otimização do game, barracas tavam comendo fps, ent apenas as no frustum da camera serão desenhadas
+
+PROMPT:  entao, eu quero fazer uma optimização para a parte do meu rendering das barracas. Eu quero dezenhar apenas aquelas que tem coordenadas dentro do frustum da minha camera, eu to com uma logica de distancia mas ela n ta tao bacana, consegue me fazer essa ai?
+
+
+### Commit com IA: Coloquei um ceu bacana, e finalmente o modelo da roda gigante funcionando decentemente
+
+PROMPT 1: so, I have a impossible mission for you. I need you to draw the model for the ferris wheel. There is a problem in that. It should be spinning like a ferris wheel. The code I sent you I believe its bugged. At some point of the code it war working, but not now. Analyse it and debug it. The final position to translate it to is (-5.3251, 7.7862, -58783),the scalling set to 0.366 and a 90 degree rotation in the Y axis.
+
+PROMPT 2: So, the last model put the ferris wheel there, but the omnitrix hud item is bugged now, problably a error in the mapping of the textures, can you fix?
+
+PROMPT 3: show, agora vc me ajudara a debugar a roda gigante. As gondolas (vabines) estao rodando certinho, mas o raio em que giram esta variando com o tempo, eh algum erro na transformação delas, provavelmente por volta da linha 157, da uma olhada
+
+PROMPT 4 - 10: Meu ta muito errado isso, n ta girando corretamente, tente ajutar @ferris_wheel_cpp
+
+PROMPT 11: so, for now we are having a white canvas for the background part os the map, i want to change it to something resembling the nightime of the game, how I do it?
+
+PROMPT 12: i need a redish color, like this tone in rgb 88, 48, 39, But it would be nice if it were a gradient, with some dark spaces in some places, to simulate some clouds

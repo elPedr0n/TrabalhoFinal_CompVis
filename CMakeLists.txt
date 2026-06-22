@@ -22,6 +22,7 @@ set(SOURCES
   src/breakables.cpp
   src/fragments.cpp
   src/screens.cpp
+  src/ferris_wheel.cpp
   src/gamepad.cpp
 )
 

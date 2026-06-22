@@ -109,7 +109,8 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     auto& player_bbox = player.characters[player.active_character].bbox;
 
     // === EIXO Y ===
-    for (const auto& item : map) {
+    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
+        const auto& item = map[p_i];
         // Reduz o move_vector_y se colidir com algo
         move_vector_y = player_bbox.GetClipY(item.bbox, move_vector_y);
         // printf("DeltaY: %f\n", move_vector_y);
@@ -125,7 +126,8 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     // player_bbox.Move(0.0f, move_vector_y, 0.0f); 
 
     // === EIXO X ===
-    for (const auto& item : map) {
+    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
+        const auto& item = map[p_i];
         move_vector_x = player_bbox.GetClipX(item.bbox, move_vector_x);
         // printf("DeltaX: %f\n", move_vector_x);
     }
@@ -138,7 +140,8 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     // player_bbox.Move(move_vector_x, 0.0f, 0.0f);
 
     // === EIXO Z ===
-    for (const auto& item : map) {
+    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
+        const auto& item = map[p_i];
         move_vector_z = player_bbox.GetClipZ(item.bbox, move_vector_z);
         // printf("DeltaZ: %f\n", move_vector_z);
     }
@@ -344,7 +347,8 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
 
 void ResolvePlayerMapCollisions() {
     auto& bbox = player.characters[player.active_character].bbox;
-    for (const auto& item : map) {
+    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
+        const auto& item = map[p_i];
         if (bbox.Intersects(item.bbox)) {
             glm::vec3 centerP = (bbox.min + bbox.max) * 0.5f;
             glm::vec3 centerM = (item.bbox.min + item.bbox.max) * 0.5f;

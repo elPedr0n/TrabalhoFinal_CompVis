@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#define FERRIS_WHEEL_ID 16
+#define FERRIS_WHEEL_ID 55
 
 // --------------------------------------------------------------------------
 // Helpers internos
@@ -68,6 +68,27 @@ static glm::mat4 nodeWorldTransformExclusive(const tinygltf::Model& model,
     for (int i = (int)chain.size() - 1; i >= 0; i--)
         m = m * nodeLocalTransform(model.nodes[chain[i]]);
     return m;
+}
+
+glm::vec3 get_mesh_center(const tinygltf::Model& model, int mesh_idx) {
+    if (mesh_idx < 0 || mesh_idx >= (int)model.meshes.size()) return glm::vec3(0.0f);
+    const auto& mesh = model.meshes[mesh_idx];
+    if (mesh.primitives.empty()) return glm::vec3(0.0f);
+    const auto& primitive = mesh.primitives[0];
+    auto it = primitive.attributes.find("POSITION");
+    if (it == primitive.attributes.end()) return glm::vec3(0.0f);
+    const tinygltf::Accessor& accessor = model.accessors[it->second];
+    const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+    const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+    const float* positions = reinterpret_cast<const float*>(&buffer.data[bufferView.byteOffset + accessor.byteOffset]);
+    float min_x = 1e9, max_x = -1e9, min_y = 1e9, max_y = -1e9, min_z = 1e9, max_z = -1e9;
+    for (size_t i = 0; i < accessor.count; i++) {
+        float x = positions[i*3 + 0]; float y = positions[i*3 + 1]; float z = positions[i*3 + 2];
+        if (x < min_x) min_x = x; if (x > max_x) max_x = x;
+        if (y < min_y) min_y = y; if (y > max_y) max_y = y;
+        if (z < min_z) min_z = z; if (z > max_z) max_z = z;
+    }
+    return glm::vec3((min_x+max_x)/2.0f, (min_y+max_y)/2.0f, (min_z+max_z)/2.0f);
 }
 
 // --------------------------------------------------------------------------
@@ -154,7 +175,7 @@ void DrawFerrisWheel(
             // mesh_local do nó wheel_lambert1_0 (sem transform = identidade)
             glm::mat4 mesh_local = nodeLocalTransform(model.nodes[ni]);
 
-            final_model = world * root_correction * to_hub * spin_z * wheel_rot_only * mesh_local;
+            final_model = world * root_correction * to_hub * wheel_rot_only * spin_z * mesh_local;
         }
         // ----------------------------------------------------------------
         // Caso B: Cabines (filhas do nó "cabin")
@@ -177,24 +198,33 @@ void DrawFerrisWheel(
                 // polySurface_node = pai direto do mesh node = quem tem a translação de órbita
                 int poly_node = parent[ni];
 
-                // Offset de órbita = translação do nó polySurface (em espaço local do grupo cabin)
+                // A posição original ABSOLUTA do centro visual da cabine
                 glm::vec3 orbit_offset(0.0f);
                 const auto& pn = model.nodes[poly_node];
-                if (pn.translation.size() == 3)
+                if (pn.translation.size() == 3) {
                     orbit_offset = glm::vec3((float)pn.translation[0],
                                              (float)pn.translation[1],
                                              (float)pn.translation[2]);
+                }
+                
+                glm::vec3 mesh_center = get_mesh_center(model, model.nodes[ni].mesh);
+                glm::vec3 hinge_orig = orbit_offset + mesh_center;
 
-                // Rotaciona apenas o vetor de órbita (posição), sem rotacionar a orientação
-                glm::vec3 orbited_pos = glm::vec3(spin_z * glm::vec4(orbit_offset, 1.0f));
+                // Rotacionar a dobradiça (hinge) ao redor do centro geométrico da roda (wheel_hub)
+                glm::vec3 rotated_hinge = wheel_hub + glm::vec3(spin_z * glm::vec4(hinge_orig - wheel_hub, 1.0f));
+
+                // O deslocamento que precisa ser aplicado à malha inteira para que a dobradiça vá para rotated_hinge
+                // Delta = rotated_hinge - hinge_orig
+                glm::vec3 delta = rotated_hinge - hinge_orig;
 
                 // root_correction acima do grupo cabin (Sketchfab * fbx * ... * cabin_parent)
                 glm::mat4 above_cabin = nodeWorldTransformExclusive(model, parent, cabin_node_idx);
 
-                // Cabine fica reta: apenas se translada para a posição orbitada, sem rotação adicional
+                // A malha se move por Delta, mantendo a orientação inalterada (rotação original da modelagem)
                 glm::mat4 mesh_local = nodeLocalTransform(model.nodes[ni]);
                 final_model = world * above_cabin
-                              * glm::translate(glm::mat4(1.0f), orbited_pos)
+                              * glm::translate(glm::mat4(1.0f), delta)
+                              * glm::translate(glm::mat4(1.0f), orbit_offset)
                               * mesh_local;
             }
             // ----------------------------------------------------------------
@@ -210,9 +240,9 @@ void DrawFerrisWheel(
 
         const SceneObject& obj = g_VirtualScene.at(obj_name);
         if (obj.texture_id != 0) {
-            glActiveTexture(GL_TEXTURE13);
+            glActiveTexture(GL_TEXTURE8);
             glBindTexture(GL_TEXTURE_2D, obj.texture_id);
-            glUniform1i(glGetUniformLocation(prog, "TextureImage13"), 13);
+            glUniform1i(glGetUniformLocation(prog, "TextureImage8"), 8);
         }
 
         glBindVertexArray(obj.vertex_array_object_id);

@@ -51,7 +51,7 @@ void UpdateCollectibles() {
         float next_y = g_collectibles[i].position.y + g_collectibles[i].velocity.y * delta_t;
         bool ground_hit = false;
         
-        for (int j = 0; j < MAX_PLATFORMS; ++j) {
+        for (int j = 0; j < g_num_platforms; ++j) {
             if (g_collectibles[i].position.x >= map[j].bbox.min.x && g_collectibles[i].position.x <= map[j].bbox.max.x &&
                 g_collectibles[i].position.z >= map[j].bbox.min.z && g_collectibles[i].position.z <= map[j].bbox.max.z) {
                 
