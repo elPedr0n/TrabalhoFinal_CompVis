@@ -7,6 +7,7 @@
 #include "animation.h"
 #include "breakables.h"
 #include "particles.h"
+#include "sound.h"
 
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
@@ -84,7 +85,7 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
             keys[GLFW_KEY_SPACE] = false;
             player.double_jump_available = false;
             player.speed.y = player.characters[player.active_character].jump_speed;
-
+            PlayJumpSound("../../data/sounds/jump.wav");
         }
 
         if (keys[GLFW_KEY_SPACE] and !player.jumping){
@@ -92,6 +93,10 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
             player.jumping = true;
             player.speed.y = player.characters[player.active_character].jump_speed;
             player.double_jump_available = true;
+            PlayJumpSound("../../data/sounds/jump.wav");
+            if (player.active_character == 0) {
+                PlaySoundEffect("../../data/sounds/big_chill_cloak.wav");
+            }
         }
     }
     
@@ -190,6 +195,12 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
 
     // 3. Atualiza as variáveis de estado baseadas na colisão final
     if (colidiu_com_chao) {
+        if (player.jumping) {
+            PlaySoundEffect("../../data/sounds/step.wav");
+            if (player.active_character == 0) {
+                PlaySoundEffect("../../data/sounds/big_chill_cloak.wav");
+            }
+        }
         player.jumping = false;
         player.double_jump_available = true; // Recarrega o pulo duplo
     } else {
@@ -202,9 +213,10 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     player_bbox = makeAABBFromGround(player.position, size);
 }
 
-void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id) 
+bool ProcessSwampfireMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id, bool just_triggered) 
 {
-    if (!animRes.punch1_active && !animRes.punch2_active) return;
+    bool hit_something = false;
+    if (!animRes.punch1_active && !animRes.punch2_active) return hit_something;
 
     glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
     glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
@@ -222,6 +234,7 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
             if (state.punch1_hit_enemies.count(i)) continue;
             if (punch_box.Intersects(g_enemies[i].bbox)) {
                 printf("Punch 1 hit enemy %d!\n", i);
+                hit_something = true;
                 state.punch1_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
                 glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
@@ -235,6 +248,7 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
             if (!g_breakables[i].active) continue;
             if (state.punch1_hit_enemies.count(1000 + i)) continue; // offset to reuse set
             if (punch_box.Intersects(g_breakables[i].bbox)) {
+                hit_something = true;
                 state.punch1_hit_enemies.insert(1000 + i);
                 ApplyDamageToBreakable(i, 20.0f);
             }
@@ -252,6 +266,7 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
             if (state.punch2_hit_enemies.count(i)) continue;
             if (punch_box.Intersects(g_enemies[i].bbox)) {
                 printf("Punch 2 hit enemy %d!\n", i);
+                hit_something = true;
                 state.punch2_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
                 glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
@@ -265,15 +280,19 @@ void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState
             if (!g_breakables[i].active) continue;
             if (state.punch2_hit_enemies.count(1000 + i)) continue;
             if (punch_box.Intersects(g_breakables[i].bbox)) {
+                hit_something = true;
                 state.punch2_hit_enemies.insert(1000 + i);
                 ApplyDamageToBreakable(i, 20.0f);
             }
         }
     }
+    
+    return hit_something;
 }
 
-void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id) {
-    if (!animRes.punch_active && !animRes.magic_active) return;
+bool ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id, bool just_triggered) {
+    bool hit_something = false;
+    if (!animRes.punch_active && !animRes.magic_active) return hit_something;
 
     glm::vec3 forward(sin(player.rotate), 0.0f, cos(player.rotate));
     float reach = 0.4f;
@@ -290,6 +309,7 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
             if (state.punch_hit_enemies.count(i)) continue;
 
             if (punch_box.Intersects(g_enemies[i].bbox)) {
+                hit_something = true;
                 state.punch_hit_enemies.insert(i);
                 ApplyDamageToEnemy(i, 20.0f);
                 glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
@@ -303,6 +323,7 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
             if (!g_breakables[i].active) continue;
             if (state.punch_hit_enemies.count(1000 + i)) continue;
             if (punch_box.Intersects(g_breakables[i].bbox)) {
+                hit_something = true;
                 state.punch_hit_enemies.insert(1000 + i);
                 ApplyDamageToBreakable(i, 20.0f);
             }
@@ -332,6 +353,7 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
         for (int i = 0; i < 20; i++) {
             if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
             if (magic_box.Intersects(g_enemies[i].bbox)) {
+                hit_something = true;
                 g_enemies[i].is_frozen = true;
                 g_enemies[i].frozen_timer = 3.0f;
                 // continuous low damage without triggering flinch
@@ -341,10 +363,13 @@ void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAni
         for (int i = 0; i < MAX_BREAKABLES; i++) {
             if (!g_breakables[i].active) continue;
             if (magic_box.Intersects(g_breakables[i].bbox)) {
+                hit_something = true;
                 ApplyDamageToBreakable(i, 15.0f * delta_t); 
             }
         }
     }
+    
+    return hit_something;
 }
 
 void ResolvePlayerMapCollisions() {
@@ -377,9 +402,10 @@ void ResolvePlayerMapCollisions() {
     }
 }
 
-void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id) 
+bool ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id, bool just_triggered) 
 {
-    if (!animRes.punch_active && !animRes.big_slap_active) return;
+    bool hit_something = false;
+    if (!animRes.punch_active && !animRes.big_slap_active) return hit_something;
 
     glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
     float reach = 0.35f;
@@ -398,6 +424,7 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
             if (punch_box.Intersects(g_enemies[i].bbox)) {
                 printf("Ben punch hit enemy %d!\n", i);
                 state.punch_hit_enemies.insert(i);
+                hit_something = true;
                 ApplyDamageToEnemy(i, 5.0f);
                 glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
                 glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
@@ -415,6 +442,7 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
             if (state.punch_hit_enemies.count(1000 + i)) continue;
             if (punch_box.Intersects(g_breakables[i].bbox)) {
                 state.punch_hit_enemies.insert(1000 + i);
+                hit_something = true;
                 ApplyDamageToBreakable(i, 5.0f);
             }
         }
@@ -432,6 +460,7 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
             if (slap_box.Intersects(g_enemies[i].bbox)) {
                 printf("Big slap applied to enemy %d!\n", i); // History log per the user's request
                 state.big_slap_hit_enemies.insert(i);
+                hit_something = true;
                 ApplyDamageToEnemy(i, 10.0f); // More damage than normal punch
                 glm::vec3 overlap_min = glm::max(slap_box.min, g_enemies[i].bbox.min);
                 glm::vec3 overlap_max = glm::min(slap_box.max, g_enemies[i].bbox.max);
@@ -445,10 +474,13 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
             if (state.big_slap_hit_enemies.count(1000 + i)) continue;
             if (slap_box.Intersects(g_breakables[i].bbox)) {
                 state.big_slap_hit_enemies.insert(1000 + i);
+                hit_something = true;
                 ApplyDamageToBreakable(i, 10.0f);
             }
         }
     }
+
+    return hit_something;
 }
 
 void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos) {

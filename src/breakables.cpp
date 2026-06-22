@@ -3,6 +3,7 @@
 #include "sceneobject.h"
 #include "matrices.h"
 #include "particles.h"
+#include "sound.h"
 #include <iostream>
 
 Breakable g_breakables[MAX_BREAKABLES];
@@ -60,6 +61,11 @@ void ApplyDamageToBreakable(int id, float damage) {
     g_breakables[id].flinch_timer = 0.0f;
     
     if (g_breakables[id].health <= 0.0f) {
+        if (g_breakables[id].model_name == "the_teddy_bear") {
+            PlaySoundEffect("../../data/sounds/break_soft.wav");
+        } else {
+            PlaySoundEffect("../../data/sounds/break_hard.wav");
+        }
         g_breakables[id].active = false;
         
         // Spawn fragments
@@ -93,6 +99,8 @@ void ApplyDamageToBreakable(int id, float damage) {
         SpawnCollectibles(g_breakables[id].position + glm::vec3(0.0f, g_breakables[id].scale, 0.0f), 1, collectible_type);
         
         player.objects_destroyed++;
+    } else {
+        PlaySoundEffect("../../data/sounds/break_hit.wav");
     }
 }
 

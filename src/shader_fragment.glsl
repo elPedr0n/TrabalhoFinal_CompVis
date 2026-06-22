@@ -78,6 +78,7 @@ uniform int is_frozen;
 uniform float enemy_alpha;
 uniform vec3 player_position;
 uniform int active_alien;
+uniform float bigchill_part_alpha;
 
 // === POSTES DE LUZ ===
 const int MAX_LAMPS = 11;
@@ -193,8 +194,19 @@ void main()
     else if ( object_id == CHILL )
     {
         U = texcoords.x;
-        V = texcoords.y;
-        Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
+        if (material_id > 3.5) {
+            V = 1.0 - texcoords.y; // flip V for big_chill_ben_10
+            Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
+            // Increase saturation
+            float luminance = dot(Kd0, vec3(0.299, 0.587, 0.114));
+            Kd0 = mix(vec3(luminance), Kd0, 1.6); // 1.6x saturation multiplier
+        } else if (material_id > 2.5) {
+            V = texcoords.y; // no flip for cloaked OBJ uvs
+            Kd0 = texture(TextureImage3, vec2(U,V)).rgb;
+        } else {
+            V = texcoords.y; // no flip for cloaked OBJ uvs
+            Kd0 = texture(TextureImage2, vec2(U,V)).rgb;
+        }
     }
     else if ( object_id == 15 ) // UAF_CHILL
     {
@@ -671,6 +683,10 @@ void main()
 
     if (enemy_alpha < 1.0) {
         color.a *= enemy_alpha;
+    }
+
+    if (object_id == CHILL) {
+        color.a *= bigchill_part_alpha;
     }
 
     // Cor final com correção gamma, considerando monitor sRGB.
