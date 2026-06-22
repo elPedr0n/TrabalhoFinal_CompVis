@@ -1297,3 +1297,22 @@ PROMPT 12: 1- o ben as vezes ainda fica debaixo da terra ao morrer, conserte iss
 5 - quanto ao "trigger" de transição, considere quando o jogador passar por um plano definido entre as coordenadas z: -99.130 e z: -82.656, na coordenada x=11.221
 
 PROMPT 13: os projéteis dos inimigos ainda não tem colisão com o chão! na animação de ataque especial, o modelo do ben fica em cima da terra, adicione um offset negativo no eixo y para deixar certo. Faça com que, para todos os personagens, os sons de "punch"/"punch_not_connect" só toquem quando o soco não acertar um inimigo. Nesse caso, deve tocar "punch_connect".
+
+### Commit com IA: Camera fixa funcionando e sombra embaixo do jogador
+
+PROMPT 1: quero que tu me monte uma sombra completamente preta embaixo do jogador. Sera um circulo preto, com um raio nao muito grande que acompanha ele em todo mapa, independente da luz. Deve ser 100 preto
+
+PROMPT 2: I need to implement a different kind of camera, a fixed one. for that, i need a callback that, once I click, it tell me all the parameters in the terminal, so I know where to put it. can you do that?
+
+PROMPT 3: nice, in the @temp.txt I have all the info I need. The ideia is, use the cameras in the order they are in the txt file. When the player gets out of the frustum, changes to the next one. the movement should be bound to the orientation of the camera, so it shound not be a issue. Implement this flow
+
+PROMPT 4: can you create a toggle of cameras? one to use the fixed and one to use he third person (that I can drag along)? Also we need a buffer to store the intended direction of the player when we changes the fixed camera, it can cause the movement to change
+
+PROMPT 5: 2 things, i need you to change the third camera in fixed to use this parameters 
+--- Camera Parameters (Click) ---
+    Position: (0.11, 2.55, -19.39)
+    LookAt:   (2.25, 1.50, -23.42)
+    View Vec: (2.14, -1.05, -4.03)
+    Up Vec:   (0.00, 1.00, 0.00)
+  --------------------------------- 
+and using only exitin the frustum of the camera wont work, the third camera has a great view of the map, so you need to add another flag to change to the closest camera based on the player distance
