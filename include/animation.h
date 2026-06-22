@@ -22,6 +22,22 @@ private:
     std::vector<int> node_parent;
     std::vector<glm::mat4> inverse_bind_matrices;
     std::vector<glm::mat4> boneMatrices;
+
+    // Caches to avoid per-frame allocations
+    std::vector<glm::vec3> node_T;
+    std::vector<glm::quat> node_R;
+    std::vector<glm::vec3> node_S;
+    std::vector<bool> node_has_matrix;
+    std::vector<glm::mat4> local_matrix;
+    
+    std::vector<glm::mat4> global_matrix;
+    std::vector<bool> matrix_computed;
+    std::vector<int> path_cache;
+
+    // Cache anim inputs/outputs to avoid re-parsing buffers
+    int cached_anim_index = -1;
+    std::vector<std::vector<float>> sampler_inputs_cache;
+    std::vector<int> sampler_output_accessor_cache;
 };
 
 // State object used to preserve local timers and flags for the Swampfire
@@ -78,6 +94,11 @@ struct BenAnimState {
     bool e_key_was_down = false;
     std::set<int> punch_hit_enemies;  // same as swampfire's punch1_hit_enemies
     float attack_speed_multiplier = 1.0f;
+    bool q_key_was_down = false;
+    bool is_q_attacking = false;
+    float q_attack_timer = 0.0f;
+    std::set<int> big_slap_hit_enemies;
+    bool is_dancing = false;
 };
 
 struct BenAnimResult {
@@ -85,6 +106,8 @@ struct BenAnimResult {
     float anim_time_to_pass = 0.0f;
     bool is_attacking = false;
     bool punch_active = false;
+    bool big_slap_active = false;
+    bool is_dancing = false;
 };
 
 BenAnimResult computeBenAnimation(const tinygltf::Model& model,
