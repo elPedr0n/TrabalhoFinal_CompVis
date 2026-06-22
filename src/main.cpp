@@ -351,8 +351,8 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.8f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.31f;   // Ângulo em relação ao eixo Y
+float g_CameraTheta = 1.26f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.22f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
@@ -540,6 +540,35 @@ void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
     sprintf(uniform_name, "TextureImage%u", unit);
     glUniform1i(glGetUniformLocation(program, uniform_name), unit);
     glUseProgram(0);
+}
+
+struct FrustumPlane {
+    glm::vec3 normal;
+    float distance;
+};
+
+void ExtractFrustumPlanes(const glm::mat4& vp, FrustumPlane* planes) {
+    planes[0].normal.x = vp[0][3] + vp[0][0]; planes[0].normal.y = vp[1][3] + vp[1][0]; planes[0].normal.z = vp[2][3] + vp[2][0]; planes[0].distance = vp[3][3] + vp[3][0];
+    planes[1].normal.x = vp[0][3] - vp[0][0]; planes[1].normal.y = vp[1][3] - vp[1][0]; planes[1].normal.z = vp[2][3] - vp[2][0]; planes[1].distance = vp[3][3] - vp[3][0];
+    planes[2].normal.x = vp[0][3] + vp[0][1]; planes[2].normal.y = vp[1][3] + vp[1][1]; planes[2].normal.z = vp[2][3] + vp[2][1]; planes[2].distance = vp[3][3] + vp[3][1];
+    planes[3].normal.x = vp[0][3] - vp[0][1]; planes[3].normal.y = vp[1][3] - vp[1][1]; planes[3].normal.z = vp[2][3] - vp[2][1]; planes[3].distance = vp[3][3] - vp[3][1];
+    planes[4].normal.x = vp[0][3] + vp[0][2]; planes[4].normal.y = vp[1][3] + vp[1][2]; planes[4].normal.z = vp[2][3] + vp[2][2]; planes[4].distance = vp[3][3] + vp[3][2];
+    planes[5].normal.x = vp[0][3] - vp[0][2]; planes[5].normal.y = vp[1][3] - vp[1][2]; planes[5].normal.z = vp[2][3] - vp[2][2]; planes[5].distance = vp[3][3] - vp[3][2];
+
+    for (int i = 0; i < 6; i++) {
+        float length = glm::length(planes[i].normal);
+        planes[i].normal /= length;
+        planes[i].distance /= length;
+    }
+}
+
+bool IsSphereInFrustum(const glm::vec3& center, float radius, FrustumPlane* planes) {
+    for (int i = 0; i < 6; i++) {
+        if (glm::dot(planes[i].normal, center) + planes[i].distance < -radius) {
+            return false;
+        }
+    }
+    return true;
 }
 
 int main(int argc, char* argv[])
@@ -1107,6 +1136,10 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
         
+        FrustumPlane frustum_planes[6];
+        glm::mat4 view_projection = projection * view;
+        ExtractFrustumPlanes(view_projection, frustum_planes);
+
         // Pass player data for lighting
         glUniform3f(glGetUniformLocation(g_GpuProgramID, "player_position"), player.position.x, player.position.y + 0.5f, player.position.z);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "active_alien"), player.active_character);
@@ -1503,6 +1536,12 @@ int main(int argc, char* argv[])
 
 
         for (int i = 0; i < barracas_positions.size(); i++) {
+
+            // Frustum Culling: Testamos se a barraca (assumindo um raio de 4.5 para cobrir o modelo) está na visão da câmera
+            if (!IsSphereInFrustum(barracas_positions[i] + glm::vec3(0.0f, 1.0f, 0.0f), 4.5f, frustum_planes)) {
+                continue;
+            }
+
             if (i >= 7 && i < 14) {
                 model = Matrix_Rotate_Y(-0.3f);
             } else {

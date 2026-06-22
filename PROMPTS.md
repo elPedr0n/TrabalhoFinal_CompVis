@@ -1195,15 +1195,20 @@ PROMPT 4: almost ready, the bananas itself are nice, but there are some random b
 PROMPT: so, I want to start working on some illuminations, read the files in s rc to understand the main objective. in @SPEC.md I have some prints of the ilumination i want to induce, can you read the files in this dir, and implement somthing like that? I want to have that glow from a alien and make my map look like its in the night
 
 
-## Commit com IA: Adicionei iluminações com postes e debuguei textura da barraca 
+### Commit com IA: Adicionei iluminações com postes e debuguei textura da barraca 
 
 PROMPT: quero fazer umas coisinhas, a fim do ben n ficar mt bucha sem luz, adicione em algumas posicoes do mapa uma luz meio amarelada, que simule postes. Me diga como esta feito para eu poder mudar a posicao depois caso eu queira
 
 
-## Commit com IA: Coloquei os modelos da parede e das torres do castelo
+### Commit com IA: Coloquei os modelos da parede e das torres do castelo e resolvi um bug de colisão
 
 PROMPT 1: seguinte, exportei como glb somente a parede, modele toda a logica que vc montou para renderizar somente a wall e tower em obj e adicione a logica para colocar a parede de glb usando as coisas de gltf
  
 PROMPT 2: bacanaaaa, coloquei o da tower la, consegue fazer a msm coisa?
 
 PROMPT 3: eu tenho um bug n de renderização mas de colisao agora, por algum motivo, o colisor da ultima parte do mapa, dps que eu faço um parkou de plataforma, to entrando no chao. Acho que eh o collider 15 se n me engano
+
+
+### Commit com IA: Otimização do game, barracas tavam comendo fps, ent apenas as no frustum da camera serão desenhadas
+
+PROMPT:  entao, eu quero fazer uma optimização para a parte do meu rendering das barracas. Eu quero dezenhar apenas aquelas que tem coordenadas dentro do frustum da minha camera, eu to com uma logica de distancia mas ela n ta tao bacana, consegue me fazer essa ai?
