@@ -29,6 +29,7 @@ uniform mat4 projection;
 #define BLOCO 5
 uniform int object_id;
 #define GROUND 13
+#define SKYBOX 99
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
 uniform vec4 aabb_min;
@@ -455,6 +456,11 @@ void main()
         else if (material_id > 26.5) { Kd0 = texture(TextureImage27, vec2(U,V)).rgb; } // 27 cb_0.png
         else if (material_id > 19.5) { Kd0 = texture(TextureImage20, vec2(U,V)).rgb; } // 20 Machine
         else { Kd0 = vec3(0.8, 0.8, 0.8); }
+    } else if (object_id == 55) { // FERRIS_WHEEL
+        U = texcoords.x;
+        V = 1.0 - texcoords.y; // gltf V flip
+        vec4 tex_color = texture(TextureImage8, vec2(U,V));
+        Kd0 = tex_color.rgb;
     } else if (object_id == GROUND) {
         U = texcoords.x;
         V = texcoords.y;
@@ -497,6 +503,36 @@ void main()
     // Debug bounding boxes rendering: when object_id==101, draw solid yellow lines
     if (object_id == 101) {
         color = vec4(1.0, 1.0, 0.0, 1.0);
+        return;
+    }
+
+    if (object_id == SKYBOX) {
+        vec3 base_color = vec3(53.0/255.0, 29.0/255.0, 23.0/255.0); // Reddish tone (darker)
+        vec3 dark_color = vec3(21.0/255.0, 9.0/255.0, 6.0/255.0); // Darker tone
+        vec3 cloud_color = vec3(12.0/255.0, 3.0/255.0, 3.0/255.0); // Very dark clouds
+
+        // Normalize y coordinate of the sphere for the gradient
+        // The sphere has radius ~1 in model space, so y is between -1 and 1
+        float gradient = clamp(position_model.y + 0.5, 0.0, 1.0);
+
+        // Procedural noise for clouds based on model position
+        vec3 p3 = position_model.xyz * 4.0;
+        float n = sin(p3.x*2.0)*cos(p3.y*2.5)*sin(p3.z*2.0);
+        n += 0.5 * sin(p3.x*4.0 + current_time*0.5)*cos(p3.y*5.0)*sin(p3.z*4.0);
+        n += 0.25 * sin(p3.x*8.0 - current_time*0.3)*cos(p3.y*9.0)*sin(p3.z*8.0);
+        float noise = (n / 1.75) * 0.5 + 0.5;
+
+        // Dark spaces simulating clouds where noise is high
+        float cloud_factor = smoothstep(0.4, 0.8, noise);
+
+        vec3 final_color = mix(dark_color, base_color, gradient);
+        final_color = mix(final_color, cloud_color, cloud_factor * 0.85);
+
+        color.rgb = final_color;
+        color.a = 1.0;
+
+        // Skip normal lighting!
+        color.rgb = pow(color.rgb, vec3(1.0,1.0,1.0)/2.2);
         return;
     }
 

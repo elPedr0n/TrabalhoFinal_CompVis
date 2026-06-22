@@ -44,6 +44,9 @@ void SpawnBreakable(glm::vec3 pos, float scale, const std::string& model_name, f
             g_breakables[i].is_flinching = false;
             g_breakables[i].flinch_timer = 0.0f;
             g_breakables[i].velocity_y = 0.0f;
+            
+            std::cout << "Spawned " << model_name << " at (" << pos.x << ", " << pos.y << ", " << pos.z << ")" << std::endl;
+            
             break;
         }
     }

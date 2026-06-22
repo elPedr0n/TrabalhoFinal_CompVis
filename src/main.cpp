@@ -67,6 +67,7 @@
 // Projectiles and particles
 #include "projectiles.h"
 #include "particles.h"
+#include "ferris_wheel.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -919,6 +920,7 @@ int main(int argc, char* argv[])
     tinygltf::Model tower_gltf_model = AsyncLoadGLTF("../../data/map_background/tower.glb", "the_tower");
     tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
     tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
+    tinygltf::Model ferris_wheel_model = AsyncLoadGLTF("../../data/map_background/ferris_wheel/scene.gltf", "the_ferris_wheel");
     
     // Breakables
     AsyncLoadGLTF("../../data/breakables/low_poly_asset_teddy_bear.glb", "the_teddy_bear");
@@ -1066,7 +1068,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
+        glClearColor(0.02f, 0.02f, 0.08f, 1.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -1182,8 +1184,8 @@ int main(int argc, char* argv[])
         #define BBOX_DEBUG 101
         #define COLLECT_OBJ 10
         #define GROUND 13
+        #define SKYBOX 99
 
-        
         // Re-bind all previously loaded textures/samplers to their texture units
         for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
         {
@@ -1191,6 +1193,22 @@ int main(int argc, char* argv[])
             glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
             glBindSampler(tu, g_LoadedSamplerIDs[tu]);
         }
+
+        // ==========================================
+        // DRAW SKYBOX (Background gradient + clouds)
+        // ==========================================
+        glDepthMask(GL_FALSE); // Don't write to depth buffer
+        glDisable(GL_CULL_FACE); // See inside the sphere
+
+        model = Matrix_Translate(camera_position_c.x, camera_position_c.y, camera_position_c.z) * Matrix_Scale(40.0f, 40.0f, 40.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, SKYBOX);
+
+        // Uses a very simple white texture so it doesn't affect color calculation in shader too much, or shader ignores Kd0 for SKYBOX
+        DrawVirtualObject("the_sphere");
+
+        glEnable(GL_CULL_FACE);
+        glDepthMask(GL_TRUE);
 
         // Compute animations for all characters at the top
         BigChillAnimResult bigchillRes = computeBigChillAnimation(bigchill_model, keys, player.jumping, delta_t, agora, bigchill_state);
@@ -1240,7 +1258,7 @@ int main(int argc, char* argv[])
         }
         UpdatePosition(can_move, can_rotate);
 
-        UpdateEnemies();
+        // UpdateEnemies();
         UpdateCollectibles();
         UpdateBreakables();
         UpdateFragments();
@@ -1592,19 +1610,6 @@ int main(int argc, char* argv[])
             }
         }
 
-        // // Draw the new wall.glb
-        // model = Matrix_Translate(1.5f, 3.0f, -76.373f) * Matrix_Scale(0.9f, 0.9f, 0.9f) * Matrix_Rotate_Y(M_PI / 2.0f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 11); // ID 11 samples TextureImage8 which we bind below
-        // for (const auto& pair : g_VirtualScene) {
-        //     if (pair.first.find("the_wall_") == 0) {
-        //         glActiveTexture(GL_TEXTURE8);
-        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
-        //         DrawVirtualObject(pair.first.c_str());
-        //     }
-        // }
-
         for (int i = 0; i < tower_positions.size(); i++) {
             model = Matrix_Translate(tower_positions[i].x, tower_positions[i].y, tower_positions[i].z);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -1618,42 +1623,6 @@ int main(int argc, char* argv[])
                 }
             }
         }
-        // // Draw the new tower.glb
-        // model = Matrix_Translate(1.6f, 6.0f, -101.373f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 11); 
-        // for (const auto& pair : g_VirtualScene) {
-        //     if (pair.first.find("the_tower_") == 0) {
-        //         glActiveTexture(GL_TEXTURE8);
-        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
-        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
-        //         DrawVirtualObject(pair.first.c_str());
-        //     }
-        // }
-
-        // // Desenhamos a barraca
-        // model = Matrix_Translate(2.8f, 1.0f, -39.6f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 50);
-        // for (const auto& shape : barraca_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
-
-        // // Desenhamos a barraca macarrao
-        // model = Matrix_Translate(3.4f, 1.0f, -42.5f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 51);
-        // for (const auto& shape : macarrao_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
-
-        // // Desenhamos a barraca banana
-        // model = Matrix_Translate(1.0f, 1.0f, -45.4f) * Matrix_Scale(1.4f, 1.4f, 1.4f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 52);
-        // for (const auto& shape : banana_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
@@ -1673,9 +1642,19 @@ int main(int argc, char* argv[])
             }
         }
 
-        for (int i = 0; i < MAX_PLATFORMS; i++) {
-            DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        // Desenhamos a Roda Gigante (ferris wheel)
+        {
+            glm::mat4 fw_world = Matrix_Translate(5.3251f, 3.7862f, -58.783f)
+                               * Matrix_Rotate_Y(M_PI / 2.0f)  // 90 graus no eixo Y
+                               * Matrix_Scale(0.366f, 0.366f, 0.366f);
+            DrawFerrisWheel(ferris_wheel_model, "the_ferris_wheel",
+                           g_GpuProgramID, g_model_uniform, g_object_id_uniform,
+                           fw_world, (float)agora, 0.4f);
         }
+
+        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        // }
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);

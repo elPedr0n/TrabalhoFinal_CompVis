@@ -1212,3 +1212,18 @@ PROMPT 3: eu tenho um bug n de renderização mas de colisao agora, por algum mo
 ### Commit com IA: Otimização do game, barracas tavam comendo fps, ent apenas as no frustum da camera serão desenhadas
 
 PROMPT:  entao, eu quero fazer uma optimização para a parte do meu rendering das barracas. Eu quero dezenhar apenas aquelas que tem coordenadas dentro do frustum da minha camera, eu to com uma logica de distancia mas ela n ta tao bacana, consegue me fazer essa ai?
+
+
+### Commit com IA: Coloquei um ceu bacana, e finalmente o modelo da roda gigante funcionando decentemente
+
+PROMPT 1: so, I have a impossible mission for you. I need you to draw the model for the ferris wheel. There is a problem in that. It should be spinning like a ferris wheel. The code I sent you I believe its bugged. At some point of the code it war working, but not now. Analyse it and debug it. The final position to translate it to is (-5.3251, 7.7862, -58783),the scalling set to 0.366 and a 90 degree rotation in the Y axis.
+
+PROMPT 2: So, the last model put the ferris wheel there, but the omnitrix hud item is bugged now, problably a error in the mapping of the textures, can you fix?
+
+PROMPT 3: show, agora vc me ajudara a debugar a roda gigante. As gondolas (vabines) estao rodando certinho, mas o raio em que giram esta variando com o tempo, eh algum erro na transformação delas, provavelmente por volta da linha 157, da uma olhada
+
+PROMPT 4 - 10: Meu ta muito errado isso, n ta girando corretamente, tente ajutar @ferris_wheel_cpp
+
+PROMPT 11: so, for now we are having a white canvas for the background part os the map, i want to change it to something resembling the nightime of the game, how I do it?
+
+PROMPT 12: i need a redish color, like this tone in rgb 88, 48, 39, But it would be nice if it were a gradient, with some dark spaces in some places, to simulate some clouds
