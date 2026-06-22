@@ -511,6 +511,31 @@ glm::vec3 bigchill_size = glm::vec3(1.38963f * player.characters[0].scale, 1.965
 glm::vec3 swampfire_size = glm::vec3(3.28f * player.characters[1].scale, 3.8f * player.characters[1].scale, 2.0f * player.characters[1].scale);
 glm::vec3 bentennyson_size = glm::vec3(1.18f * player.characters[2].scale, 1.5f * player.characters[2].scale, 0.9f * player.characters[2].scale);
 
+struct SpawnPoint g_spawn_points[MAX_SPAWN_POINTS] = {
+    SpawnPoint(glm::vec3(0.162f, 1.000f, -19.182f), 0, 1),
+    SpawnPoint(glm::vec3(4.820f, 1.000f, -20.590f), 0, 1),
+    SpawnPoint(glm::vec3(5.149f, 1.000f, -25.142f), 0, 1),
+    SpawnPoint(glm::vec3(2.463f, 1.000f, -25.913f), 0, 1),
+    SpawnPoint(glm::vec3(2.675f, 1.000f, -31.658f), 0, 1),
+    SpawnPoint(glm::vec3(8.278f, 1.000f, -36.553f), 0, 1),
+    SpawnPoint(glm::vec3(4.253f, 1.000f, -40.824f), 0, 1),
+    SpawnPoint(glm::vec3(5.961f, 1.000f, -47.035f), 0, 1),
+    SpawnPoint(glm::vec3(10.160f, 1.000f, -46.688f), 0, 1),
+    SpawnPoint(glm::vec3(16.273f, 1.000f, -51.056f), 0, 1),
+    SpawnPoint(glm::vec3(20.158f, 1.000f, -51.102f), 0, 1),
+    SpawnPoint(glm::vec3(20.177f, 1.000f, -55.054f), 0, 1),
+    SpawnPoint(glm::vec3(17.362f, 1.000f, -59.580f), 0, 1),
+    SpawnPoint(glm::vec3(11.262f, 1.000f, -60.843f), 0, 1),
+    SpawnPoint(glm::vec3(18.921f, 1.000f, -62.191f), 0, 1),
+    SpawnPoint(glm::vec3(6.840f, 0.988f, -84.157f), 1, 1),
+    SpawnPoint(glm::vec3(4.212f, 0.988f, -90.785f), 1, 2),
+    SpawnPoint(glm::vec3(4.775f, 0.988f, -96.124f), 1, 1),
+    SpawnPoint(glm::vec3(7.543f, 0.988f, -98.300f), 1, 2),
+    SpawnPoint(glm::vec3(10.514f, 0.988f, -97.883f), 1, 2),
+    SpawnPoint(glm::vec3(10.520f, 0.988f, -84.577f), 1, 1)
+};
+int g_num_spawn_points = 21;
+
 Enemy g_enemies[MAX_ENEMIES] = {
     Enemy(2.0f, 2.0f, -2.0f, 0.0f, 0.5f, true, 1.0f, 0.99f, 0.775f)
 };
@@ -1508,6 +1533,16 @@ int main(int argc, char* argv[])
         }
         UpdatePosition(can_move, can_rotate);
 
+        // Handle proximity spawning
+        for (int i = 0; i < g_num_spawn_points; ++i) {
+            if (g_spawn_points[i].enemies_spawned < g_spawn_points[i].max_enemies && 
+                g_spawn_points[i].active_enemy_id == -1) {
+                if (glm::distance(player.position, g_spawn_points[i].position) < 5.0f) {
+                    SpawnEnemy(g_spawn_points[i].position, i);
+                }
+            }
+        }
+
         UpdateEnemies();
         UpdateCollectibles();
         UpdateBreakables();
@@ -1955,7 +1990,10 @@ int main(int argc, char* argv[])
             if (!g_enemies[i].visible) continue;
 
             float enemy_alpha = 1.0f;
-            if (g_enemies[i].is_flashing) {
+            if (g_enemies[i].is_spawning) {
+                enemy_alpha = g_enemies[i].spawn_timer / g_enemies[i].spawn_duration;
+                if (enemy_alpha > 1.0f) enemy_alpha = 1.0f;
+            } else if (g_enemies[i].is_flashing) {
                 enemy_alpha = 1.0f - (g_enemies[i].flash_timer / 1.0f);
                 if (enemy_alpha < 0.0f) enemy_alpha = 0.0f;
             }
@@ -2363,32 +2401,7 @@ int main(int argc, char* argv[])
 }
 
 void DrawBoundingBox(AABB& aabb, int restore_object_id) {
-    if (g_BBoxVAO == 0) return;
-
-    glm::mat4 identity = Matrix_Identity();
-    glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(identity));
-
-    const GLfloat bbox_vertices[8 * 4] = {
-        aabb.min.x, aabb.min.y, aabb.min.z, 1.0f, // V0
-        aabb.max.x, aabb.min.y, aabb.min.z, 1.0f, // V1
-        aabb.max.x, aabb.max.y, aabb.min.z, 1.0f, // V2
-        aabb.min.x, aabb.max.y, aabb.min.z, 1.0f, // V3
-        aabb.min.x, aabb.min.y, aabb.max.z, 1.0f, // V4
-        aabb.max.x, aabb.min.y, aabb.max.z, 1.0f, // V5
-        aabb.max.x, aabb.max.y, aabb.max.z, 1.0f, // V6
-        aabb.min.x, aabb.max.y, aabb.max.z, 1.0f  // V7
-    };
-
-    glBindVertexArray(g_BBoxVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, g_BBoxVBO);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(bbox_vertices), bbox_vertices);
-
-    glUniform1i(g_object_id_uniform, 101);
-    glLineWidth(2.0f);
-    glDrawElements(GL_LINES, 24, GL_UNSIGNED_INT, 0);
-
-    glBindVertexArray(0);
-    glUniform1i(g_object_id_uniform, restore_object_id);
+    // Debug views removed by user request
 }
 
 // Função que carrega uma imagem para ser utilizada como textura
@@ -3306,83 +3319,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     else if (action == GLFW_RELEASE)
         keys[key] = false;
 
-    // In-game spawn breakables shortcuts
-    if (!g_ui_debug_enabled && action == GLFW_PRESS) {
-        if (key == GLFW_KEY_1 || key == GLFW_KEY_2 || key == GLFW_KEY_3) {
-            glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-            glm::vec3 spawn_pos = player.position + forward * 2.0f;
-            spawn_pos.y += 2.0f; // um pouco acima
-            
-            if (key == GLFW_KEY_1) {
-                SpawnBreakable(spawn_pos, 1.5f, "the_teddy_bear", 10.0f, 0.4f, 0.4f, 0.4f, glm::vec3(0.835f, 0.694f, 0.612f), 0.2f, 8, player.rotate + 3.14159265f);
-            } else if (key == GLFW_KEY_2) {
-                SpawnBreakable(spawn_pos, 0.4f, "the_wooden_box", 25.0f, 3.0f, 3.0f, 3.0f, glm::vec3(0.569f, 0.525f, 0.467f), 0.4f, 12, player.rotate + 3.14159265f);
-            } else if (key == GLFW_KEY_3) {
-                SpawnBreakable(spawn_pos, 0.08f, "the_park_bench", 30.0f, 9.0f, 10.0f, 20.0f, glm::vec3(0.318f, 0.259f, 0.216f), 0.2f, 15, player.rotate + 3.14159265f);
-            }
-        } else if (key == GLFW_KEY_4) {
-            glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-            glm::vec3 spawn_pos = player.position + forward * 2.0f;
-            spawn_pos.y += 2.0f; // um pouco acima
-            SpawnEnemy(spawn_pos);
-        }
-    }
-
-    // DEBUG UI TOGGLE
-    if (key == GLFW_KEY_U && action == GLFW_PRESS) {
-        g_ui_debug_enabled = !g_ui_debug_enabled;
-    }
-
-    if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-        g_UseFixedCameras = !g_UseFixedCameras;
-        printf("Fixed Cameras: %s\n", g_UseFixedCameras ? "ON" : "OFF");
-    }
-
-    // DEBUG MAP COORDS
-    if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-        printf("========== MAP COORDS ==========\n");
-        printf("Player Position: x = %.3f, y = %.3f, z = %.3f\n", player.position.x, player.position.y, player.position.z);
-        // printf("Camera Look At : x = %.3f, y = %.3f, z = %.3f\n", camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z);
-        printf("================================\n");
-        fflush(stdout);
-    }
-    if (g_ui_debug_enabled && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-        if (key == GLFW_KEY_1 && action == GLFW_PRESS) {
-            g_ui_selected_elem = (g_ui_selected_elem - 1 + 13) % 13;
-        }
-        if (key == GLFW_KEY_2 && action == GLFW_PRESS) {
-            g_ui_selected_elem = (g_ui_selected_elem + 1) % 13;
-        }
-        if (key == GLFW_KEY_3 && action == GLFW_PRESS) {
-            g_ui_selected_param = (g_ui_selected_param - 1 + 4) % 4;
-        }
-        if (key == GLFW_KEY_4 && action == GLFW_PRESS) {
-            g_ui_selected_param = (g_ui_selected_param + 1) % 4;
-        }
-        
-        if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-            printf("\n--- Current UI Config ---\n");
-            for (int i = 0; i < 13; i++) {
-                printf("    { %.3ff, %.3ff, %.3ff, %.3ff, \"%s\" },\n", 
-                    g_ui_items[i].x, g_ui_items[i].y, g_ui_items[i].scale_x, g_ui_items[i].scale_y, g_ui_items[i].name);
-            }
-            printf("-------------------------\n");
-        }
-        
-        float step = (g_ui_selected_param >= 2) ? 0.005f : 0.005f;
-        if (key == GLFW_KEY_MINUS || key == GLFW_KEY_KP_SUBTRACT) {
-            if (g_ui_selected_param == 0) g_ui_items[g_ui_selected_elem].x -= step;
-            if (g_ui_selected_param == 1) g_ui_items[g_ui_selected_elem].y -= step;
-            if (g_ui_selected_param == 2) g_ui_items[g_ui_selected_elem].scale_x -= step;
-            if (g_ui_selected_param == 3) g_ui_items[g_ui_selected_elem].scale_y -= step;
-        }
-        if (key == GLFW_KEY_EQUAL || key == GLFW_KEY_KP_ADD) {
-            if (g_ui_selected_param == 0) g_ui_items[g_ui_selected_elem].x += step;
-            if (g_ui_selected_param == 1) g_ui_items[g_ui_selected_elem].y += step;
-            if (g_ui_selected_param == 2) g_ui_items[g_ui_selected_elem].scale_x += step;
-            if (g_ui_selected_param == 3) g_ui_items[g_ui_selected_elem].scale_y += step;
-        }
-    }
+    // Debug keys removed by user request
 
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -3412,26 +3349,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_Y && action == GLFW_PRESS)
     {
         g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-
-        // DEBUG: Print all active breakables
-        printf("\n========== ACTIVE BREAKABLES ==========\n");
-        for (int i = 0; i < MAX_BREAKABLES; ++i) {
-            if (g_breakables[i].active) {
-                printf("Breakable %d:\n", i);
-                printf("  Model: %s\n", g_breakables[i].model_name.c_str());
-                printf("  Position: (%.3f, %.3f, %.3f)\n", g_breakables[i].position.x, g_breakables[i].position.y, g_breakables[i].position.z);
-                printf("  Rotation: (%.3f, %.3f, %.3f)\n", g_breakables[i].rotation_x, g_breakables[i].rotation_y, g_breakables[i].rotation_z);
-                printf("  Scale: %.3f\n", g_breakables[i].scale);
-                printf("  Health: %.1f / %.1f\n", g_breakables[i].health, g_breakables[i].max_health);
-                printf("  BBox Size: (%.3f, %.3f, %.3f)\n", g_breakables[i].bbox_w, g_breakables[i].bbox_h, g_breakables[i].bbox_d);
-                printf("  Fragments: color=(%.2f,%.2f,%.2f), size=%.2f, count=%d\n", 
-                    g_breakables[i].fragment_color.r, g_breakables[i].fragment_color.g, g_breakables[i].fragment_color.b,
-                    g_breakables[i].fragment_size, g_breakables[i].fragment_count);
-            }
-        }
-        printf("=======================================\n");
-        fflush(stdout);
     }
+
+    // Spawn point debug keys removed
     if (key == GLFW_KEY_Z && action == GLFW_PRESS)
     {
         if (mod & GLFW_MOD_SHIFT)

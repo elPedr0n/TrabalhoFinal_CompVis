@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
+#include <GLFW/glfw3.h>
 #include "particles.h"
 #include "projectiles.h"
 #include "sound.h"
@@ -15,14 +16,15 @@
 
 void ResolvePlayerMapCollisions();
 
-void SpawnEnemy(glm::vec3 pos) {
+void SpawnEnemy(glm::vec3 pos, int spawner_id) {
     if (rand() % 3 == 0) {
-        SpawnRangedEnemy(pos);
+        SpawnRangedEnemy(pos, spawner_id);
         return;
     }
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
+            pos.y += 0.5f; // Add positive offset to ensure they fall and don't clip through the ground
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -42,8 +44,16 @@ void SpawnEnemy(glm::vec3 pos) {
             g_enemies[i].punch_active = false;
             g_enemies[i].has_hit_player = false;
             g_enemies[i].type = 0; // Melee
-            g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
-            if (glm::distance(pos, player.position) < 8.0f) {
+            g_enemies[i].is_spawning = true;
+            g_enemies[i].spawn_timer = 0.0f;
+            g_enemies[i].spawn_duration = 2.0f;
+            g_enemies[i].spawner_id = spawner_id;
+            g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+            if (spawner_id != -1) {
+                g_spawn_points[spawner_id].active_enemy_id = i;
+                g_spawn_points[spawner_id].enemies_spawned++;
+            }
+            if ((rand() % 4 == 0) && glm::distance(pos, player.position) < 8.0f) {
                 PlaySoundEffect("../../data/sounds/knight_laugh.wav");
             }
             break;
@@ -51,10 +61,11 @@ void SpawnEnemy(glm::vec3 pos) {
     }
 }
 
-void SpawnRangedEnemy(glm::vec3 pos) {
+void SpawnRangedEnemy(glm::vec3 pos, int spawner_id) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
+            pos.y += 0.5f; // Add positive offset to ensure they fall and don't clip through the ground
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -75,8 +86,16 @@ void SpawnRangedEnemy(glm::vec3 pos) {
             g_enemies[i].has_hit_player = false;
             g_enemies[i].type = 1; // Ranged
             g_enemies[i].attack_phase = 0;
-            g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
-            if (glm::distance(pos, player.position) < 8.0f) {
+            g_enemies[i].is_spawning = true;
+            g_enemies[i].spawn_timer = 0.0f;
+            g_enemies[i].spawn_duration = 2.0f;
+            g_enemies[i].spawner_id = spawner_id;
+            g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
+            if (spawner_id != -1) {
+                g_spawn_points[spawner_id].active_enemy_id = i;
+                g_spawn_points[spawner_id].enemies_spawned++;
+            }
+            if ((rand() % 4 == 0) && glm::distance(pos, player.position) < 8.0f) {
                 PlaySoundEffect("../../data/sounds/knight_laugh.wav");
             }
             break;
@@ -91,6 +110,14 @@ void UpdateEnemies() {
 
         // Reset per-frame flag
         g_enemies[i].punch_active = false;
+
+        if (g_enemies[i].is_spawning) {
+            g_enemies[i].spawn_timer += delta_t;
+            if (g_enemies[i].spawn_timer >= g_enemies[i].spawn_duration) {
+                g_enemies[i].is_spawning = false;
+            }
+            continue; // Skip movement, attacks, gravity, etc
+        }
 
 // ===== TEMPO E CONGELAMENTO =====
         float time_scale = 1.0f;
@@ -117,6 +144,8 @@ void UpdateEnemies() {
             }
         }
         g_enemies[i].position.y += fall_y;
+        g_enemies[i].bbox = MakeAABBFromCenterSize(
+            g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
         // Safety net for enemies
         if (g_enemies[i].position.y < -5.0f) {
@@ -289,7 +318,8 @@ void UpdateEnemies() {
                 }
             }
             g_enemies[i].position.x += move_x;
-            // g_enemies[i].bbox.Move(move_x, 0.0f, 0.0f);
+            g_enemies[i].bbox = MakeAABBFromCenterSize(
+                g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
             for (int j = 0; j < g_num_platforms; j++) {
                 move_z = g_enemies[i].bbox.GetClipZ(map[j].bbox, move_z);
@@ -304,12 +334,12 @@ void UpdateEnemies() {
 
         // Update AABB
         g_enemies[i].bbox = MakeAABBFromCenterSize(
-            g_enemies[i].position, glm::vec3(1.0f, 0.99f, 0.775f));
+            g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
     }
 }
 
 void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
-    if (g_enemies[enemy_id].is_dead) return;
+    if (g_enemies[enemy_id].is_dead || g_enemies[enemy_id].is_spawning) return;
     
     g_enemies[enemy_id].health -= damage;
     if (g_enemies[enemy_id].health <= 0.0f) {
@@ -323,17 +353,32 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
         
         player.enemies_slain++;
 
+        if (g_enemies[enemy_id].spawner_id != -1) {
+            int sid = g_enemies[enemy_id].spawner_id;
+            g_spawn_points[sid].enemies_killed++;
+            g_spawn_points[sid].active_enemy_id = -1;
+
+            // Check win condition
+            bool all_i_spawners_dead = true;
+            bool has_i_spawners = false;
+            for(int k=0; k<g_num_spawn_points; k++) {
+                if (g_spawn_points[k].type == 1) { // Special 'i'
+                    has_i_spawners = true;
+                    if (g_spawn_points[k].enemies_killed < g_spawn_points[k].max_enemies) {
+                        all_i_spawners_dead = false;
+                        break;
+                    }
+                }
+            }
+            if (has_i_spawners && all_i_spawners_dead) {
+                player.has_won = true;
+                player.final_time = (float)glfwGetTime() - player.start_time;
+                printf("You won! All special enemies defeated!\n");
+            }
+        }
+
         SpawnCollectibles(g_enemies[enemy_id].position, 1, 0);
 
-        for(int k=0; k<2; ++k) {
-            float angle = (rand() % 360) * (M_PI / 180.0f);
-            float distance = 2.0f + (rand() % 100) / 10.0f; // 10 to 20 units away
-            glm::vec3 spawn_pos;
-            spawn_pos.x = player.position.x + cos(angle) * distance;
-            spawn_pos.y = 2.0f;
-            spawn_pos.z = player.position.z + std::abs(sin(angle) * distance);
-            SpawnEnemy(spawn_pos);
-        }
     } else if (cause_flinch) {
         if (rand() % 2 == 0) PlaySoundEffect("../../data/sounds/knight_hurt1.wav");
         else PlaySoundEffect("../../data/sounds/knight_hurt2.wav");
