@@ -67,6 +67,7 @@
 // Projectiles and particles
 #include "projectiles.h"
 #include "particles.h"
+#include "ferris_wheel.h"
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -351,8 +352,8 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.8f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.31f;   // Ângulo em relação ao eixo Y
+float g_CameraTheta = 1.26f; // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.22f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
@@ -511,6 +512,7 @@ Enemy g_enemies[MAX_ENEMIES] = {
 #include "projectiles.h"
 
 MapItem map[MAX_PLATFORMS];
+int g_num_platforms = 0;
 
 
 void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
@@ -541,6 +543,34 @@ void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
     glUseProgram(0);
 }
 
+struct FrustumPlane {
+    glm::vec3 normal;
+    float distance;
+};
+
+void ExtractFrustumPlanes(const glm::mat4& vp, FrustumPlane* planes) {
+    planes[0].normal.x = vp[0][3] + vp[0][0]; planes[0].normal.y = vp[1][3] + vp[1][0]; planes[0].normal.z = vp[2][3] + vp[2][0]; planes[0].distance = vp[3][3] + vp[3][0];
+    planes[1].normal.x = vp[0][3] - vp[0][0]; planes[1].normal.y = vp[1][3] - vp[1][0]; planes[1].normal.z = vp[2][3] - vp[2][0]; planes[1].distance = vp[3][3] - vp[3][0];
+    planes[2].normal.x = vp[0][3] + vp[0][1]; planes[2].normal.y = vp[1][3] + vp[1][1]; planes[2].normal.z = vp[2][3] + vp[2][1]; planes[2].distance = vp[3][3] + vp[3][1];
+    planes[3].normal.x = vp[0][3] - vp[0][1]; planes[3].normal.y = vp[1][3] - vp[1][1]; planes[3].normal.z = vp[2][3] - vp[2][1]; planes[3].distance = vp[3][3] - vp[3][1];
+    planes[4].normal.x = vp[0][3] + vp[0][2]; planes[4].normal.y = vp[1][3] + vp[1][2]; planes[4].normal.z = vp[2][3] + vp[2][2]; planes[4].distance = vp[3][3] + vp[3][2];
+    planes[5].normal.x = vp[0][3] - vp[0][2]; planes[5].normal.y = vp[1][3] - vp[1][2]; planes[5].normal.z = vp[2][3] - vp[2][2]; planes[5].distance = vp[3][3] - vp[3][2];
+
+    for (int i = 0; i < 6; i++) {
+        float length = glm::length(planes[i].normal);
+        planes[i].normal /= length;
+        planes[i].distance /= length;
+    }
+}
+
+bool IsSphereInFrustum(const glm::vec3& center, float radius, FrustumPlane* planes) {
+    for (int i = 0; i < 6; i++) {
+        if (glm::dot(planes[i].normal, center) + planes[i].distance < -radius) {
+            return false;
+        }
+    }
+    return true;
+}
 #include "gamepad.h"
 
 int main(int argc, char* argv[])
@@ -842,11 +872,9 @@ int main(int argc, char* argv[])
                                                                                                                                                                                            
     // Loop through all shapes in the OBJ                                                                                                                                                  
     for (int i = 0; i < colliders.size(); i++) {                
-                                                                                                                                
         if (i < MAX_PLATFORMS) {                                                                                                                                  
-            // Add the shape's AABB to the collision map                                                                                                                               
             map[i].bbox = colliders[i]; 
-            // printf("Collider %d: min(%.2f, %.2f, %.2f), max(%.2f, %.2f, %.2f)\n", i, colliders[i].min.x, colliders[i].min.y, colliders[i].min.z, colliders[i].max.x, colliders[i].max.y, colliders[i].max.z);                                                                                                                                        
+            g_num_platforms++;
         } else {                                                                                                                                                                       
             printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
         }                                                                                                                                                                              
@@ -873,14 +901,33 @@ int main(int argc, char* argv[])
         glm::vec3(1.0f, 1.0f, -45.0f)
     };
 
+    std::vector<glm::vec3> tower_positions = {
+        glm::vec3(9.5f, 6.0f, -81.373f),
+        glm::vec3(9.5f, 6.0f, -71.373f),
+        glm::vec3(1.6f, 6.0f, -71.373f),
+        glm::vec3(1.6f, 6.0f, -81.373f),
+        glm::vec3(9.5f, 6.0f, -101.373f),
+        glm::vec3(1.6f, 6.0f, -101.373f)
+    };
+
+
+    std::vector<glm::vec3> wall_positions = {
+       glm::vec3(5.5f, 3.0f, -71.373f),
+       glm::vec3(5.5f, 3.0f, -101.373f),
+       glm::vec3(9.5f, 3.0f, -76.373f), 
+       glm::vec3(1.5f, 3.0f, -76.373f) 
+    };
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = AsyncLoadGLTF("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = AsyncLoadGLTF("../../data/ben_tennyson.glb", "the_bentennyson");
     tinygltf::Model foreverknight_model = AsyncLoadGLTF("../../data/forever_knight.glb", "the_foreverknight");
     tinygltf::Model castle_model = AsyncLoadGLTF("../../data/castelin/scene.gltf", "the_castle");
+    tinygltf::Model wall_gltf_model = AsyncLoadGLTF("../../data/map_background/wall.glb", "the_wall");
+    tinygltf::Model tower_gltf_model = AsyncLoadGLTF("../../data/map_background/tower.glb", "the_tower");
     tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
     tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
+    tinygltf::Model ferris_wheel_model = AsyncLoadGLTF("../../data/map_background/ferris_wheel/scene.gltf", "the_ferris_wheel");
     
     // Breakables
     AsyncLoadGLTF("../../data/breakables/low_poly_asset_teddy_bear.glb", "the_teddy_bear");
@@ -1048,7 +1095,7 @@ int main(int argc, char* argv[])
         // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
         //
         //           R     G     B     A
-        glClearColor(0.9f, 0.9f, 1.0f, 1.0f);
+        glClearColor(0.02f, 0.02f, 0.08f, 1.0f);
 
         // "Pintamos" todos os pixels do framebuffer com a cor definida acima,
         // e também resetamos todos os pixels do Z-buffer (depth buffer).
@@ -1118,6 +1165,10 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(g_view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
         glUniformMatrix4fv(g_projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
         
+        FrustumPlane frustum_planes[6];
+        glm::mat4 view_projection = projection * view;
+        ExtractFrustumPlanes(view_projection, frustum_planes);
+
         // Pass player data for lighting
         glUniform3f(glGetUniformLocation(g_GpuProgramID, "player_position"), player.position.x, player.position.y + 0.5f, player.position.z);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "active_alien"), player.active_character);
@@ -1160,8 +1211,8 @@ int main(int argc, char* argv[])
         #define BBOX_DEBUG 101
         #define COLLECT_OBJ 10
         #define GROUND 13
+        #define SKYBOX 99
 
-        
         // Re-bind all previously loaded textures/samplers to their texture units
         for (GLuint tu = 0; tu < g_NumLoadedTextures; ++tu)
         {
@@ -1169,6 +1220,22 @@ int main(int argc, char* argv[])
             glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[tu]);
             glBindSampler(tu, g_LoadedSamplerIDs[tu]);
         }
+
+        // ==========================================
+        // DRAW SKYBOX (Background gradient + clouds)
+        // ==========================================
+        glDepthMask(GL_FALSE); // Don't write to depth buffer
+        glDisable(GL_CULL_FACE); // See inside the sphere
+
+        model = Matrix_Translate(camera_position_c.x, camera_position_c.y, camera_position_c.z) * Matrix_Scale(40.0f, 40.0f, 40.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, SKYBOX);
+
+        // Uses a very simple white texture so it doesn't affect color calculation in shader too much, or shader ignores Kd0 for SKYBOX
+        DrawVirtualObject("the_sphere");
+
+        glEnable(GL_CULL_FACE);
+        glDepthMask(GL_TRUE);
 
         // Compute animations for all characters at the top
         BigChillAnimResult bigchillRes = computeBigChillAnimation(bigchill_model, keys, player.jumping, delta_t, agora, bigchill_state);
@@ -1466,11 +1533,6 @@ int main(int argc, char* argv[])
         bool t_is_down = keys[GLFW_KEY_T];
 
 
-        // Desenhar o inimigo (MOVED BELOW)
-
-
-
-
         // 1. Matriz de Modelo (Posição, Escala e Rotação do mapa)
         // Supondo que ele deve ficar na origem do mundo e com tamanho normal
         model = Matrix_Translate(0.0f, 0.0f, 0.0f) * Matrix_Scale(1.0f, 1.0f, 1.0f);
@@ -1516,7 +1578,7 @@ int main(int argc, char* argv[])
         glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
 
 
-        // Desenhamos o plano do chão
+        // Desenhamos o plano do marzao
         model = Matrix_Translate(0.0f, -2.0f, 0.0f)
                 * Matrix_Scale(130.0f, 1.0f, 130.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -1525,6 +1587,12 @@ int main(int argc, char* argv[])
 
 
         for (int i = 0; i < barracas_positions.size(); i++) {
+
+            // Frustum Culling: Testamos se a barraca (assumindo um raio de 4.5 para cobrir o modelo) está na visão da câmera
+            if (!IsSphereInFrustum(barracas_positions[i] + glm::vec3(0.0f, 1.0f, 0.0f), 4.5f, frustum_planes)) {
+                continue;
+            }
+
             if (i >= 7 && i < 14) {
                 model = Matrix_Rotate_Y(-0.3f);
             } else {
@@ -1554,29 +1622,40 @@ int main(int argc, char* argv[])
             }
         }
 
-        // // Desenhamos a barraca
-        // model = Matrix_Translate(2.8f, 1.0f, -39.6f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 50);
-        // for (const auto& shape : barraca_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
+        for (int i = 0; i < wall_positions.size(); i++) {
 
-        // // Desenhamos a barraca macarrao
-        // model = Matrix_Translate(3.4f, 1.0f, -42.5f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 51);
-        // for (const auto& shape : macarrao_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
+            if (i <= 1) {
+                model = Matrix_Identity();
+            } else {
+                model = Matrix_Rotate_Y(M_PI / 2.0f);
+            }
 
-        // // Desenhamos a barraca banana
-        // model = Matrix_Translate(1.0f, 1.0f, -45.4f) * Matrix_Scale(1.4f, 1.4f, 1.4f);
-        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
-        // glUniform1i(g_object_id_uniform, 52);
-        // for (const auto& shape : banana_model.shapes) {
-        //     DrawVirtualObject(shape.name.c_str());
-        // }
+            model = Matrix_Translate(wall_positions[i].x, wall_positions[i].y, wall_positions[i].z) * Matrix_Scale(0.9f, 0.9f, 0.9f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 11); // ID 11 samples TextureImage8 which we bind below
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_wall_") == 0) {
+                    glActiveTexture(GL_TEXTURE8);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+                    DrawVirtualObject(pair.first.c_str());
+                }
+            }
+        }
+
+        for (int i = 0; i < tower_positions.size(); i++) {
+            model = Matrix_Translate(tower_positions[i].x, tower_positions[i].y, tower_positions[i].z);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 11); 
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_tower_") == 0) {
+                    glActiveTexture(GL_TEXTURE8);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+                    DrawVirtualObject(pair.first.c_str());
+                }
+            }
+        }
 
         // Desenhamos o Castelo
         // Scaled down by 0.01 so it's realistically sized, and placed within view at Z = -15
@@ -1594,6 +1673,16 @@ int main(int argc, char* argv[])
                 DrawVirtualObject(pair.first.c_str());
                 glEnable(GL_CULL_FACE);
             }
+        }
+
+        // Desenhamos a Roda Gigante (ferris wheel)
+        {
+            glm::mat4 fw_world = Matrix_Translate(5.3251f, 3.7862f, -58.783f)
+                               * Matrix_Rotate_Y(M_PI / 2.0f)  // 90 graus no eixo Y
+                               * Matrix_Scale(0.366f, 0.366f, 0.366f);
+            DrawFerrisWheel(ferris_wheel_model, "the_ferris_wheel",
+                           g_GpuProgramID, g_model_uniform, g_object_id_uniform,
+                           fw_world, (float)agora, 0.4f);
         }
 
         // for (int i = 0; i < MAX_PLATFORMS; i++) {

@@ -1235,3 +1235,31 @@ PROMPT 1: vamos implementar um novo inimigo. Ele usa o mesmo modelo do forever k
 PROMPT 2: O projétil deve dar dano. O inimigo deve se mover na direção do ben enquanto não estiver no alcance correto. O projétil deve sair da frente dele. Ele deve ser vermelho com partículas vermelhas.
 
 PROMPT 3: a animação de ficar em posição de ataque e a animação de atacar ele deve fazer uma vez só, não ficar ciclando. O projétil em si também deve ser vermleho. O inimigo ranged deve ter 1/3 de chance de ser spawnado ao invés de um normal. O jogador deve ser capaz de morrer pelo dano do projétil (ajuste para que seja como se tomasse um soco, com todas as animações correspnodentes). Diminua a distância para 6 unidades.
+                          
+### Commit com IA: Coloquei os modelos da parede e das torres do castelo e resolvi um bug de colisão
+
+PROMPT 1: seguinte, exportei como glb somente a parede, modele toda a logica que vc montou para renderizar somente a wall e tower em obj e adicione a logica para colocar a parede de glb usando as coisas de gltf
+ 
+PROMPT 2: bacanaaaa, coloquei o da tower la, consegue fazer a msm coisa?
+
+PROMPT 3: eu tenho um bug n de renderização mas de colisao agora, por algum motivo, o colisor da ultima parte do mapa, dps que eu faço um parkou de plataforma, to entrando no chao. Acho que eh o collider 15 se n me engano
+
+
+### Commit com IA: Otimização do game, barracas tavam comendo fps, ent apenas as no frustum da camera serão desenhadas
+
+PROMPT:  entao, eu quero fazer uma optimização para a parte do meu rendering das barracas. Eu quero dezenhar apenas aquelas que tem coordenadas dentro do frustum da minha camera, eu to com uma logica de distancia mas ela n ta tao bacana, consegue me fazer essa ai?
+
+
+### Commit com IA: Coloquei um ceu bacana, e finalmente o modelo da roda gigante funcionando decentemente
+
+PROMPT 1: so, I have a impossible mission for you. I need you to draw the model for the ferris wheel. There is a problem in that. It should be spinning like a ferris wheel. The code I sent you I believe its bugged. At some point of the code it war working, but not now. Analyse it and debug it. The final position to translate it to is (-5.3251, 7.7862, -58783),the scalling set to 0.366 and a 90 degree rotation in the Y axis.
+
+PROMPT 2: So, the last model put the ferris wheel there, but the omnitrix hud item is bugged now, problably a error in the mapping of the textures, can you fix?
+
+PROMPT 3: show, agora vc me ajudara a debugar a roda gigante. As gondolas (vabines) estao rodando certinho, mas o raio em que giram esta variando com o tempo, eh algum erro na transformação delas, provavelmente por volta da linha 157, da uma olhada
+
+PROMPT 4 - 10: Meu ta muito errado isso, n ta girando corretamente, tente ajutar @ferris_wheel_cpp
+
+PROMPT 11: so, for now we are having a white canvas for the background part os the map, i want to change it to something resembling the nightime of the game, how I do it?
+
+PROMPT 12: i need a redish color, like this tone in rgb 88, 48, 39, But it would be nice if it were a gradient, with some dark spaces in some places, to simulate some clouds

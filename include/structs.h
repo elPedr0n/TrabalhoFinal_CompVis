@@ -49,7 +49,7 @@ struct AABB {
 		if(IntersectsY(against) && IntersectsZ(against)) {
 			//if we are moving right and our right bounds are smaller than
 			//or equal to the other left bounds
-			if(deltaX > 0 && max.x <= against.min.x) {
+			if(deltaX > 0 && max.x <= against.min.x + 0.002f) {
 				//what is the distance to the other AABB?
 				float clip = against.min.x - max.x;
 				//if our move delta is larger than the distance to
@@ -59,7 +59,7 @@ struct AABB {
 			}
 			//the principle explained in the code above is the same for
 			//everything else
-			if (deltaX < 0 && min.x >= against.max.x) {
+			if (deltaX < 0 && min.x >= against.max.x - 0.002f) {
 				float clip = against.max.x - min.x;
 				if (deltaX < clip)
 					deltaX = clip;
@@ -71,12 +71,12 @@ struct AABB {
 
 	float GetClipY(AABB against, float deltaY) {
 		if (IntersectsX(against) && IntersectsZ(against)) {
-			if (deltaY > 0 && max.y <= against.min.y) {
+			if (deltaY > 0 && max.y <= against.min.y + 0.002f) {
 				float clip = against.min.y - max.y;
 				if (deltaY > clip)
 					deltaY = clip;
 			}
-			if (deltaY < 0 && min.y >= against.max.y) {
+			if (deltaY < 0 && min.y >= against.max.y - 0.002f) {
 				float clip = against.max.y - min.y;
 				if (deltaY < clip)
 					deltaY = clip;
@@ -88,12 +88,12 @@ struct AABB {
 
 	float GetClipZ(AABB against, float deltaZ) {
 		if (IntersectsX(against) && IntersectsY(against)) {
-			if (deltaZ > 0 && max.z <= against.min.z) {
+			if (deltaZ > 0 && max.z <= against.min.z + 0.002f) {
 				float clip = against.min.z - max.z;
 				if (deltaZ > clip)
 					deltaZ = clip;
 			}
-			if (deltaZ < 0 && min.z >= against.max.z) {
+			if (deltaZ < 0 && min.z >= against.max.z - 0.002f) {
 				float clip = against.max.z - min.z;
 				if (deltaZ < clip)
 					deltaZ = clip;
@@ -186,7 +186,7 @@ struct Player {
 	}
 
 	Player()
-		: active_character(2), position(1.0f, 0.0f, -7.0f), speed(3.0f, 0.0f, 3.0f), rotate(0.0f), scale(1.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f), transform_energy(100.0f), max_transform_energy(100.0f), special_energy(100.0f), max_special_energy(100.0f), selected_alien(0)
+		: active_character(2), position(1.0f, 0.0f, -7.0f), speed(8.0f, 0.0f, 8.0f), rotate(0.0f), scale(1.0f), jumping(false), double_jump_available(false), health(100.0f), max_health(100.0f), is_dead(false), death_timer(0.0f), is_flinching(false), flinch_timer(0.0f), transform_energy(100.0f), max_transform_energy(100.0f), special_energy(100.0f), max_special_energy(100.0f), selected_alien(0)
 	{
 		characters[0] = Character("the_bigchill", position, 1.38963f, 1.96548f, 0.454046f, 0.5f, bigchill_jump_speed); // Calafrio pula mais alto
 		characters[1] = Character("the_swampfire", position, 3.28f, 3.8f, 2.0f, 0.3f, swampfire_jump_speed); // Fogo Fátuo pula mais baixo
