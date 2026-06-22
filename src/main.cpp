@@ -810,7 +810,7 @@ int main(int argc, char* argv[])
     RenderLoadingStep();
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
-    LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
+    LoadTextureImage("../../data/aguinha.jpeg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
     LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
@@ -1291,7 +1291,7 @@ int main(int argc, char* argv[])
         }
         UpdatePosition(can_move, can_rotate);
 
-        UpdateEnemies();
+        // UpdateEnemies();
         UpdateCollectibles();
         UpdateBreakables();
         UpdateFragments();
@@ -2868,6 +2868,25 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
+
+        float r = g_CameraDistance;
+        float y = r*sin(g_CameraPhi);
+        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+
+        float height_offset = 1.5f;
+
+        glm::vec4 camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f);
+        glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f);
+        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
+        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f);
+        
+        printf("--- Camera Parameters (Click) ---\n");
+        printf("  Position: (%.2f, %.2f, %.2f)\n", camera_position_c.x, camera_position_c.y, camera_position_c.z);
+        printf("  LookAt:   (%.2f, %.2f, %.2f)\n", camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z);
+        printf("  View Vec: (%.2f, %.2f, %.2f)\n", camera_view_vector.x, camera_view_vector.y, camera_view_vector.z);
+        printf("  Up Vec:   (%.2f, %.2f, %.2f)\n", camera_up_vector.x, camera_up_vector.y, camera_up_vector.z);
+        printf("---------------------------------\n");
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
     {
