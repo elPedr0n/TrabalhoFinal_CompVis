@@ -511,6 +511,7 @@ Enemy g_enemies[MAX_ENEMIES] = {
 #include "projectiles.h"
 
 MapItem map[MAX_PLATFORMS];
+int g_num_platforms = 0;
 
 
 void LoadModelTextureFixed(const char* filename, GLuint unit, GLuint program) {
@@ -834,11 +835,9 @@ int main(int argc, char* argv[])
                                                                                                                                                                                            
     // Loop through all shapes in the OBJ                                                                                                                                                  
     for (int i = 0; i < colliders.size(); i++) {                
-                                                                                                                                
         if (i < MAX_PLATFORMS) {                                                                                                                                  
-            // Add the shape's AABB to the collision map                                                                                                                               
             map[i].bbox = colliders[i]; 
-            // printf("Collider %d: min(%.2f, %.2f, %.2f), max(%.2f, %.2f, %.2f)\n", i, colliders[i].min.x, colliders[i].min.y, colliders[i].min.z, colliders[i].max.x, colliders[i].max.y, colliders[i].max.z);                                                                                                                                        
+            g_num_platforms++;
         } else {                                                                                                                                                                       
             printf("WARNING: Too many colliders! Increase MAX_PLATFORMS.\n");                                                                                                          
         }                                                                                                                                                                              
@@ -865,12 +864,30 @@ int main(int argc, char* argv[])
         glm::vec3(1.0f, 1.0f, -45.0f)
     };
 
+    std::vector<glm::vec3> tower_positions = {
+        glm::vec3(9.5f, 6.0f, -81.373f),
+        glm::vec3(9.5f, 6.0f, -71.373f),
+        glm::vec3(1.6f, 6.0f, -71.373f),
+        glm::vec3(1.6f, 6.0f, -81.373f),
+        glm::vec3(9.5f, 6.0f, -101.373f),
+        glm::vec3(1.6f, 6.0f, -101.373f)
+    };
+
+
+    std::vector<glm::vec3> wall_positions = {
+       glm::vec3(5.5f, 3.0f, -71.373f),
+       glm::vec3(5.5f, 3.0f, -101.373f),
+       glm::vec3(9.5f, 3.0f, -76.373f), 
+       glm::vec3(1.5f, 3.0f, -76.373f) 
+    };
 
     // Load swampfire glTF and build GPU resources; loader prints diagnostics
     tinygltf::Model gltfmodel = AsyncLoadGLTF("../../data/swampfire__ben_10_alien_force/scene.gltf", "the_swampfire");
     tinygltf::Model bentennyson_model = AsyncLoadGLTF("../../data/ben_tennyson.glb", "the_bentennyson");
     tinygltf::Model foreverknight_model = AsyncLoadGLTF("../../data/forever_knight.glb", "the_foreverknight");
     tinygltf::Model castle_model = AsyncLoadGLTF("../../data/castelin/scene.gltf", "the_castle");
+    tinygltf::Model wall_gltf_model = AsyncLoadGLTF("../../data/map_background/wall.glb", "the_wall");
+    tinygltf::Model tower_gltf_model = AsyncLoadGLTF("../../data/map_background/tower.glb", "the_tower");
     tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
     tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
     
@@ -1432,11 +1449,6 @@ int main(int argc, char* argv[])
         bool t_is_down = keys[GLFW_KEY_T];
 
 
-        // Desenhar o inimigo (MOVED BELOW)
-
-
-
-
         // 1. Matriz de Modelo (Posição, Escala e Rotação do mapa)
         // Supondo que ele deve ficar na origem do mundo e com tamanho normal
         model = Matrix_Translate(0.0f, 0.0f, 0.0f) * Matrix_Scale(1.0f, 1.0f, 1.0f);
@@ -1482,7 +1494,7 @@ int main(int argc, char* argv[])
         glEnable(GL_CULL_FACE); // Reabilita culling para os próximos objetos
 
 
-        // Desenhamos o plano do chão
+        // Desenhamos o plano do marzao
         model = Matrix_Translate(0.0f, -2.0f, 0.0f)
                 * Matrix_Scale(130.0f, 1.0f, 130.0f);
         glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
@@ -1519,6 +1531,66 @@ int main(int argc, char* argv[])
                 }
             }
         }
+
+        for (int i = 0; i < wall_positions.size(); i++) {
+
+            if (i <= 1) {
+                model = Matrix_Identity();
+            } else {
+                model = Matrix_Rotate_Y(M_PI / 2.0f);
+            }
+
+            model = Matrix_Translate(wall_positions[i].x, wall_positions[i].y, wall_positions[i].z) * Matrix_Scale(0.9f, 0.9f, 0.9f) * model;
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 11); // ID 11 samples TextureImage8 which we bind below
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_wall_") == 0) {
+                    glActiveTexture(GL_TEXTURE8);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+                    DrawVirtualObject(pair.first.c_str());
+                }
+            }
+        }
+
+        // // Draw the new wall.glb
+        // model = Matrix_Translate(1.5f, 3.0f, -76.373f) * Matrix_Scale(0.9f, 0.9f, 0.9f) * Matrix_Rotate_Y(M_PI / 2.0f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 11); // ID 11 samples TextureImage8 which we bind below
+        // for (const auto& pair : g_VirtualScene) {
+        //     if (pair.first.find("the_wall_") == 0) {
+        //         glActiveTexture(GL_TEXTURE8);
+        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+        //         DrawVirtualObject(pair.first.c_str());
+        //     }
+        // }
+
+        for (int i = 0; i < tower_positions.size(); i++) {
+            model = Matrix_Translate(tower_positions[i].x, tower_positions[i].y, tower_positions[i].z);
+            glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+            glUniform1i(g_object_id_uniform, 11); 
+            for (const auto& pair : g_VirtualScene) {
+                if (pair.first.find("the_tower_") == 0) {
+                    glActiveTexture(GL_TEXTURE8);
+                    glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+                    DrawVirtualObject(pair.first.c_str());
+                }
+            }
+        }
+        // // Draw the new tower.glb
+        // model = Matrix_Translate(1.6f, 6.0f, -101.373f);
+        // glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, 11); 
+        // for (const auto& pair : g_VirtualScene) {
+        //     if (pair.first.find("the_tower_") == 0) {
+        //         glActiveTexture(GL_TEXTURE8);
+        //         glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
+        //         glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage8"), 8);
+        //         DrawVirtualObject(pair.first.c_str());
+        //     }
+        // }
 
         // // Desenhamos a barraca
         // model = Matrix_Translate(2.8f, 1.0f, -39.6f) * Matrix_Scale(1.4f, 1.4f, 1.4f) * Matrix_Rotate_Y(-0.3f);
@@ -1562,9 +1634,9 @@ int main(int argc, char* argv[])
             }
         }
 
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
-        //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
-        // }
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
+        }
 
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);

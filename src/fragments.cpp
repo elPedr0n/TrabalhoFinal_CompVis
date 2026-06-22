@@ -63,7 +63,7 @@ void UpdateFragments() {
         float next_y = g_fragments[i].position.y + g_fragments[i].velocity.y * delta_t;
         bool ground_hit = false;
         
-        for (int j = 0; j < MAX_PLATFORMS; ++j) {
+        for (int j = 0; j < g_num_platforms; ++j) {
             if (g_fragments[i].position.x >= map[j].bbox.min.x && g_fragments[i].position.x <= map[j].bbox.max.x &&
                 g_fragments[i].position.z >= map[j].bbox.min.z && g_fragments[i].position.z <= map[j].bbox.max.z) {
                 

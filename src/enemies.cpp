@@ -63,7 +63,7 @@ void UpdateEnemies() {
 
         // ===== GRAVITY =====
         float fall_y = gravidade * delta_t; 
-        for (int j = 0; j < MAX_PLATFORMS; j++) {
+        for (int j = 0; j < g_num_platforms; j++) {
             fall_y = g_enemies[i].bbox.GetClipY(map[j].bbox, fall_y);
         }
         for (int j = 0; j < MAX_BREAKABLES; j++) {
@@ -177,7 +177,7 @@ void UpdateEnemies() {
             float move_z = direction_to_player.z * g_enemies[i].speed * (delta_t * time_scale);
 
             // Clip against map platforms (same pattern as player.cpp)
-            for (int j = 0; j < MAX_PLATFORMS; j++) {
+            for (int j = 0; j < g_num_platforms; j++) {
                 move_x = g_enemies[i].bbox.GetClipX(map[j].bbox, move_x);
             }
             for (int j = 0; j < MAX_BREAKABLES; j++) {
@@ -188,7 +188,7 @@ void UpdateEnemies() {
             g_enemies[i].position.x += move_x;
             // g_enemies[i].bbox.Move(move_x, 0.0f, 0.0f);
 
-            for (int j = 0; j < MAX_PLATFORMS; j++) {
+            for (int j = 0; j < g_num_platforms; j++) {
                 move_z = g_enemies[i].bbox.GetClipZ(map[j].bbox, move_z);
             }
             for (int j = 0; j < MAX_BREAKABLES; j++) {

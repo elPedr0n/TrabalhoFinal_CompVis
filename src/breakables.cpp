@@ -109,7 +109,7 @@ void UpdateBreakables() {
         float move_y = g_breakables[i].velocity_y * delta_t;
         
         // Map collision
-        for (int j = 0; j < MAX_PLATFORMS; ++j) {
+        for (int j = 0; j < g_num_platforms; ++j) {
             move_y = g_breakables[i].bbox.GetClipY(map[j].bbox, move_y);
         }
 
