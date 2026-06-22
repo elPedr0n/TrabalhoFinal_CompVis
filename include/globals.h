@@ -47,6 +47,10 @@ extern float g_CameraTheta;
 extern float g_CameraPhi;   
 extern float g_CameraDistance; 
 
+extern float g_MovementTheta;
+extern bool g_UseFixedCameras;
+extern bool g_IsMovementBuffered; 
+
 extern glm::vec3 bigchill_size;
 extern glm::vec3 swampfire_size;
 extern glm::vec3 bentennyson_size;
