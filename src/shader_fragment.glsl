@@ -643,14 +643,15 @@ void main()
             color.rgb = mix(color.rgb, vec3(0.4, 0.8, 1.0), 0.25);
         }
 
-        // Sombra preta (100% preta) do jogador no chão
+        // Sombra do jogador no chão (translúcida e fidedigna à altura)
         if (object_id == GROUND || object_id == PLANE) {
-            float shadow_radius = 0.3; // Raio não muito grande
+            float shadow_radius = 0.35; // Raio fixo
+            
             float dist_xz = distance(position_world.xz, player_position.xz);
             if (dist_xz < shadow_radius) {
-                // Suaviza a borda bem de leve para não ficar pixelada, mas o centro é 100% preto
-                float antialias = smoothstep(shadow_radius, shadow_radius - 0.05, dist_xz);
-                color.rgb = mix(color.rgb, vec3(0.0), antialias);
+                float antialias = smoothstep(shadow_radius, shadow_radius - 0.1, dist_xz);
+                float shadow_intensity = 0.8 * antialias; // 80% opacity, independente da altura
+                color.rgb = mix(color.rgb, vec3(0.0), shadow_intensity);
             }
         }
     }
