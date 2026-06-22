@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "globals.h"
 #include "breakables.h"
+#include "sound.h"
 
 #include <vector>
 #include <algorithm>
@@ -36,6 +37,8 @@ namespace {
 
 void Projectiles_Spawn(const std::string &modelBaseName, float strength, const glm::vec3 &player_pos, float player_rotate)
 {
+    if (rand() % 2 == 0) PlaySoundEffect("../../data/sounds/fireball_launch.wav");
+    else PlaySoundEffect("../../data/sounds/fireball_launch2.wav");
     Projectile p;
     glm::vec3 forward = glm::vec3(sin(player_rotate), 0.0f, cos(player_rotate));
     p.model_name = modelBaseName;
@@ -116,7 +119,15 @@ void Projectiles_Update(float delta_t)
             // Check collision
             bool exploded = false;
             // Floor collision
-            if (p.pos.y <= 0.1f) {
+            extern int g_num_platforms;
+            for (int i = 0; i < g_num_platforms; i++) {
+                if (p.bbox.Intersects(map[i].bbox)) {
+                    p.active = false;
+                    exploded = true;
+                    break;
+                }
+            }
+            if (p.pos.y <= -2.0f) {
                 p.active = false;
                 exploded = true;
             }
@@ -179,6 +190,7 @@ void Projectiles_Update(float delta_t)
         }
 
         if (exploded) {
+            PlaySoundEffect("../../data/sounds/ball_hit.wav");
             float damage = 20.0f + (p.scale - 0.4f) * 25.0f;
             float splash_radius = 2.0f + p.scale;
             

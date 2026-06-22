@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include "particles.h"
 #include "projectiles.h"
+#include "sound.h"
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
@@ -42,6 +43,9 @@ void SpawnEnemy(glm::vec3 pos) {
             g_enemies[i].has_hit_player = false;
             g_enemies[i].type = 0; // Melee
             g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
+            if (glm::distance(pos, player.position) < 8.0f) {
+                PlaySoundEffect("../../data/sounds/knight_laugh.wav");
+            }
             break;
         }
     }
@@ -72,6 +76,9 @@ void SpawnRangedEnemy(glm::vec3 pos) {
             g_enemies[i].type = 1; // Ranged
             g_enemies[i].attack_phase = 0;
             g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
+            if (glm::distance(pos, player.position) < 8.0f) {
+                PlaySoundEffect("../../data/sounds/knight_laugh.wav");
+            }
             break;
         }
     }
@@ -90,6 +97,9 @@ void UpdateEnemies() {
         if (g_enemies[i].is_frozen) {
             g_enemies[i].frozen_timer -= delta_t;
             if (g_enemies[i].frozen_timer <= 0.0f) {
+                if (g_enemies[i].is_frozen) {
+                    PlaySoundEffect("../../data/sounds/ice_break.wav");
+                }
                 g_enemies[i].is_frozen = false;
             } else {
                 time_scale = 0.3f;
@@ -109,12 +119,21 @@ void UpdateEnemies() {
         g_enemies[i].position.y += fall_y;
 
         // Safety net for enemies
-        if (g_enemies[i].position.y <= -10.0f) {
-            g_enemies[i].position.y = -10.0f;
+        if (g_enemies[i].position.y < -5.0f) {
+            if (g_enemies[i].health > 0.0f) {
+                PlaySoundEffect("../../data/sounds/knight_death_water.wav");
+            }
+            g_enemies[i].health = 0.0f;
+            g_enemies[i].is_dead = true;
         }
-        
 
-        // ===== ATTACK COOLDOWN =====
+        if (!g_enemies[i].is_dead && glm::distance(player.position, g_enemies[i].position) < 8.0f) {
+            if ((rand() % 10000) < 5) { 
+                PlaySoundEffect("../../data/sounds/knight_laugh.wav");
+            }
+        }
+
+        // Timer for attacks
         if (g_enemies[i].attack_cooldown > 0.0f) {
             g_enemies[i].attack_cooldown -= delta_t * time_scale;
         }
@@ -170,6 +189,7 @@ void UpdateEnemies() {
                         g_enemies[i].attack_timer = 0.0f; // Reset for anim 25
                         glm::vec3 forward = glm::vec3(sin(g_enemies[i].rotate), 0.0f, cos(g_enemies[i].rotate));
                         glm::vec3 spawn_pos = g_enemies[i].position + glm::vec3(0.0f, 1.0f, 0.0f) + forward * 1.5f;
+                        PlaySoundEffect("../../data/sounds/knight_shot.wav");
                         // Spawn bezier projectile!
                         Projectiles_SpawnBezier(std::string("the_sphere"), spawn_pos, player.position + glm::vec3(0.0f, 0.5f, 0.0f), true);
                     }
@@ -293,6 +313,7 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
     
     g_enemies[enemy_id].health -= damage;
     if (g_enemies[enemy_id].health <= 0.0f) {
+        PlaySoundEffect("../../data/sounds/knight_death.wav");
         g_enemies[enemy_id].health = 0.0f;
         g_enemies[enemy_id].is_dead = true;
         g_enemies[enemy_id].death_timer = 0.0f;
@@ -314,6 +335,8 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
             SpawnEnemy(spawn_pos);
         }
     } else if (cause_flinch) {
+        if (rand() % 2 == 0) PlaySoundEffect("../../data/sounds/knight_hurt1.wav");
+        else PlaySoundEffect("../../data/sounds/knight_hurt2.wav");
         // Flinch
         g_enemies[enemy_id].is_flinching = true;
         g_enemies[enemy_id].flinch_timer = 0.0f;
@@ -360,6 +383,8 @@ void ProcessEnemyMeleeHitboxes()
         if (punch_box.Intersects(player_bbox)) {
             printf("Enemy %d hit the player!\n", i);
             g_enemies[i].has_hit_player = true;
+            if (rand() % 2 == 0) PlaySoundEffect("../../data/sounds/knight_slice1.wav");
+            else PlaySoundEffect("../../data/sounds/knight_slice2.wav");
             if (!player.is_dead) {
                 glm::vec3 overlap_min = glm::max(punch_box.min, player_bbox.min);
                 glm::vec3 overlap_max = glm::min(punch_box.max, player_bbox.max);

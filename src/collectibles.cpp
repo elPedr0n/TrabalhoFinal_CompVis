@@ -2,6 +2,7 @@
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
+#include "sound.h"
 
 Collectible g_collectibles[MAX_COLLECTIBLES];
 
@@ -103,6 +104,7 @@ void UpdateCollectibles() {
                 } else if (g_collectibles[i].type == 2) {
                     player.special_energy = std::min(player.special_energy + 20.0f, player.max_special_energy);
                 }
+                PlaySoundEffect("../../data/sounds/absorb.wav");
                 g_collectibles[i].active = false;
             }
         }

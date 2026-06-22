@@ -58,6 +58,10 @@
 #include "animation.h"
 #include "screens.h"
 #include "breakables.h"
+#include "sound.h"
+
+float g_transform_sound_timer = 0.0f;
+bool g_play_transform_sound = false;
 #include "fragments.h"
 
 #include <future>
@@ -572,6 +576,7 @@ bool IsSphereInFrustum(const glm::vec3& center, float radius, FrustumPlane* plan
     return true;
 }
 #include "gamepad.h"
+#include "sound.h"
 
 int main(int argc, char* argv[])
 {
@@ -585,6 +590,7 @@ int main(int argc, char* argv[])
     }
 
     InitGamepadMappings();
+    InitSoundSystem();
 
     // Definimos o callback para impressão de erros da GLFW no terminal
     glfwSetErrorCallback(ErrorCallback);
@@ -688,6 +694,7 @@ int main(int argc, char* argv[])
     // ==========================================
     // TITLE SCREEN LOOP
     // ==========================================
+    PlayMusic("../../data/sounds/title.mp3", false);
     while (!glfwWindowShouldClose(window)) {
         if (keys[GLFW_KEY_ENTER]) {
             break; // Proceed to loading
@@ -728,6 +735,7 @@ int main(int argc, char* argv[])
         glfwPollEvents();
         ProcessGamepadInput(window);
     }
+    StopMusic();
 
     if (glfwWindowShouldClose(window)) {
         glfwTerminate();
@@ -925,8 +933,8 @@ int main(int argc, char* argv[])
     tinygltf::Model castle_model = AsyncLoadGLTF("../../data/castelin/scene.gltf", "the_castle");
     tinygltf::Model wall_gltf_model = AsyncLoadGLTF("../../data/map_background/wall.glb", "the_wall");
     tinygltf::Model tower_gltf_model = AsyncLoadGLTF("../../data/map_background/tower.glb", "the_tower");
-    tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill");
-    tinygltf::Model bigchill_uaf_model = AsyncLoadGLTF("../../data/big_chill_uaf.glb", "the_bigchill_uaf");
+    tinygltf::Model bigchill_model = AsyncLoadGLTF("../../data/big_chill_ben_10.glb", "the_bigchill");
+    tinygltf::Model bigchill_cloaked_model = AsyncLoadGLTF("../../data/big_chill_cloaked.glb", "the_bigchill_cloaked");
     tinygltf::Model ferris_wheel_model = AsyncLoadGLTF("../../data/map_background/ferris_wheel/scene.gltf", "the_ferris_wheel");
     
     // Breakables
@@ -998,7 +1006,8 @@ int main(int argc, char* argv[])
     // Swampfire animation local state (preserves timers and flags)
     SwampfireAnimState swampfire_state;
     BenAnimState ben_state;
-    BigChillAnimState bigchill_state;
+    BigChillAnimState bigchill_cloaked_state;
+    BigChillAnimState bigchill_ben10_state;
 
     int current_enemy_anim = 36;
     bool t_key_was_down = false;
@@ -1008,14 +1017,37 @@ int main(int argc, char* argv[])
     GltfAnimator fireballAnimator(emptyModel);
     GltfAnimator bentennysonAnimator(bentennyson_model);
     GltfAnimator foreverknightAnimator(foreverknight_model);
-    GltfAnimator bigchillAnimator(bigchill_model);
-    GltfAnimator bigchill_uaf_Animator(bigchill_uaf_model);
+    GltfAnimator bigchillBen10Animator(bigchill_model);
+    GltfAnimator bigchillCloakedAnimator(bigchill_cloaked_model);
     bool bigchill_was_jumping = false;
     // keep swampfire_state alive for the main loop (defined above)
 
     bool inner_loop_running = true;
+    PlayMusic("../../data/sounds/song1.mp3", true);
     while (inner_loop_running && !glfwWindowShouldClose(window))
     {
+        UpdateSoundSystem();
+
+        if (g_play_transform_sound) {
+            g_transform_sound_timer -= delta_t;
+            if (g_transform_sound_timer <= 0.0f) {
+                PlaySoundEffect("../../data/sounds/omintrix_transform.wav"); // Intentionally matched spelling from filesystem
+                g_play_transform_sound = false;
+            }
+        }
+
+        static bool was_dead = false;
+        static bool was_won = false;
+        
+        if (player.is_dead && !was_dead) {
+            was_dead = true;
+            StopMusic();
+            PlayMusic("../../data/sounds/defeat.mp3", false);
+        } else if (player.has_won && !was_won) {
+            was_won = true;
+            StopMusic();
+            PlayMusic("../../data/sounds/victory.mp3", false);
+        }
         if (keys[GLFW_KEY_ESCAPE])
             glfwSetWindowShouldClose(window, GL_TRUE);
 
@@ -1039,29 +1071,47 @@ int main(int argc, char* argv[])
             }
 
             if (player.active_character == 2) {
+                float old_energy = player.transform_energy;
                 player.transform_energy += 10.0f * delta_t; // Recarrega em 10s
+                if (old_energy < player.max_transform_energy && player.transform_energy >= player.max_transform_energy) {
+                    PlayOmnitrixSound("../../data/sounds/omnitrix_ready.wav");
+                }
                 if (player.transform_energy > player.max_transform_energy) {
                     player.transform_energy = player.max_transform_energy;
                 }
             } else {
-                player.transform_energy -= (100.0f / 20.0f) * delta_t; // Dura 20s
+                static bool is_waiting_oops = false;
+                if (!is_waiting_oops) {
+                    player.transform_energy -= (100.0f / 40.0f) * delta_t; // Dura 40s
+                }
+                
                 if (player.transform_energy <= 0.0f) {
                     player.transform_energy = 0.0f;
                     
-                    // Force revert to Ben
-                    player.active_character = 2; // Ben
-                    glm::vec3 size = bentennyson_size;
-                    printf("Energy depleted! Reverting to Ben.\n");
-                    player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
-                    ResolvePlayerMapCollisions();
+                    if (!is_waiting_oops) {
+                        is_waiting_oops = true;
+                        PlayOopsSound();
+                    }
+                    
+                    if (is_waiting_oops && IsOopsSoundFinished()) {
+                        is_waiting_oops = false;
+                        
+                        // Force revert to Ben
+                        PlayDetransformSound("../../data/sounds/omnitrix_detransform.wav");
+                        player.active_character = 2; // Ben
+                        glm::vec3 size = bentennyson_size;
+                        printf("Energy depleted! Reverting to Ben.\n");
+                        player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
+                        ResolvePlayerMapCollisions();
 
-                    ParticleOptions popts;
-                    popts.color = HexToRgb("#ff0000"); // Red flash on forced revert
-                    popts.life = 0.25f + 0.15f * 1.0f;
-                    popts.scale = 0.15f + 0.01f * 6.0f;
-                    popts.speed = 0.1f + 0.8f * 3.0f;
-                    popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
-                    Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+                        ParticleOptions popts;
+                        popts.color = HexToRgb("#ff0000"); // Red flash on forced revert
+                        popts.life = 0.25f + 0.15f * 1.0f;
+                        popts.scale = 0.15f + 0.01f * 6.0f;
+                        popts.speed = 0.1f + 0.8f * 3.0f;
+                        popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                        Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+                    }
                 }
             }
         }
@@ -1070,7 +1120,7 @@ int main(int argc, char* argv[])
         // Update UI timers
         auto updateAttackUI = [&](AttackUI& atk) {
             if (!atk.active) return;
-            if (&atk == &player.recent_attack && player.active_character == 0 && bigchill_state.is_q_attacking && atk.text == "Ice breath") {
+            if (&atk == &player.recent_attack && player.active_character == 0 && bigchill_cloaked_state.is_q_attacking && atk.text == "Ice breath") {
                 atk.timer = 0.0f;
             } else {
                 atk.timer += delta_t;
@@ -1238,12 +1288,13 @@ int main(int argc, char* argv[])
         glDepthMask(GL_TRUE);
 
         // Compute animations for all characters at the top
-        BigChillAnimResult bigchillRes = computeBigChillAnimation(bigchill_model, keys, player.jumping, delta_t, agora, bigchill_state);
+        BigChillAnimResult bigchillBen10Res = computeBigChillBen10Animation(bigchill_model, keys, player.jumping, delta_t, agora, bigchill_ben10_state);
+        BigChillAnimResult bigchillCloakedRes = computeBigChillCloakedAnimation(bigchill_cloaked_model, keys, player.jumping, delta_t, agora, bigchill_cloaked_state);
         SwampfireAnimResult animRes = computeSwampfireAnimation(gltfmodel, keys, player.jumping, delta_t, agora, swampfire_state);
         BenAnimResult benRes = computeBenAnimation(bentennyson_model, keys, player.jumping, delta_t, agora, ben_state);
 
         is_attacking = false;
-        if (player.active_character == 0) is_attacking = bigchill_state.is_attacking || bigchill_state.is_q_attacking;
+        if (player.active_character == 0) is_attacking = bigchill_cloaked_state.is_attacking || bigchill_cloaked_state.is_q_attacking;
         else if (player.active_character == 1) is_attacking = swampfire_state.is_e_attacking || swampfire_state.q_state > 0;
         else if (player.active_character == 2) is_attacking = ben_state.is_attacking || ben_state.is_q_attacking;
 
@@ -1254,10 +1305,44 @@ int main(int argc, char* argv[])
         }
         prev_ben_attacking = ben_state.is_attacking;
 
+        static bool prev_ben_punch_hitbox = false;
+        if (benRes.punch_active && !prev_ben_punch_hitbox) PlaySoundEffect("../../data/sounds/ben_punch.wav");
+        bool ben_punch_just_triggered = benRes.punch_active && !prev_ben_punch_hitbox;
+        prev_ben_punch_hitbox = benRes.punch_active;
+
+        static bool prev_sf_punch1 = false;
+        static bool prev_sf_punch2 = false;
+        if (animRes.punch1_active && !prev_sf_punch1) PlaySoundEffect("../../data/sounds/swampfire_punch.wav");
+        if (animRes.punch2_active && !prev_sf_punch2) PlaySoundEffect("../../data/sounds/swampfire_punch.wav");
+        bool sf_punch_just_triggered = (animRes.punch1_active && !prev_sf_punch1) || (animRes.punch2_active && !prev_sf_punch2);
+        prev_sf_punch1 = animRes.punch1_active;
+        prev_sf_punch2 = animRes.punch2_active;
+
+        static bool prev_bc_punch1 = false;
+        bool bc_punch_just_triggered = false;
+        if (player.active_character == 0) {
+            if (!player.jumping) {
+                if (bigchill_cloaked_state.is_attacking && bigchillCloakedRes.punch_sound_trigger) {
+                    bc_punch_just_triggered = true;
+                    PlaySoundEffect("../../data/sounds/punch_not_connect.wav");
+                }
+            } else {
+                if (bigchill_ben10_state.is_attacking && bigchillBen10Res.punch_sound_trigger) {
+                    bc_punch_just_triggered = true;
+                    PlaySoundEffect("../../data/sounds/punch_not_connect.wav");
+                }
+            }
+        }
+        prev_bc_punch1 = bigchillCloakedRes.punch_active;
+
         static bool prev_ben_q = false;
+        static bool prev_ben_slap_hitbox = false;
         if (player.active_character == 2 && ben_state.is_q_attacking && !prev_ben_q) {
             player.pushAttack("Big slap");
         }
+        if (benRes.big_slap_active && !prev_ben_slap_hitbox) PlaySoundEffect("../../data/sounds/ben_heavy.wav");
+        bool ben_slap_just_triggered = benRes.big_slap_active && !prev_ben_slap_hitbox;
+        prev_ben_slap_hitbox = benRes.big_slap_active;
         prev_ben_q = ben_state.is_q_attacking;
 
         static bool prev_swamp_e = false;
@@ -1271,22 +1356,29 @@ int main(int argc, char* argv[])
         }
 
         static bool prev_bc_e = false;
-        if (player.active_character == 0 && bigchill_state.is_attacking && !prev_bc_e) {
-            player.pushAttack("Cold boxing");
+        if (player.active_character == 0 && bigchill_cloaked_state.is_attacking && !prev_bc_e) {
+            player.pushAttack("Cold punch");
         }
-        prev_bc_e = bigchill_state.is_attacking;
+        prev_bc_e = bigchill_cloaked_state.is_attacking;
 
         static bool prev_bc_q = false;
-        if (player.active_character == 0 && bigchill_state.is_q_attacking && !prev_bc_q) {
-            player.pushAttack("Ice breath");
+        if (player.active_character == 0 && bigchill_cloaked_state.is_q_attacking) {
+            if (bigchill_cloaked_state.q_attack_timer > 1.0f) {
+                StartIceBreath();
+            } else {
+                StopIceBreath();
+            }
+            if (!prev_bc_q) player.pushAttack("Ice breath");
+        } else {
+            StopIceBreath();
         }
-        prev_bc_q = bigchill_state.is_q_attacking;
+        prev_bc_q = bigchill_cloaked_state.is_q_attacking;
 
         // O personagem só pode se mover se não estiver no meio de um ataque, morto ou sofrendo flinch
         bool can_move = !is_attacking && !player.is_dead && !player.is_flinching && !(player.active_character == 2 && ben_state.is_dancing);
         bool can_rotate = false;
         if ((player.active_character == 1 && swampfire_state.q_state > 0) || 
-            (player.active_character == 0 && bigchill_state.is_q_attacking)) {
+            (player.active_character == 0 && bigchill_cloaked_state.is_q_attacking)) {
             can_rotate = true;
         }
         UpdatePosition(can_move, can_rotate);
@@ -1298,16 +1390,19 @@ int main(int argc, char* argv[])
         ProcessEnemyMeleeHitboxes();
         // Process Big Chill hitboxes if active
         if (player.active_character == 0) {
-            ProcessBigChillMeleeHitboxes(bigchillRes, bigchill_state, CHILL);
-            if (bigchillRes.magic_active) {
+            BigChillAnimResult& activeRes = player.jumping ? bigchillBen10Res : bigchillCloakedRes;
+            BigChillAnimState& activeState = player.jumping ? bigchill_ben10_state : bigchill_cloaked_state;
+            
+            ProcessBigChillMeleeHitboxes(activeRes, activeState, CHILL, bc_punch_just_triggered);
+            if (activeRes.magic_active) {
                 glm::vec3 forward(sin(player.rotate), 0.0f, cos(player.rotate));
                 glm::vec3 spawn_pos = player.position + forward * 0.2f + glm::vec3(0.02f, 0.85f, 0.02f);
                 ParticleOptions popts;
                 popts.color = HexToRgb("#00FFFF"); // Vibrant Cyan
-                popts.life = 0.4f;
-                popts.scale = 0.08f;
-                popts.speed = 4.0f;
-                popts.count = 5;
+                popts.life = 0.3f;
+                popts.scale = 0.20f;
+                popts.speed = 2.0f;
+                popts.count = 20;
                 Particles_SpawnDirectional(spawn_pos, forward, 0.4f, popts);
             }
         }
@@ -1329,82 +1424,116 @@ int main(int argc, char* argv[])
                 glBindVertexArray(0);
                 glUniform1i(g_object_id_uniform, CHILL);
             }
-            glDisable(GL_CULL_FACE); // Manto precisa dupla-face para não "sumir" por dentro.
-            bool loop_anim = (bigchillRes.current_anim_index != 1 && bigchillRes.current_anim_index != 0 && bigchillRes.current_anim_index != 5);
             
-            static bool uaf_spawned = false;
-            static bool ground_spawned = true; // initially true so we don't spawn on frame 0
-            if (!player.jumping && !ground_spawned) {
-                // Landing
-                ground_spawned = true;
-                uaf_spawned = false;
-                ParticleOptions popts;
-                popts.color = HexToRgb("#888888"); // Smoke color
-                popts.life = 0.8f;
-                popts.scale = 0.8f; // Maior ainda
-                popts.speed = 3.0f;
-                popts.count = 50; // Poucas partículas
-                popts.additive = false;
-                Particles_SpawnDirectional(player.position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 1.5f, popts);
-            } else if (player.jumping && bigchill_state.jump_timer >= 0.2f && !uaf_spawned) {
-                // Before swapping to UAF (swap happens at 0.3f)
-                uaf_spawned = true;
-                ground_spawned = false;
-                ParticleOptions popts;
-                popts.color = HexToRgb("#888888");
-                popts.life = 0.8f;
-                popts.scale = 0.8f;
-                popts.speed = 3.0f;
-                popts.count = 50;
-                popts.additive = false;
-                Particles_SpawnDirectional(player.position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f), 1.5f, popts);
-            }
+            static float bigchill_wings_alpha = 0.0f;
+            float transition_speed = 4.0f;
             if (player.jumping) {
-                bigchill_uaf_Animator.update(bigchill_uaf_model, bigchillRes.current_anim_index, bigchillRes.anim_time_to_pass, loop_anim);
-                const auto& bigchillBones = bigchill_uaf_Animator.getBoneMatrices();
-                if (g_bone_matrices_uniform >= 0) {
-                    if (!bigchillBones.empty()) {
-                        glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillBones.size(), GL_FALSE, (const GLfloat*)bigchillBones.data());
-                    } else {
-                        std::vector<glm::mat4> idBones(100, Matrix_Identity());
-                        glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
-                    }
-                }
+                bigchill_wings_alpha += delta_t * transition_speed;
+                if (bigchill_wings_alpha > 1.0f) bigchill_wings_alpha = 1.0f;
             } else {
-                bigchillAnimator.update(bigchill_model, bigchillRes.current_anim_index, bigchillRes.anim_time_to_pass, loop_anim);
-                const auto& bigchillBones = bigchillAnimator.getBoneMatrices();
-                if (g_bone_matrices_uniform >= 0) {
-                    if (!bigchillBones.empty()) {
-                        glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillBones.size(), GL_FALSE, (const GLfloat*)bigchillBones.data());
-                    } else {
-                        std::vector<glm::mat4> idBones(100, Matrix_Identity());
-                        glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
-                    }
-                }
+                bigchill_wings_alpha -= delta_t * transition_speed;
+                if (bigchill_wings_alpha < 0.0f) bigchill_wings_alpha = 0.0f;
             }
 
+            static float g_WingsRotationY = 0.0f;
+            if (keys[GLFW_KEY_LEFT_BRACKET]) {
+                g_WingsRotationY -= delta_t * 2.0f;
+                printf("Wings Rotation Y: %f\n", g_WingsRotationY);
+            }
+            if (keys[GLFW_KEY_RIGHT_BRACKET]) {
+                g_WingsRotationY += delta_t * 2.0f;
+                printf("Wings Rotation Y: %f\n", g_WingsRotationY);
+            }
+
+            bool loop_ben10 = (bigchillBen10Res.current_anim_index != 1 && bigchillBen10Res.current_anim_index != 0 && bigchillBen10Res.current_anim_index != 2 && bigchillBen10Res.current_anim_index != 9);
+            bigchillBen10Animator.update(bigchill_model, bigchillBen10Res.current_anim_index, bigchillBen10Res.anim_time_to_pass, loop_ben10);
+            const auto& bigchillBen10Bones = bigchillBen10Animator.getBoneMatrices();
+            
+            bool loop_cloaked = (bigchillCloakedRes.current_anim_index != 1 && bigchillCloakedRes.current_anim_index != 0 && bigchillCloakedRes.current_anim_index != 5);
+            bigchillCloakedAnimator.update(bigchill_cloaked_model, bigchillCloakedRes.current_anim_index, bigchillCloakedRes.anim_time_to_pass, loop_cloaked);
+            const auto& bigchillCloakedBones = bigchillCloakedAnimator.getBoneMatrices();
+            
+            static bool castle_reached = false;
+            if (!castle_reached && player.position.x >= 11.0f && player.position.z >= -99.14f && player.position.z <= -82.65f) {
+                castle_reached = true;
+                PlayTransition("../../data/sounds/transition.mp3", "../../data/sounds/song2.mp3");
+            }
+            
             for (const auto& pair : g_VirtualScene) {
-                bool draw = false;
-                if (player.jumping && bigchill_state.jump_timer > 0.3f) {
-                    if (pair.first.find("the_bigchill_uaf_") == 0) draw = true;
-                } else {
-                    if (pair.first.find("the_bigchill_") == 0 && pair.first.find("the_bigchill_uaf_") != 0) draw = true;
-                }
+                bool is_ben10 = (pair.first.find("the_bigchill_") == 0 && pair.first.find("the_bigchill_cloaked") != 0 && pair.first.find("the_bigchill_uaf") != 0);
+                bool is_cloaked = (pair.first.find("the_bigchill_cloaked") == 0);
                 
-                if (draw) {
-                    if (pair.first.find("the_bigchill_uaf_") == 0) {
-                        glUniform1i(g_object_id_uniform, UAF_CHILL);
+                // HIDE the cloak from big_chill_ben_10 model
+                if (is_ben10 && (pair.first == "the_bigchill_1" || pair.first == "the_bigchill_2")) continue;
+                
+                if (is_ben10 || is_cloaked) {
+                    float current_alpha = 1.0f;
+                    if (is_ben10) current_alpha = bigchill_wings_alpha;
+                    else if (is_cloaked) current_alpha = 1.0f - bigchill_wings_alpha;
+                    
+                    if (current_alpha <= 0.01f) continue;
+                    
+                    if (current_alpha < 0.99f) {
+                        glEnable(GL_BLEND);
+                        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+                    } else {
+                        glDisable(GL_BLEND);
                     }
+                    
+                    glUniform1f(glGetUniformLocation(g_GpuProgramID, "bigchill_part_alpha"), current_alpha);
+                    
                     glActiveTexture(GL_TEXTURE2);
-                    GLuint tex_to_use = pair.second.texture_id != 0 ? pair.second.texture_id : g_LoadedTextureIDs[2];
-                    glBindTexture(GL_TEXTURE_2D, tex_to_use);
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
-                    DrawVirtualObject(pair.first.c_str());
-                    if (pair.first.find("the_bigchill_uaf_") == 0) {
-                        glUniform1i(g_object_id_uniform, CHILL); // restore
+                    GLuint tex_to_use = pair.second.texture_id;
+                    if (tex_to_use == 0 && g_LoadedTextureIDs.size() > 3) {
+                        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[2]); // bcck1.png
+                        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
+                        
+                        glActiveTexture(GL_TEXTURE3);
+                        glBindTexture(GL_TEXTURE_2D, g_LoadedTextureIDs[3]); // bcck2.png
+                        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage3"), 3);
+                    } else {
+                        glBindTexture(GL_TEXTURE_2D, tex_to_use);
+                        glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage2"), 2);
                     }
+                    
+                    if (g_bone_matrices_uniform >= 0) {
+                        if (is_ben10) {
+                            bool is_wings = (pair.first == "the_bigchill_3");
+                            if (is_wings) {
+                                std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                                idBones[0] = Matrix_Rotate_Y(g_WingsRotationY);
+                                glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                            } else if (!bigchillBen10Bones.empty()) {
+                                glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillBen10Bones.size(), GL_FALSE, (const GLfloat*)bigchillBen10Bones.data());
+                            } else {
+                                std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                                glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                            }
+                        } else if (is_cloaked) {
+                            if (!bigchillCloakedBones.empty()) {
+                                glUniformMatrix4fv(g_bone_matrices_uniform, (GLsizei)bigchillCloakedBones.size(), GL_FALSE, (const GLfloat*)bigchillCloakedBones.data());
+                            } else {
+                                std::vector<glm::mat4> idBones(100, Matrix_Identity());
+                                glUniformMatrix4fv(g_bone_matrices_uniform, 100, GL_FALSE, glm::value_ptr(idBones[0]));
+                            }
+                        }
+                    }
+                    
+                    bool disable_culling = false;
+                    if (is_ben10 && (pair.first == "the_bigchill_1" || pair.first == "the_bigchill_2")) disable_culling = true;
+                    if (is_cloaked) disable_culling = true;
+                    
+                    if (disable_culling) glDisable(GL_CULL_FACE);
+                    else glEnable(GL_CULL_FACE);
+                    
+                    DrawVirtualObject(pair.first.c_str());
+                    
+                    if (disable_culling) glEnable(GL_CULL_FACE);
+                    
+                    glDisable(GL_BLEND);
                 }
             }
+            glUniform1f(glGetUniformLocation(g_GpuProgramID, "bigchill_part_alpha"), 1.0f);
             DrawBoundingBox(player.characters[0].bbox, CHILL);
             glEnable(GL_CULL_FACE);
         }
@@ -1415,7 +1544,7 @@ int main(int argc, char* argv[])
         if (player.active_character == 1)
         {
             int current_anim_index = animRes.current_anim_index;
-            ProcessMeleeHitboxes(animRes, swampfire_state, SWAMPFIRE);
+            ProcessSwampfireMeleeHitboxes(animRes, swampfire_state, SWAMPFIRE, sf_punch_just_triggered);
             float anim_time_to_pass = animRes.anim_time_to_pass;
 
             // Atualiza o animador modular
@@ -1477,10 +1606,14 @@ int main(int argc, char* argv[])
         // Draw Ben Tennyson instances if visible
         if (player.active_character == 2)
         {
-            ProcessBenMeleeHitboxes(benRes, ben_state, BENTENNYSON);
+            ProcessBenMeleeHitboxes(benRes, ben_state, BENTENNYSON, ben_punch_just_triggered || ben_slap_just_triggered);
             float ben_y_offset = 0.0f;
-            if (player.is_flinching) {
+            if (player.is_dead) {
+                ben_y_offset = 0.10f;
+            } else if (player.is_flinching) {
                 ben_y_offset = -0.110f;
+            } else if (ben_state.is_q_attacking) {
+                ben_y_offset = -0.12f;
             }
             model = Matrix_Translate(player.position.x, player.position.y + ben_y_offset, player.position.z)
                   * Matrix_Scale(player.characters[2].scale, player.characters[2].scale, player.characters[2].scale)
@@ -2097,6 +2230,7 @@ int main(int argc, char* argv[])
     } // end of outer loop
 
     // Finalizamos o uso dos recursos do sistema operacional
+    CleanupSoundSystem();
     glfwTerminate();
 
     // Fim do programa
@@ -3119,7 +3253,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     {
         if (mod == 0 && !(mod & GLFW_MOD_SHIFT) && player.active_character == 2 && !player.is_dead) {
             player.selected_alien = (player.selected_alien == 0) ? 1 : 0;
-            printf("Selected alien: %d\n", player.selected_alien);
+            PlayOmnitrixSound("../../data/sounds/omnitrix_switch.wav");
+            printf("Selected Alien: %d\n", player.selected_alien);
         } else {
             g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
         }
@@ -3137,11 +3272,17 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             if (player.active_character == 2) {
                 // Try to transform
                 if (player.transform_energy < player.max_transform_energy) {
+                    PlayOmnitrixSound("../../data/sounds/omnitrix_no_transform.wav");
                     printf("Energy not full! Cannot transform.\n");
                 } else if (g_omnitrix_anim_frame < 15.0f) {
+                    PlayOmnitrixSound("../../data/sounds/omnitrix_no_transform.wav");
                     printf("Omnitrix is not fully opened! Cannot transform.\n");
                 } else {
                     // Start transformation
+                    PlayOmnitrixSound("../../data/sounds/omnitrix_hit.wav");
+                    g_transform_sound_timer = 0.35f;
+                    g_play_transform_sound = true;
+
                     player.active_character = player.selected_alien;
                     glm::vec3 size = player.active_character == 0 ? bigchill_size : swampfire_size;
                     printf("Switched to character %d\n", player.active_character);
@@ -3159,6 +3300,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             } else {
                 // Voluntary revert back to Ben
                 player.active_character = 2;
+                PlayDetransformSound("../../data/sounds/omnitrix_detransform.wav");
                 glm::vec3 size = bentennyson_size;
                 printf("Switched back to character 2\n");
                 player.characters[player.active_character].bbox = makeAABBFromGround(player.position, size);
@@ -3211,6 +3353,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         LoadShadersFromFiles();
         fprintf(stdout,"Shaders recarregados!\n");
         fflush(stdout);
+    }
+
+    if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+    {
+        PlayTransition("../../data/sounds/transition.mp3", "../../data/sounds/song2.mp3");
     }
 }
 

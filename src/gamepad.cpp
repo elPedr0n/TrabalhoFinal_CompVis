@@ -154,14 +154,13 @@ void ProcessGamepadInput(GLFWwindow* window) {
         simulateKey(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, GLFW_KEY_Z);
         simulateKey(GLFW_GAMEPAD_BUTTON_START, GLFW_KEY_ENTER);
         simulateKey(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, GLFW_KEY_G);
+        simulateKey(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, GLFW_KEY_X); // Mapped alien swap to right d-pad
 
-        bool dpad_lr_pressed = state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS || state.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS;
-        bool last_dpad_lr_pressed = lastState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT] == GLFW_PRESS || lastState.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT] == GLFW_PRESS;
         bool triggers_pressed = state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.0f || state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.0f;
         bool last_triggers_pressed = lastState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.0f || lastState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.0f;
         
-        bool x_pressed = dpad_lr_pressed || triggers_pressed;
-        bool last_x_pressed = last_dpad_lr_pressed || last_triggers_pressed;
+        bool x_pressed = triggers_pressed;
+        bool last_x_pressed = last_triggers_pressed;
 
         if (x_pressed && !last_x_pressed) {
             KeyCallback(window, GLFW_KEY_X, 0, GLFW_PRESS, 0);
@@ -190,10 +189,10 @@ void ProcessGamepadInput(GLFWwindow* window) {
             float rx = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
             float ry = state.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
             if (fabs(rx) > deadzone) {
-                g_CameraTheta -= 0.05f * rx;
+                g_CameraTheta -= 0.15f * rx;
             }
             if (fabs(ry) > deadzone) {
-                g_CameraPhi += 0.05f * ry;
+                g_CameraPhi += 0.15f * ry;
                 float phimax = 3.141592f/2;
                 float phimin = -phimax;
                 if (g_CameraPhi > phimax) g_CameraPhi = phimax;

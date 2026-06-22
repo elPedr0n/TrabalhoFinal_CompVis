@@ -8,6 +8,7 @@
 set(SOURCES
   src/player.cpp
   src/main.cpp
+  src/sound.cpp
   src/animation.cpp
   src/correcao.cpp
   src/textrendering.cpp

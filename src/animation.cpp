@@ -595,7 +595,7 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
     }
 }
 
-BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
+BigChillAnimResult computeBigChillCloakedAnimation(const tinygltf::Model& model,
                                  const bool keys[1024],
                                  bool jumping,
                                  float delta_t,
@@ -611,11 +611,24 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
     bool is_moving = w_is_down || a_is_down || s_is_down || d_is_down;
     bool e_is_down = keys[GLFW_KEY_E];
     bool q_is_down = keys[GLFW_KEY_Q];
+    bool g_is_down = keys[GLFW_KEY_G];
 
     if (!e_is_down) state.e_key_was_down = false;
     if (!q_is_down) state.q_key_was_down = false;
+    
+    state.is_dancing = g_is_down && !jumping && !state.is_attacking && !state.is_q_attacking;
 
-    if (jumping && !state.is_attacking && !state.is_q_attacking) {
+    if (player.is_dead) {
+        current_anim_index = 3; // Dying Backwards_4
+        anim_time_to_pass = player.death_timer;
+        state.is_attacking = false;
+        state.is_q_attacking = false;
+    } else if (player.is_flinching) {
+        current_anim_index = 2; // Rib Hit_3
+        anim_time_to_pass = player.flinch_timer;
+        state.is_attacking = false;
+        state.is_q_attacking = false;
+    } else if (jumping && !state.is_attacking && !state.is_q_attacking) {
         current_anim_index = 1; // Jump_2
         state.jump_timer += delta_t * 1.5f;
     } else {
@@ -663,8 +676,10 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
             current_anim_index = 6; // Running_7
             state.in_fighting_stance = false;
         } else {
-            if (state.in_fighting_stance) {
-                current_anim_index = 7; // Fighting Stance (was 3 which is dying)
+            if (state.is_dancing) {
+                current_anim_index = 8; // Fallback to idle, big chill cloaked doesn't have dance
+            } else if (state.in_fighting_stance) {
+                current_anim_index = 7; // Fighting Stance
             } else {
                 current_anim_index = 8; // Idle_9
             }
@@ -673,6 +688,7 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
         if (player.active_character == 0 && e_is_down && !jumping && !state.is_attacking && !state.is_q_attacking) {
             state.is_attacking = true;
             state.attack_timer = 0.0f;
+            state.punch_segment = 0;
             state.e_key_was_down = true;
             state.in_fighting_stance = true;
             state.punch_hit_enemies.clear();
@@ -703,8 +719,15 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
 
     if (current_anim_index == 5) {
         anim_time_to_pass = state.attack_timer;
-        if (anim_time_to_pass >= 0.15f)
-            res.punch_active = true;
+        if (anim_time_to_pass >= 0.15f && anim_time_to_pass < 0.25f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.30f && anim_time_to_pass < 0.40f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.45f && anim_time_to_pass < 0.55f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.60f && anim_time_to_pass < 0.70f) res.punch_active = true;
+
+        if (anim_time_to_pass >= 0.15f && state.punch_segment == 0) { state.punch_segment = 1; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.30f && state.punch_segment == 1) { state.punch_segment = 2; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.45f && state.punch_segment == 2) { state.punch_segment = 3; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.60f && state.punch_segment == 3) { state.punch_segment = 4; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
     }
     if (current_anim_index == 0) {
         float frame_48 = 48.0f / 24.0f;
@@ -724,6 +747,171 @@ BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
 
     if (current_anim_index == 6) {
         anim_time_to_pass *= 0.8f; 
+    }
+
+    res.current_anim_index = current_anim_index;
+    res.anim_time_to_pass = anim_time_to_pass;
+    res.is_attacking = state.is_attacking || state.is_q_attacking;
+    res.is_dancing = state.is_dancing;
+    return res;
+}
+
+BigChillAnimResult computeBigChillBen10Animation(const tinygltf::Model& model,
+                                 const bool keys[1024],
+                                 bool jumping,
+                                 float delta_t,
+                                 float agora,
+                                 BigChillAnimState& state) {
+    BigChillAnimResult res;
+    int current_anim_index = 5; // Idle_Loop
+    float anim_time_to_pass = 0.0f;
+    bool w_is_down = keys[GLFW_KEY_W];
+    bool a_is_down = keys[GLFW_KEY_A];
+    bool s_is_down = keys[GLFW_KEY_S];
+    bool d_is_down = keys[GLFW_KEY_D];
+    bool is_moving = w_is_down || a_is_down || s_is_down || d_is_down;
+    bool e_is_down = keys[GLFW_KEY_E];
+    bool q_is_down = keys[GLFW_KEY_Q];
+    bool g_is_down = keys[GLFW_KEY_G];
+
+    if (!e_is_down) state.e_key_was_down = false;
+    if (!q_is_down) state.q_key_was_down = false;
+    
+    state.is_dancing = g_is_down && !jumping && !state.is_attacking && !state.is_q_attacking;
+
+    if (player.is_dead) {
+        current_anim_index = 4; // Use Hit_Chest for now if no dead animation
+        anim_time_to_pass = player.death_timer;
+        state.is_attacking = false;
+        state.is_q_attacking = false;
+    } else if (player.is_flinching) {
+        current_anim_index = 4; // Hit_Chest
+        anim_time_to_pass = player.flinch_timer;
+        state.is_attacking = false;
+        state.is_q_attacking = false;
+    } else if (jumping && !state.is_attacking && !state.is_q_attacking) {
+        current_anim_index = 7; // Jump_Loop
+        state.jump_timer += delta_t * 1.5f;
+    } else {
+        state.jump_timer = 0.0f;
+        if (state.is_q_attacking) {
+            current_anim_index = 9; // Levitate Entrance (Special attack)
+            state.q_attack_timer += delta_t * 1.5f;
+            float max_attack_time = 0.0f;
+            if (current_anim_index < model.animations.size()) {
+                const auto& anim = model.animations[current_anim_index];
+                float max_t = 0.0f;
+                for (const auto& samp : anim.samplers) {
+                    const auto& inAcc = model.accessors[samp.input];
+                    const auto& inBV = model.bufferViews[inAcc.bufferView];
+                    const auto& inBuf = model.buffers[inBV.buffer];
+                    const float* times = reinterpret_cast<const float*>(&inBuf.data[inBV.byteOffset + inAcc.byteOffset]);
+                    if (inAcc.count > 0 && times[inAcc.count - 1] > max_t) max_t = times[inAcc.count - 1];
+                }
+                if (max_t > 0.0f) max_attack_time = max_t;
+            }
+            if (state.q_attack_timer >= max_attack_time) {
+                state.is_q_attacking = false;
+            }
+        } else if (state.is_attacking) {
+            current_anim_index = 2; // Fighting Left Jab
+            state.attack_timer += delta_t * 1.5f;
+            float max_attack_time = 0.0f;
+            if (current_anim_index < model.animations.size()) {
+                const auto& anim = model.animations[current_anim_index];
+                float max_t = 0.0f;
+                for (const auto& samp : anim.samplers) {
+                    const auto& inAcc = model.accessors[samp.input];
+                    const auto& inBV = model.bufferViews[inAcc.bufferView];
+                    const auto& inBuf = model.buffers[inBV.buffer];
+                    const float* times = reinterpret_cast<const float*>(&inBuf.data[inBV.byteOffset + inAcc.byteOffset]);
+                    if (inAcc.count > 0 && times[inAcc.count - 1] > max_t) max_t = times[inAcc.count - 1];
+                }
+                if (max_t > 0.0f) max_attack_time = max_t;
+            }
+            if (state.attack_timer >= max_attack_time) {
+                state.is_attacking = false;
+                state.punch_hit_enemies.clear();
+            }
+        } else if (is_moving) {
+            current_anim_index = 11; // Run Anime
+            state.in_fighting_stance = false;
+        } else {
+            if (state.is_dancing) {
+                current_anim_index = 0; // Dance Charleston
+            } else if (state.in_fighting_stance) {
+                current_anim_index = 1; // Fighting Idle
+            } else {
+                current_anim_index = 5; // Idle_Loop
+            }
+        }
+
+        if (player.active_character == 0 && e_is_down && !jumping && !state.is_attacking && !state.is_q_attacking) {
+            state.is_attacking = true;
+            state.attack_timer = 0.0f;
+            state.punch_segment = 0;
+            state.e_key_was_down = true;
+            state.in_fighting_stance = true;
+            state.punch_hit_enemies.clear();
+        }
+        
+        if (player.active_character == 0 && q_is_down && !jumping && !state.is_attacking && !state.is_q_attacking) {
+            if (player.special_energy >= 10.0f) {
+                state.is_q_attacking = true;
+                state.q_attack_timer = 0.0f;
+                state.in_fighting_stance = true;
+                player.special_energy -= 10.0f; // Deduct start cost
+            }
+        }
+    }
+
+    if (current_anim_index != state.last_applied_anim_index && current_anim_index != 7 && current_anim_index != 2 && current_anim_index != 9 && current_anim_index != 0) {
+        state.anim_start_time = agora;
+    }
+    state.last_applied_anim_index = current_anim_index;
+
+    if (current_anim_index != 7 && current_anim_index != 2 && current_anim_index != 9 && current_anim_index != 0) {
+        anim_time_to_pass = (agora - state.anim_start_time) * 1.5f;
+    }
+
+    if (current_anim_index == 0) {
+        anim_time_to_pass = (agora - state.anim_start_time) * 1.2f;
+    }
+
+    if (current_anim_index == 7 && jumping) {
+        anim_time_to_pass = state.jump_timer;
+    }
+
+    if (current_anim_index == 2) {
+        anim_time_to_pass = state.attack_timer;
+        if (anim_time_to_pass >= 0.15f && anim_time_to_pass < 0.25f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.30f && anim_time_to_pass < 0.40f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.45f && anim_time_to_pass < 0.55f) res.punch_active = true;
+        if (anim_time_to_pass >= 0.60f && anim_time_to_pass < 0.70f) res.punch_active = true;
+
+        if (anim_time_to_pass >= 0.15f && state.punch_segment == 0) { state.punch_segment = 1; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.30f && state.punch_segment == 1) { state.punch_segment = 2; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.45f && state.punch_segment == 2) { state.punch_segment = 3; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+        if (anim_time_to_pass >= 0.60f && state.punch_segment == 3) { state.punch_segment = 4; state.punch_hit_enemies.clear(); res.punch_sound_trigger = true; }
+    }
+    
+    if (current_anim_index == 9) {
+        float freeze_time = 1.0f; // Approximate freeze point for levitation magic
+        if (q_is_down && state.q_attack_timer >= freeze_time && state.q_attack_timer <= freeze_time + 0.5f) {
+            if (player.special_energy > 0.0f) {
+                state.q_attack_timer = freeze_time; // freeze
+                player.special_energy -= 10.0f * delta_t; // Continuous drain
+            }
+        }
+        
+        anim_time_to_pass = state.q_attack_timer;
+        if (anim_time_to_pass >= freeze_time - 0.2f && anim_time_to_pass <= freeze_time) {
+            res.magic_active = true;
+        }
+    }
+
+    if (current_anim_index == 11) {
+        anim_time_to_pass *= 1.2f; // Adjust run speed if needed
     }
 
     res.current_anim_index = current_anim_index;

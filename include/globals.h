@@ -58,8 +58,8 @@ void SpawnRangedEnemy(glm::vec3 pos);
 void DrawBoundingBox(struct AABB& aabb, int restore_object_id);
 
 void ProcessEnemyMeleeHitboxes();
-void ProcessMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id);
-void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id);
-void ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id);
+bool ProcessSwampfireMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id, bool just_triggered);
+bool ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id, bool just_triggered);
+bool ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id, bool just_triggered);
 
 #endif

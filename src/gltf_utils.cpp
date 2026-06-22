@@ -225,6 +225,16 @@ void buildTrianglesAndAddToVirtualSceneFromGLTF(const tinygltf::Model &model, co
             // Material selector (location 3) — constant 4.0 for SWAMPFIRE
             {
                 std::vector<float> mat_sel(positions.size(), 4.0f);
+                if (base_name == "the_bigchill_cloaked") {
+                    std::ifstream infile("../../data/big_chill_cloaked_mats.txt");
+                    if (infile.is_open()) {
+                        float m;
+                        int idx = 0;
+                        while (infile >> m && idx < (int)mat_sel.size()) {
+                            mat_sel[idx++] = m;
+                        }
+                    }
+                }
                 glGenBuffers(1, &vbo_mat);
                 glBindBuffer(GL_ARRAY_BUFFER, vbo_mat);
                 glBufferData(GL_ARRAY_BUFFER, mat_sel.size() * sizeof(float), mat_sel.data(), GL_STATIC_DRAW);

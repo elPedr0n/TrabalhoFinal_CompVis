@@ -1263,3 +1263,37 @@ PROMPT 4 - 10: Meu ta muito errado isso, n ta girando corretamente, tente ajutar
 PROMPT 11: so, for now we are having a white canvas for the background part os the map, i want to change it to something resembling the nightime of the game, how I do it?
 
 PROMPT 12: i need a redish color, like this tone in rgb 88, 48, 39, But it would be nice if it were a gradient, with some dark spaces in some places, to simulate some clouds
+
+### Commit com IA: Modelo do big chill corrigido, som adicionado e outras correções
+
+PROMPT 1: carregue "big_chill_ben_10.glb" ao invés do modelo atual do big chill. Use as texturas do próprio glb, não as externas
+mude que para, ao invés de trocar de modelo ao pular, a capa do modelo interpole com as asas(enquanto a capa fica transparente, as asas ficam visíveis) e quando voltar ao chão o contrário acontecer. Também remova as partículas que apareciam ao pular
+
+PROMPT 2: aplique as animações do modelo para andar, pular, ataque, etc. faça com que as asas não se mexam com a animação. Mude o nome do ataque "Cold boxing" para "Cold punch". Torne as partículas do cold breath mais numerosas e grandes
+
+PROMPT 3: volte a usar big_chill_cloaked quando o modelo estiver no chão, com suas respectivas animações. Ao mudar pro ar, ele vai mudar para o big_chill_ben_10, com a mesma interpolação.
+
+PROMPT 4: aumente a sensibilidade do analógico direito no controle, Mapeie a troca de alien para o botão direito do d-pad também, atualmente está mapeado para o botão de baixo do d-pad, o que está errado
+
+PROMPT 5: hora de adicionar um sistema de som. Crie sound.cpp e vamos nessa. O primeiro som será "omnitrix_switch.wav" tocado quando o jogador mudar o alien ativo no omnitrix
+
+PROMPT 6: diminua o volume dos sons do omnitrix. O som de oops só deve tocar quando a barra de transformação acabar enquanto ben estiver transformado. Nesse caso, o som vai tocar por inteiro e DEPOIS ben vai se destransformar. O som de icebreath deve ficar em loop na parte do meio. Toque o som title em loop durante o jogo, victory em caso de vitória (uma vez só) e defeat em caso de derrota (uma vez só). 
+
+PROMPT 7: implemente o step corretamente. Aplique o som de omintrix_hit seguido de omnitrix_transform quando o jogador se transformar. Implemente break_hit quando um quebrável sofrer dano mas não quebrar, e para quando quebrar, break_heavy quando for um banco/caixa e break_soft quando for um ursinho. Adicione os novos sons de acordo. Absorb toda vez que absorver um orbe. A música deve começar novamente toda vez que a fase começar de novo. Toque title na tela inicial, uma vez somente. Ao apertar "7" pare de tocar a song1 e toque transition, e depois comece a ciclar a "song2".
+
+PROMPT 8: remova o "step" e toda a sua lógica. A música "title" deve tocar na tela principal, não no jogo em si. Ice breath deve ciclar mais cedo. Adicione os sons ice_freeze para quando um inimigo congelar e ice_break pra quando ele descongelar. Adicione o som big_chill_cloak pra quando o big_chill pular ou voltar pro chão. O som knight_laugh pode tocar aleatoriamente (chance baixa) enquanto um inimigo estiver vivo e perto do ben ou quando um inimigo for spawnado perto dele
+
+PROMPT 9: O som de title deve parar de tocar assim que sair da tela. A música song1 não está sendo tocada corretamente (está começando sem parar). Onde posso determinar o funcionamento do som do ice breath? Revise os sons do swampfire, eles mudaram. Lembre-se de aplicar os sons de soco com hit e soco sem hit para todos os personagens. Para ben, devem tocar uma vez só, para swampfire duas e para big chill tres. Aplique knight_death_water quando um cavaleiro cair na água e morrer. Double jump é para quando o jogador pula no ar com o big_chill. Aumente o volume dos sons de transformação e destransformação (mas só eles). 
+
+PROMPT 10: o ataque normal do big chill está todo bugado (as vezes não funciona, as vezes não tem hitbox). Temos dois sons diferentes para fireball launch agora. Agora temos apenas "jump" que deve ser usado quando um personagem pular, seja no chão ou no ar (com big chill). Step deve tocar quando os jogadores caírem no chão.
+
+PROMPT 11: diminua o volume do som de pulo. O som do ataque básico do big chill deve tocar quatro vezes. A sua hitbox, também, deve piscar quatro vezes, com dano 5 em cada hitbox.
+os projéteis dos inimigos devem ter colisão com o chão. Quando muitos sons ficam acumulados, o jogo faz um barulho estourado (conserte isso). Use o novo ice_breath, dessa vez totalmente em loop. Diminua o alcance das partículas do ice breath. Ao pisar na útlima plataforma, a que contém o castelo, o jogo deve agir como se "7" tivesse sido apertado (mudando para transição e depois a song2).
+
+PROMPT 12: 1- o ben as vezes ainda fica debaixo da terra ao morrer, conserte isso
+2 - use o novo som ben_heavy para o ataque pesado do ben (Removido um dos ben_punch)
+3- As vezes o som toca no ataque básico do big chill mesmo sem ele atacar. Além disso, atrase a colsião um pouquinho
+4- no ataque ice breath, comece o som 0.5 segundos depois do início do ataque
+5 - quanto ao "trigger" de transição, considere quando o jogador passar por um plano definido entre as coordenadas z: -99.130 e z: -82.656, na coordenada x=11.221
+
+PROMPT 13: os projéteis dos inimigos ainda não tem colisão com o chão! na animação de ataque especial, o modelo do ben fica em cima da terra, adicione um offset negativo no eixo y para deixar certo. Faça com que, para todos os personagens, os sons de "punch"/"punch_not_connect" só toquem quando o soco não acertar um inimigo. Nesse caso, deve tocar "punch_connect".

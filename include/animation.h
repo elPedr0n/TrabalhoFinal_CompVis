@@ -131,6 +131,8 @@ struct BigChillAnimState {
     float q_attack_timer = 0.0f;
     std::set<int> punch_hit_enemies;
     std::set<int> magic_hit_enemies;
+    bool is_dancing = false;
+    int punch_segment = 0;
 };
 
 struct BigChillAnimResult {
@@ -139,9 +141,18 @@ struct BigChillAnimResult {
     bool is_attacking = false;
     bool punch_active = false;
     bool magic_active = false;
+    bool is_dancing = false;
+    bool punch_sound_trigger = false;
 };
 
-BigChillAnimResult computeBigChillAnimation(const tinygltf::Model& model,
+BigChillAnimResult computeBigChillBen10Animation(const tinygltf::Model& model,
+                                 const bool keys[1024],
+                                 bool jumping,
+                                 float delta_t,
+                                 float agora,
+                                 BigChillAnimState& state);
+
+BigChillAnimResult computeBigChillCloakedAnimation(const tinygltf::Model& model,
                                  const bool keys[1024],
                                  bool jumping,
                                  float delta_t,
