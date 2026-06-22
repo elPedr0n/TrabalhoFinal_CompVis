@@ -1291,7 +1291,7 @@ int main(int argc, char* argv[])
         }
         UpdatePosition(can_move, can_rotate);
 
-        // UpdateEnemies();
+        UpdateEnemies();
         UpdateCollectibles();
         UpdateBreakables();
         UpdateFragments();
