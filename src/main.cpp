@@ -973,7 +973,45 @@ int main(int argc, char* argv[])
         player.start_time = (float)glfwGetTime();
         for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].visible = false;
         for (int i = 0; i < MAX_COLLECTIBLES; i++) g_collectibles[i].active = false;
-        SpawnEnemy(glm::vec3(5.0f, 2.0f, -5.0f));
+        
+        for (int i = 0; i < MAX_BREAKABLES; i++) g_breakables[i].active = false;
+        SpawnBreakable(glm::vec3(4.396f, 0.000f, -4.801f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.572f);
+        SpawnBreakable(glm::vec3(4.396f, 1.200f, -4.801f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.572f);
+        SpawnBreakable(glm::vec3(1.099f, 0.000f, -5.125f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 2.118f);
+        SpawnBreakable(glm::vec3(0.401f, 0.000f, -8.648f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 1.571f);
+        SpawnBreakable(glm::vec3(4.270f, 0.000f, -15.677f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 4.712f);
+        SpawnBreakable(glm::vec3(4.596f, 0.000f, -21.789f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 4.650f);
+        SpawnBreakable(glm::vec3(4.650f, 0.000f, -23.112f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.745f);
+        SpawnBreakable(glm::vec3(1.280f, 0.000f, -27.149f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 1.571f);
+        SpawnBreakable(glm::vec3(2.780f, 0.000f, -33.034f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.459f);
+        SpawnBreakable(glm::vec3(2.780f, 1.200f, -33.034f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.459f);
+        SpawnBreakable(glm::vec3(7.583f, 0.000f, -34.916f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 4.712f);
+        SpawnBreakable(glm::vec3(5.495f, 1.200f, -39.560f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.521f);
+        SpawnBreakable(glm::vec3(5.451f, 0.000f, -39.656f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.369f);
+        SpawnBreakable(glm::vec3(0.327f, 0.000f, -18.605f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.611f);
+        SpawnBreakable(glm::vec3(7.879f, 0.000f, -51.031f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.317f);
+        SpawnBreakable(glm::vec3(7.879f, 1.200f, -51.031f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.317f);
+        SpawnBreakable(glm::vec3(7.574f, 0.000f, -49.338f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.441f);
+        SpawnBreakable(glm::vec3(7.931f, 1.200f, -49.386f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.381f);
+        SpawnBreakable(glm::vec3(9.726f, 0.000f, -56.927f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 1.571f);
+        SpawnBreakable(glm::vec3(9.362f, 0.000f, -59.537f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 1.571f);
+        SpawnBreakable(glm::vec3(13.072f, 0.000f, -67.149f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 6.228f);
+        SpawnBreakable(glm::vec3(10.946f, 0.000f, -66.791f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.686f);
+        SpawnBreakable(glm::vec3(17.227f, 0.000f, -50.562f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 2.141f);
+        SpawnBreakable(glm::vec3(9.498f, 0.000f, -64.202f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.249f);
+        SpawnBreakable(glm::vec3(21.579f, 0.000f, -57.297f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 4.712f);
+        SpawnBreakable(glm::vec3(16.613f, 0.000f, -57.810f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.654f);
+        SpawnBreakable(glm::vec3(16.368f, 1.200f, -57.509f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.069f);
+        SpawnBreakable(glm::vec3(12.429f, 0.000f, -47.390f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 3.142f);
+        SpawnBreakable(glm::vec3(22.484f, -0.371f, -81.857f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 0.116f);
+        SpawnBreakable(glm::vec3(5.375f, -0.012f, -84.465f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 2.049f);
+        SpawnBreakable(glm::vec3(5.375f, 1.188f, -84.465f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 2.049f);
+        SpawnBreakable(glm::vec3(8.606f, -0.012f, -84.490f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.221f);
+        SpawnBreakable(glm::vec3(5.169f, -0.012f, -97.720f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 0.641f);
+        SpawnBreakable(glm::vec3(9.207f, -0.012f, -97.917f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 5.994f);
+        SpawnBreakable(glm::vec3(3.910f, -0.012f, -92.668f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 1.621f);
+        SpawnBreakable(glm::vec3(3.632f, 1.188f, -92.300f), 1.500f, "the_teddy_bear", 10.0f, 0.400f, 0.400f, 0.400f, glm::vec3(0.83f, 0.69f, 0.61f), 0.20f, 8, 1.621f);
+        SpawnBreakable(glm::vec3(4.043f, -0.012f, -87.881f), 0.080f, "the_park_bench", 30.0f, 9.000f, 10.000f, 20.000f, glm::vec3(0.32f, 0.26f, 0.22f), 0.20f, 15, 1.571f);
 
         // Fake loading screen for 2 seconds
         float fake_load_start = (float)glfwGetTime();
@@ -3374,6 +3412,25 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_Y && action == GLFW_PRESS)
     {
         g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
+
+        // DEBUG: Print all active breakables
+        printf("\n========== ACTIVE BREAKABLES ==========\n");
+        for (int i = 0; i < MAX_BREAKABLES; ++i) {
+            if (g_breakables[i].active) {
+                printf("Breakable %d:\n", i);
+                printf("  Model: %s\n", g_breakables[i].model_name.c_str());
+                printf("  Position: (%.3f, %.3f, %.3f)\n", g_breakables[i].position.x, g_breakables[i].position.y, g_breakables[i].position.z);
+                printf("  Rotation: (%.3f, %.3f, %.3f)\n", g_breakables[i].rotation_x, g_breakables[i].rotation_y, g_breakables[i].rotation_z);
+                printf("  Scale: %.3f\n", g_breakables[i].scale);
+                printf("  Health: %.1f / %.1f\n", g_breakables[i].health, g_breakables[i].max_health);
+                printf("  BBox Size: (%.3f, %.3f, %.3f)\n", g_breakables[i].bbox_w, g_breakables[i].bbox_h, g_breakables[i].bbox_d);
+                printf("  Fragments: color=(%.2f,%.2f,%.2f), size=%.2f, count=%d\n", 
+                    g_breakables[i].fragment_color.r, g_breakables[i].fragment_color.g, g_breakables[i].fragment_color.b,
+                    g_breakables[i].fragment_size, g_breakables[i].fragment_count);
+            }
+        }
+        printf("=======================================\n");
+        fflush(stdout);
     }
     if (key == GLFW_KEY_Z && action == GLFW_PRESS)
     {

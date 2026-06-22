@@ -1316,3 +1316,309 @@ PROMPT 5: 2 things, i need you to change the third camera in fixed to use this p
     Up Vec:   (0.00, 1.00, 0.00)
   --------------------------------- 
 and using only exitin the frustum of the camera wont work, the third camera has a great view of the map, so you need to add another flag to change to the closest camera based on the player distance
+
+### Commit com IA: Definidas posições dos breakables e algumas correções
+
+PROMPT 1:O jogador deve morrer instantaneamente se cair no chão verde tóxico. Adicione uma função de debug para adicionar os quebráveis. Os botões de gerar quebráveis vão funcionar normalmente. Quando o jogador quiser, ele pode apertar y, e o terminal vai printar um texto com todas as posições dos quebráveis ativos, quais são, orientação, etc. (para depois o jogo montar automaticamente esses quebráveis toda vez)
+
+PROMPT 2:permita que não apareçam inimigos por enquanto. Também torne a sombra embaixo do jogador mais transparente e faça com que siga sua posição de forma mais fidedigna
+
+PROMPT 3: adicione os seguintes quebráveis. Toda vez que o jogo recomeçar, eles deverão estar lá.
+========== ACTIVE BREAKABLES ==========
+Breakable 0:
+  Model: the_wooden_box
+  Position: (4.396, 0.000, -4.801)
+  Rotation: (0.000, 3.572, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 1:
+  Model: the_wooden_box
+  Position: (4.396, 1.200, -4.801)
+  Rotation: (0.000, 3.572, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 2:
+  Model: the_wooden_box
+  Position: (1.099, 0.000, -5.125)
+  Rotation: (0.000, 2.118, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 3:
+  Model: the_park_bench
+  Position: (0.401, 0.000, -8.648)
+  Rotation: (0.000, -0.000, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 4:
+  Model: the_park_bench
+  Position: (4.270, 0.000, -15.677)
+  Rotation: (0.000, 3.142, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 5:
+  Model: the_wooden_box
+  Position: (4.596, 0.000, -21.789)
+  Rotation: (0.000, 4.650, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 6:
+  Model: the_wooden_box
+  Position: (4.650, 0.000, -23.112)
+  Rotation: (0.000, 3.745, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 7:
+  Model: the_park_bench
+  Position: (1.280, 0.000, -27.149)
+  Rotation: (0.000, -0.000, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 8:
+  Model: the_wooden_box
+  Position: (2.780, 0.000, -33.034)
+  Rotation: (0.000, 0.459, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 9:
+  Model: the_wooden_box
+  Position: (2.780, 1.200, -33.034)
+  Rotation: (0.000, 0.459, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 10:
+  Model: the_park_bench
+  Position: (7.583, 0.000, -34.916)
+  Rotation: (0.000, 3.142, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 11:
+  Model: the_teddy_bear
+  Position: (5.495, 1.200, -39.560)
+  Rotation: (-1.571, 1.521, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 12:
+  Model: the_wooden_box
+  Position: (5.451, 0.000, -39.656)
+  Rotation: (0.000, 0.369, 0.000)
+  Scale: 0.400
+  Health: 20.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 13:
+  Model: the_teddy_bear
+  Position: (0.327, 0.000, -18.605)
+  Rotation: (-1.571, 1.611, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 14:
+  Model: the_wooden_box
+  Position: (7.879, 0.000, -51.031)
+  Rotation: (0.000, 0.317, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 15:
+  Model: the_wooden_box
+  Position: (7.879, 1.200, -51.031)
+  Rotation: (0.000, 0.317, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 16:
+  Model: the_wooden_box
+  Position: (7.574, 0.000, -49.338)
+  Rotation: (0.000, 0.441, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 17:
+  Model: the_teddy_bear
+  Position: (7.931, 1.200, -49.386)
+  Rotation: (-1.571, 1.381, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 18:
+  Model: the_park_bench
+  Position: (9.726, 0.000, -56.927)
+  Rotation: (0.000, -0.000, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 19:
+  Model: the_park_bench
+  Position: (9.362, 0.000, -59.537)
+  Rotation: (0.000, -0.000, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 20:
+  Model: the_wooden_box
+  Position: (13.072, 0.000, -67.149)
+  Rotation: (0.000, 6.228, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 21:
+  Model: the_wooden_box
+  Position: (10.946, 0.000, -66.791)
+  Rotation: (0.000, 0.686, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 22:
+  Model: the_wooden_box
+  Position: (17.227, 0.000, -50.562)
+  Rotation: (0.000, 2.141, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 23:
+  Model: the_teddy_bear
+  Position: (9.498, 0.000, -64.202)
+  Rotation: (-1.571, 1.249, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 24:
+  Model: the_park_bench
+  Position: (21.579, 0.000, -57.297)
+  Rotation: (0.000, 3.142, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 25:
+  Model: the_wooden_box
+  Position: (16.613, 0.000, -57.810)
+  Rotation: (0.000, 0.654, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 26:
+  Model: the_teddy_bear
+  Position: (16.368, 1.200, -57.509)
+  Rotation: (-1.571, 1.069, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 27:
+  Model: the_park_bench
+  Position: (12.429, 0.000, -47.390)
+  Rotation: (0.000, 1.571, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (20.000, 10.000, 9.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+Breakable 28:
+  Model: the_teddy_bear
+  Position: (22.484, -0.371, -81.857)
+  Rotation: (-1.571, 0.116, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 29:
+  Model: the_wooden_box
+  Position: (5.375, -0.012, -84.465)
+  Rotation: (0.000, 2.049, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 30:
+  Model: the_wooden_box
+  Position: (5.375, 1.188, -84.465)
+  Rotation: (0.000, 2.049, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 31:
+  Model: the_wooden_box
+  Position: (8.606, -0.012, -84.490)
+  Rotation: (0.000, 3.221, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 32:
+  Model: the_wooden_box
+  Position: (5.169, -0.012, -97.720)
+  Rotation: (0.000, 0.641, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 33:
+  Model: the_wooden_box
+  Position: (9.207, -0.012, -97.917)
+  Rotation: (0.000, 5.994, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 34:
+  Model: the_wooden_box
+  Position: (3.910, -0.012, -92.668)
+  Rotation: (0.000, 1.621, 0.000)
+  Scale: 0.400
+  Health: 25.0 / 25.0
+  BBox Size: (3.000, 3.000, 3.000)
+  Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
+Breakable 35:
+  Model: the_teddy_bear
+  Position: (3.632, 1.188, -92.300)
+  Rotation: (-1.571, 1.621, 0.000)
+  Scale: 1.500
+  Health: 10.0 / 10.0
+  BBox Size: (0.400, 0.400, 0.400)
+  Fragments: color=(0.83,0.69,0.61), size=0.20, count=8
+Breakable 36:
+  Model: the_park_bench
+  Position: (4.043, -0.012, -87.881)
+  Rotation: (0.000, 0.000, 0.000)
+  Scale: 0.080
+  Health: 30.0 / 30.0
+  BBox Size: (9.000, 10.000, 20.000)
+  Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
+=======================================

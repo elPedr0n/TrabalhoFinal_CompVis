@@ -13,6 +13,9 @@
     #define M_PI 3.14159265358979323846
 #endif
 
+void ResolvePlayerMapCollisions();
+
+
 void UpdatePosition(bool can_move, bool can_rotate = false) {
 
     float input_x = 0.0f;
@@ -170,6 +173,26 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         player.position.y = -2.0f;
         player.speed.y = 0.0f;
         colidiu_com_chao = true;
+        
+        if (!player.is_dead) {
+            player.health = 0.0f;
+            player.is_dead = true;
+            player.death_timer = 0.0f;
+            
+            if (player.active_character != 2) {
+                player.active_character = 2; // Ben
+                player.characters[2].bbox = makeAABBFromGround(player.position, bentennyson_size);
+                ResolvePlayerMapCollisions();
+                
+                ParticleOptions popts;
+                popts.color = HexToRgb("#ff0000"); // Red flash on forced revert (damage)
+                popts.life = 0.25f + 0.15f * 1.0f;
+                popts.scale = 0.15f + 0.01f * 6.0f;
+                popts.speed = 0.1f + 0.8f * 3.0f;
+                popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+                Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+            }
+        }
     }
 
     // 2. Zerar velocidades em caso de colisão (física real)
