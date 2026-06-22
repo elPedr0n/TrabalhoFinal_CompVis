@@ -4,7 +4,7 @@
 #include <cmath>
 #include <cstdlib>
 #include "particles.h"
-
+#include "projectiles.h"
 #ifndef M_PI
     #define M_PI 3.14159265358979323846
 #endif
@@ -15,6 +15,10 @@
 void ResolvePlayerMapCollisions();
 
 void SpawnEnemy(glm::vec3 pos) {
+    if (rand() % 3 == 0) {
+        SpawnRangedEnemy(pos);
+        return;
+    }
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
@@ -36,6 +40,37 @@ void SpawnEnemy(glm::vec3 pos) {
             g_enemies[i].flash_timer = 0.0f;
             g_enemies[i].punch_active = false;
             g_enemies[i].has_hit_player = false;
+            g_enemies[i].type = 0; // Melee
+            g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
+            break;
+        }
+    }
+}
+
+void SpawnRangedEnemy(glm::vec3 pos) {
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (!g_enemies[i].visible) {
+            g_enemies[i].visible = true;
+            g_enemies[i].position = pos;
+            g_enemies[i].rotate = 0.0f;
+            g_enemies[i].scale = 1.0f;
+            g_enemies[i].max_health = 80.0f; // Less health for ranged
+            g_enemies[i].health = 80.0f;
+            g_enemies[i].speed = 1.2f; // Slower
+            g_enemies[i].attack_range = 6.0f; // Far away attack
+            g_enemies[i].is_attacking = false;
+            g_enemies[i].attack_timer = 0.0f;
+            g_enemies[i].attack_cooldown = 0.0f;
+            g_enemies[i].is_flinching = false;
+            g_enemies[i].flinch_timer = 0.0f;
+            g_enemies[i].is_dead = false;
+            g_enemies[i].death_timer = 0.0f;
+            g_enemies[i].is_flashing = false;
+            g_enemies[i].flash_timer = 0.0f;
+            g_enemies[i].punch_active = false;
+            g_enemies[i].has_hit_player = false;
+            g_enemies[i].type = 1; // Ranged
+            g_enemies[i].attack_phase = 0;
             g_enemies[i].bbox = MakeAABBFromCenterSize(g_enemies[i].position + glm::vec3(0.0f, 0.5f, 0.0f), glm::vec3(0.5f, 1.0f, 0.5f));
             break;
         }
@@ -110,16 +145,61 @@ void UpdateEnemies() {
         if (g_enemies[i].is_attacking) {
             g_enemies[i].attack_timer += delta_t * time_scale;
 
-            // Hitbox active window (tune these) - Ativa apenas nos 80% centrais da animação de 1.25s
-            float elapsed = g_enemies[i].attack_timer;
-            if (elapsed >= 0.425f && elapsed <= 0.825f) {
-                g_enemies[i].punch_active = true;
-            }
+            if (g_enemies[i].type == 0) { // MELEE
+                // Hitbox active window (tune these) - Ativa apenas nos 80% centrais da animação de 1.25s
+                float elapsed = g_enemies[i].attack_timer;
+                if (elapsed >= 0.425f && elapsed <= 0.825f) {
+                    g_enemies[i].punch_active = true;
+                }
 
-            // Attack finished
-            if (g_enemies[i].attack_timer >= g_enemies[i].attack_duration) {
-                g_enemies[i].is_attacking = false;
-                g_enemies[i].attack_cooldown = 1.5f; // cooldown before next attack
+                // Attack finished
+                if (g_enemies[i].attack_timer >= g_enemies[i].attack_duration) {
+                    g_enemies[i].is_attacking = false;
+                    g_enemies[i].attack_cooldown = 1.5f; // cooldown before next attack
+                }
+            } else if (g_enemies[i].type == 1) { // RANGED
+                if (g_enemies[i].attack_phase == 0) { // Prepare (Anim 22)
+                    if (g_enemies[i].attack_timer >= 1.5f) {
+                        g_enemies[i].attack_phase = 1;
+                        g_enemies[i].attack_timer = 0.0f; // Reset for next phase
+                    }
+                } else if (g_enemies[i].attack_phase == 1) { // Idle attack mode (Anim 23)
+                    g_enemies[i].phase_timer += delta_t * time_scale;
+                    if (g_enemies[i].phase_timer >= 2.0f) { // wait 2s between shots
+                        g_enemies[i].attack_phase = 2;
+                        g_enemies[i].attack_timer = 0.0f; // Reset for anim 25
+                        glm::vec3 forward = glm::vec3(sin(g_enemies[i].rotate), 0.0f, cos(g_enemies[i].rotate));
+                        glm::vec3 spawn_pos = g_enemies[i].position + glm::vec3(0.0f, 1.0f, 0.0f) + forward * 1.5f;
+                        // Spawn bezier projectile!
+                        Projectiles_SpawnBezier(std::string("the_sphere"), spawn_pos, player.position + glm::vec3(0.0f, 0.5f, 0.0f), true);
+                    }
+                } else if (g_enemies[i].attack_phase == 2) { // Shooting (Anim 25)
+                    if (g_enemies[i].attack_timer >= 1.0f) { // approx anim duration
+                        g_enemies[i].attack_phase = 1;
+                        g_enemies[i].phase_timer = 0.0f; // Reset wait timer
+                        g_enemies[i].attack_timer = 100.0f; // Jump to end of anim 23 so it doesn't replay
+                    }
+                }
+
+                // Check if player moved out of range
+                float dist_to_player = glm::distance(
+                    glm::vec3(g_enemies[i].position.x, 0.0f, g_enemies[i].position.z),
+                    glm::vec3(player.position.x, 0.0f, player.position.z));
+                    
+                if (dist_to_player > g_enemies[i].attack_range && g_enemies[i].attack_phase == 1) {
+                    g_enemies[i].is_attacking = false;
+                    g_enemies[i].attack_phase = 0;
+                    g_enemies[i].attack_timer = 0.0f;
+                    g_enemies[i].phase_timer = 0.0f;
+                } else {
+                    // Ranged enemies keep facing player while attacking
+                    glm::vec3 direction_to_player = glm::normalize(glm::vec3(
+                        player.position.x - g_enemies[i].position.x,
+                        0.0f,
+                        player.position.z - g_enemies[i].position.z
+                    ));
+                    g_enemies[i].rotate = atan2(direction_to_player.x, direction_to_player.z);
+                }
             }
 
             // While attacking, don't move — skip movement below
@@ -141,6 +221,9 @@ void UpdateEnemies() {
             g_enemies[i].is_attacking = true;
             g_enemies[i].attack_timer = 0.0f;
             g_enemies[i].has_hit_player = false;
+            if (g_enemies[i].type == 1) {
+                g_enemies[i].attack_phase = 0; // Start preparation
+            }
             // Face the player when attacking
             g_enemies[i].rotate = atan2(
                 player.position.x - g_enemies[i].position.x,
@@ -278,24 +361,6 @@ void ProcessEnemyMeleeHitboxes()
             printf("Enemy %d hit the player!\n", i);
             g_enemies[i].has_hit_player = true;
             if (!player.is_dead) {
-                glm::vec3 knockback_dir = player.position - g_enemies[i].position;
-                knockback_dir.y = 0.0f;
-                if (glm::length(knockback_dir) > 0.001f) {
-                    knockback_dir = glm::normalize(knockback_dir);
-                } else {
-                    knockback_dir = forward;
-                }
-                player.position += knockback_dir * 0.05f; // small knockback
-                ResolvePlayerMapCollisions();
-
-                // Rotate player to face the enemy
-                glm::vec3 look_dir = g_enemies[i].position - player.position;
-                player.rotate = atan2(look_dir.x, look_dir.z);
-
-                float defense = player.active_character == 0 ? 0.5f : (player.active_character == 1 ? 0.4f : 1.0f);
-                float damage = 50.0f * defense;
-                player.health -= damage;
-                
                 glm::vec3 overlap_min = glm::max(punch_box.min, player_bbox.min);
                 glm::vec3 overlap_max = glm::min(punch_box.max, player_bbox.max);
                 glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
@@ -306,30 +371,8 @@ void ProcessEnemyMeleeHitboxes()
                 popts.speed = 2.0f;
                 popts.count = 15;
                 Particles_Spawn(contact, popts);
-
-                if (player.health <= 0.0f) {
-                    player.health = 0.0f;
-                    player.is_dead = true;
-                    player.death_timer = 0.0f;
-                    if (player.speed.y > 0.0f) player.speed.y = 0.0f;
-                    
-                    if (player.active_character != 2) {
-                        player.active_character = 2; // Ben
-                        player.characters[2].bbox = makeAABBFromGround(player.position, bentennyson_size);
-                        ResolvePlayerMapCollisions();
-                        
-                        ParticleOptions popts;
-                        popts.color = HexToRgb("#ff0000"); // Red flash on forced revert (damage)
-                        popts.life = 0.25f + 0.15f * 1.0f;
-                        popts.scale = 0.15f + 0.01f * 6.0f;
-                        popts.speed = 0.1f + 0.8f * 3.0f;
-                        popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
-                        Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
-                    }
-                } else {
-                    player.is_flinching = true;
-                    player.flinch_timer = 0.0f;
-                }
+                
+                ApplyDamageToPlayer(50.0f, g_enemies[i].position);
             }
         }
     }

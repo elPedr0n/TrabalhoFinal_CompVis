@@ -444,3 +444,49 @@ void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, 
         }
     }
 }
+
+void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos) {
+    if (player.is_dead) return;
+
+    glm::vec3 knockback_dir = player.position - damage_source_pos;
+    knockback_dir.y = 0.0f;
+    if (glm::length(knockback_dir) > 0.001f) {
+        knockback_dir = glm::normalize(knockback_dir);
+    } else {
+        knockback_dir = glm::vec3(0,0,1);
+    }
+    player.position += knockback_dir * 0.05f; // small knockback
+    ResolvePlayerMapCollisions();
+
+    // Rotate player to face the damage source
+    glm::vec3 look_dir = damage_source_pos - player.position;
+    player.rotate = atan2(look_dir.x, look_dir.z);
+
+    float defense = player.active_character == 0 ? 0.5f : (player.active_character == 1 ? 0.4f : 1.0f);
+    float actual_damage = base_damage * defense;
+    player.health -= actual_damage;
+    
+    if (player.health <= 0.0f) {
+        player.health = 0.0f;
+        player.is_dead = true;
+        player.death_timer = 0.0f;
+        if (player.speed.y > 0.0f) player.speed.y = 0.0f;
+        
+        if (player.active_character != 2) {
+            player.active_character = 2; // Ben
+            player.characters[2].bbox = makeAABBFromGround(player.position, bentennyson_size);
+            ResolvePlayerMapCollisions();
+            
+            ParticleOptions popts;
+            popts.color = HexToRgb("#ff0000"); // Red flash on forced revert (damage)
+            popts.life = 0.25f + 0.15f * 1.0f;
+            popts.scale = 0.15f + 0.01f * 6.0f;
+            popts.speed = 0.1f + 0.8f * 3.0f;
+            popts.count = std::max(2, (int)std::round(8.0f * 6.0f));
+            Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
+        }
+    } else {
+        player.is_flinching = true;
+        player.flinch_timer = 0.0f;
+    }
+}

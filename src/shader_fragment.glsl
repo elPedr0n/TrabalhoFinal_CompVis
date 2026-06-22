@@ -224,6 +224,9 @@ void main()
     {
         // Solid yellow/orange for the fireball and its particles (emissive)
         Kd0 = vec3(1.0, 0.75, 0.12) * 2.0;
+    } else if ( object_id == 61 ) // FIREBALL_RED
+    {
+        Kd0 = vec3(1.0, 0.1, 0.1) * 2.0;
     } else if ( object_id == 7 ) // GREEN TRANSFORM PARTICLES
     {
         // Bright green emissive for transform particles
@@ -593,7 +596,7 @@ void main()
     //    suas distâncias para a câmera (desenhando primeiro objetos
     //    transparentes que estão mais longe da câmera).
     // Use lower alpha for additive particles so blending uses source alpha
-    if (object_id == 6) {
+    if (object_id == 6 || object_id == 61) {
         // Procedural soft radial gradient for particles (no solid circle)
         float edge_fade = max(0.0, dot(n, v));
         color.a = 0.85 * pow(edge_fade, 1.5); // Soft falloff
