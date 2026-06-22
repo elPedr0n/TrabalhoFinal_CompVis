@@ -23,6 +23,10 @@ namespace {
         float scale=1.0f;
         bool active=true; 
         AABB bbox;
+        
+        bool is_bezier=false;
+        bool is_enemy=false;
+        glm::vec3 p0, p1, p2, p3;
     };
     std::vector<Projectile> s_projectiles;
 
@@ -51,15 +55,77 @@ void Projectiles_Spawn(float strength, const glm::vec3 &player_pos, float player
     Projectiles_Spawn(std::string("the_fireball"), strength, player_pos, player_rotate);
 }
 
+void Projectiles_SpawnBezier(const std::string &modelBaseName, const glm::vec3 &start_pos, const glm::vec3 &target_pos, bool is_enemy)
+{
+    Projectile p;
+    p.model_name = modelBaseName;
+    p.pos = start_pos;
+    p.vel = glm::vec3(0.0f); // Not used for Bezier
+    p.age = 0.0f;
+    p.life = 1.5f; // time to reach target
+    p.scale = 0.5f;
+    p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+    p.active = true;
+    p.is_bezier = true;
+    p.is_enemy = is_enemy;
+    p.p0 = start_pos;
+    p.p3 = target_pos;
+    
+    // Parabola effect: control points are higher up
+    glm::vec3 mid = (start_pos + target_pos) * 0.5f;
+    float dist = glm::distance(start_pos, target_pos);
+    float height = std::max(2.0f, dist * 0.3f);
+    
+    p.p1 = p.p0 + (mid - p.p0) * 0.5f;
+    p.p1.y += height;
+    p.p2 = mid + (target_pos - mid) * 0.5f;
+    p.p2.y += height;
+    
+    s_projectiles.push_back(p);
+}
+
 void Projectiles_Update(float delta_t)
 {
     for (auto &p : s_projectiles) {
         if (!p.active) continue;
 
-        float move_x = p.vel.x * delta_t;
-        float move_z = p.vel.z * delta_t;
-        float orig_move_x = move_x;
-        float orig_move_z = move_z;
+        if (p.is_bezier) {
+            float t = p.age / p.life;
+            if (t > 1.0f) t = 1.0f;
+            
+            float u = 1.0f - t;
+            float tt = t * t;
+            float uu = u * u;
+            float uuu = uu * u;
+            float ttt = tt * t;
+
+            glm::vec3 next_pos = uuu * p.p0; // (1-t)^3 * P0
+            next_pos += 3 * uu * t * p.p1;   // 3 * (1-t)^2 * t * P1
+            next_pos += 3 * u * tt * p.p2;   // 3 * (1-t) * t^2 * P2
+            next_pos += ttt * p.p3;          // t^3 * P3
+            
+            // Derive velocity for rotation (approximate)
+            p.vel = next_pos - p.pos;
+            if (p.vel != glm::vec3(0.0f)) {
+                p.vel = glm::normalize(p.vel) * 2.0f; // Give it some length for rotation atan2
+            }
+            
+            p.pos = next_pos;
+            p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+            
+            // Check collision
+            bool exploded = false;
+            // Floor collision
+            if (p.pos.y <= 0.1f) {
+                p.active = false;
+                exploded = true;
+            }
+            // Skip map collision for bezier or implement simple point collision
+        } else {
+            float move_x = p.vel.x * delta_t;
+            float move_z = p.vel.z * delta_t;
+            float orig_move_x = move_x;
+            float orig_move_z = move_z;
 
         for (int i = 0; i < MAX_PLATFORMS; i++) {
             // Ignorar colisões horizontais com o chão (onde max.y costuma ser <= 0.1f)
@@ -69,28 +135,35 @@ void Projectiles_Update(float delta_t)
             move_z = p.bbox.GetClipZ(map[i].bbox, move_z);
         }
 
-        bool exploded = false;
+            // Explode if it hits a wall horizontally
+            if (move_x != orig_move_x || move_z != orig_move_z) {
+                p.active = false;
+            }
 
-        // Explode if it hits a wall horizontally
-        if (move_x != orig_move_x || move_z != orig_move_z) {
-            p.active = false;
-            exploded = true;
+            p.pos.x += move_x;
+            p.pos.y += p.vel.y * delta_t;
+            p.pos.z += move_z;
+            p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
         }
 
-        p.pos.x += move_x;
-        p.pos.y += p.vel.y * delta_t;
-        p.pos.z += move_z;
-        p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+        bool exploded = !p.active; // True if it hit a wall or floor
 
-        // Hit enemies
+        // Hit enemies or player
         if (p.active) {
-            for (int i = 0; i < MAX_ENEMIES; i++) {
-                if (!g_enemies[i].visible) continue;
-                if (g_enemies[i].is_dead) continue;
-                if (p.bbox.Intersects(g_enemies[i].bbox)) {
+            if (p.is_enemy) {
+                if (p.bbox.Intersects(player.characters[player.active_character].bbox)) {
                     p.active = false;
                     exploded = true;
-                    break;
+                }
+            } else {
+                for (int i = 0; i < MAX_ENEMIES; i++) {
+                    if (!g_enemies[i].visible) continue;
+                    if (g_enemies[i].is_dead) continue;
+                    if (p.bbox.Intersects(g_enemies[i].bbox)) {
+                        p.active = false;
+                        exploded = true;
+                        break;
+                    }
                 }
             }
             if (p.active) {
@@ -109,12 +182,19 @@ void Projectiles_Update(float delta_t)
             float damage = 20.0f + (p.scale - 0.4f) * 25.0f;
             float splash_radius = 2.0f + p.scale;
             
-            for (int i = 0; i < MAX_ENEMIES; i++) {
-                if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
-                
-                float dist = glm::distance(p.pos, g_enemies[i].position);
+            if (p.is_enemy) {
+                float dist = glm::distance(p.pos, player.position);
                 if (dist <= splash_radius) {
-                    ApplyDamageToEnemy(i, damage);
+                    ApplyDamageToPlayer(damage, p.pos);
+                }
+            } else {
+                for (int i = 0; i < MAX_ENEMIES; i++) {
+                    if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+                    
+                    float dist = glm::distance(p.pos, g_enemies[i].position);
+                    if (dist <= splash_radius) {
+                        ApplyDamageToEnemy(i, damage);
+                    }
                 }
             }
             
@@ -128,7 +208,7 @@ void Projectiles_Update(float delta_t)
             }
             
             ParticleOptions explode_opts;
-            explode_opts.color = HexToRgb("#ff8800");
+            explode_opts.color = p.is_enemy ? HexToRgb("#ff0000") : HexToRgb("#ff8800");
             explode_opts.life = 0.4f;
             explode_opts.scale = 0.05f * p.scale;
             explode_opts.speed = 3.0f * p.scale;
@@ -140,7 +220,7 @@ void Projectiles_Update(float delta_t)
         if (p.age >= p.life) p.active = false;
         // Emit a stronger particle trail from projectile position (via options)
         ParticleOptions popts;
-        popts.color = HexToRgb("#ff3c00");
+        popts.color = p.is_enemy ? HexToRgb("#ff0000") : HexToRgb("#ff3c00");
         popts.life = 0.1f + 0.15f * (p.scale * 3.0f);
         popts.scale = 0.01f + 0.01f * (p.scale * 3.0f);
         popts.speed = 0.5f + 0.2f * (p.scale * 3.0f);
@@ -184,12 +264,13 @@ void Projectiles_Draw(const tinygltf::Model &model,
                 glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(modelMat));
 
                 if (it->second.texture_id != 0) {
-                    glActiveTexture(GL_TEXTURE4);
-                    glBindTexture(GL_TEXTURE_2D, it->second.texture_id);
-                    glUniform1i(glGetUniformLocation(gpuProgramID, "TextureImage4"), 4);
+                    glUniform1i(glGetUniformLocation(gpuProgramID, "UseOverrideKd"), 0);
+                } else {
+                    glUniform1i(glGetUniformLocation(gpuProgramID, "UseOverrideKd"), 0);
                 }
-
-                glUniform1i(objectIdUniform, objectIdValue);
+                
+                int draw_id = p.is_enemy ? 61 : objectIdValue;
+                glUniform1i(objectIdUniform, draw_id);
                 glBindVertexArray(it->second.vertex_array_object_id);
                 glDrawElements(it->second.rendering_mode, it->second.num_indices, GL_UNSIGNED_INT, (void*)(it->second.first_index * sizeof(GLuint)));
                 glBindVertexArray(0);
@@ -209,12 +290,13 @@ void Projectiles_Draw(const tinygltf::Model &model,
             glUniformMatrix4fv(modelUniform, 1, GL_FALSE, glm::value_ptr(modelMat));
 
             if (it->second.texture_id != 0) {
-                glActiveTexture(GL_TEXTURE4);
-                glBindTexture(GL_TEXTURE_2D, it->second.texture_id);
-                glUniform1i(glGetUniformLocation(gpuProgramID, "TextureImage4"), 4);
+                glUniform1i(glGetUniformLocation(gpuProgramID, "UseOverrideKd"), 0);
+            } else {
+                glUniform1i(glGetUniformLocation(gpuProgramID, "UseOverrideKd"), 0);
             }
 
-            glUniform1i(objectIdUniform, objectIdValue);
+            int draw_id = p.is_enemy ? 61 : objectIdValue;
+            glUniform1i(objectIdUniform, draw_id);
             glBindVertexArray(it->second.vertex_array_object_id);
             glDrawElements(it->second.rendering_mode, it->second.num_indices, GL_UNSIGNED_INT, (void*)(it->second.first_index * sizeof(GLuint)));
             glBindVertexArray(0);

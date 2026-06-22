@@ -13,7 +13,10 @@
 // strength: 0..1 (normalized charge)
 void Projectiles_Spawn(const std::string &modelBaseName, float strength, const glm::vec3 &player_pos, float player_rotate);
 
+void Projectiles_SpawnBezier(const std::string &modelBaseName, const glm::vec3 &start_pos, const glm::vec3 &target_pos, bool is_enemy = false);
+
 // Update projectile physics (delta seconds)
+
 void Projectiles_Update(float delta_t);
 
 // Draw active projectiles for the specified model base name. Pass renderer state and scene map.

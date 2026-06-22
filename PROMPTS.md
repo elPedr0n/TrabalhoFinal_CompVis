@@ -1125,7 +1125,7 @@ Big chill: "Light punch" e "Ice breath". Use a mesma fonte (com borda preta) da 
 
 PROMPT 12: pare de carregar holograms.png, e passe a carregar swampfire_hologram, big_chill_hologram e glow. Adicione sliders para TODOS os itens (incluindo os elementos da barra separadamente). Adicione um botão que manda todos os offsets e scales configurados atualmente para printar no terminal.
 
-## Commit com IA: Quebráveis adicionados, coletáveis modificados e outros aspectos de combate
+### Commit com IA: Quebráveis adicionados, coletáveis modificados e outros aspectos de combate
 
 PROMPT 1: agora vamos implementar quebráveis. A partir de agora, qualquer objeto marcado como quebrável vai ter uma barra de vida e uma hurtbox, e poder ser destruída por ataques do jogador, podendo dropar coletáveis quando for destruída. Ao ser destruído, o objeto vai emitir fragmentos (polígonos quase 2, muito finos) proporcionais ao tamanho do objeto. Essas propriedades (vida do objeto, cor dos fragmentos, etc. são configuráveis por tipo de objeto. Implemente essas lógicas em novos arquivos, breakables.cpp e fragments.cpp
 
@@ -1225,6 +1225,16 @@ PROMPT 6: adicione as animações de retargeted_animations(3).glb também. ao ap
 
 PROMPT 7: o "big slap" deve aparecer no histórico de ataques, o exibido na ui. implemente todas as lógicas relacionadas a ele, como não poder mover enquanto ataca, parar o movimento pra atacar. o big slap deve dar o dobro de dano do soco do ben, e deve gastar 10% da barra de especial. Mapeie um botão de "emote" para "G" no teclado e "clique do analógico direito" no controle. Ao clicar nesse botão como ben, ele deve tocar a animação de dança enquanto esse botão está segurado. as partículas do ataque big slap devem ser brancas como dos demais ataques.
 
+### Commit com IA: Novo inimigo ranged adicionado, com projétil com curva de Bezier
+
+PROMPT 1: vamos implementar um novo inimigo. Ele usa o mesmo modelo do forever knight e todas as suas animações. Porém:
+- ele deve atacar quando estiver a uma distância predeterminada do ben (longe dele)
+- antes de atacar, ele deve usar a animação 22, e ficar parado na animação 23 (modo de ataque)
+- quando estiver em posição de ataque, deve mudar para a animação 25 em intervalos regulares, e quando fizer isso, lançar um projétil na direção do ben usando uma curva de bezier cúbica, depois de cada ataque deve voltar para a animação 23. 
+
+PROMPT 2: O projétil deve dar dano. O inimigo deve se mover na direção do ben enquanto não estiver no alcance correto. O projétil deve sair da frente dele. Ele deve ser vermelho com partículas vermelhas.
+
+PROMPT 3: a animação de ficar em posição de ataque e a animação de atacar ele deve fazer uma vez só, não ficar ciclando. O projétil em si também deve ser vermleho. O inimigo ranged deve ter 1/3 de chance de ser spawnado ao invés de um normal. O jogador deve ser capaz de morrer pelo dano do projétil (ajuste para que seja como se tomasse um soco, com todas as animações correspnodentes). Diminua a distância para 6 unidades.
                           
 ### Commit com IA: Coloquei os modelos da parede e das torres do castelo e resolvi um bug de colisão
 

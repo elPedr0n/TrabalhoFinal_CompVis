@@ -1724,8 +1724,18 @@ int main(int argc, char* argv[])
                 current_enemy_anim = g_enemies[i].flinch_anim; 
                 anim_time = g_enemies[i].flinch_timer;
             } else if (g_enemies[i].is_attacking) {
-                current_enemy_anim = 21; 
-                anim_time = g_enemies[i].attack_timer; 
+                if (g_enemies[i].type == 0) {
+                    current_enemy_anim = 21; 
+                    anim_time = g_enemies[i].attack_timer; 
+                } else if (g_enemies[i].type == 1) {
+                    if (g_enemies[i].attack_phase == 1) {
+                        current_enemy_anim = 23; // Attack Idle
+                        anim_time = g_enemies[i].attack_timer;
+                    } else {
+                        current_enemy_anim = 25; // Shooting
+                        anim_time = g_enemies[i].attack_timer;
+                    }
+                }
             } else {
                 float dist_to_player = glm::distance(
                     glm::vec3(g_enemies[i].position.x, 0.0f, g_enemies[i].position.z),
@@ -1737,6 +1747,9 @@ int main(int argc, char* argv[])
             }
 
             bool loop_anim = !(g_enemies[i].is_dead || g_enemies[i].is_flinching);
+            if (g_enemies[i].type == 1 && (current_enemy_anim == 22 || current_enemy_anim == 23 || current_enemy_anim == 25)) {
+                loop_anim = false;
+            }
             foreverknightAnimator.update(foreverknight_model, current_enemy_anim, anim_time, loop_anim);
 
             float y_offset = (current_enemy_anim == 34) ? 0.2f : 0.0f;
@@ -3029,6 +3042,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             } else if (key == GLFW_KEY_3) {
                 SpawnBreakable(spawn_pos, 0.08f, "the_park_bench", 30.0f, 9.0f, 10.0f, 20.0f, glm::vec3(0.318f, 0.259f, 0.216f), 0.2f, 15, player.rotate + 3.14159265f);
             }
+        } else if (key == GLFW_KEY_4) {
+            glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
+            glm::vec3 spawn_pos = player.position + forward * 2.0f;
+            spawn_pos.y += 2.0f; // um pouco acima
+            SpawnEnemy(spawn_pos);
         }
     }
 

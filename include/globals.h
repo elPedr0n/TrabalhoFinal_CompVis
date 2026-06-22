@@ -52,7 +52,9 @@ extern glm::vec3 swampfire_size;
 extern glm::vec3 bentennyson_size;
 
 void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch = true);
+void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos);
 void SpawnEnemy(glm::vec3 pos);
+void SpawnRangedEnemy(glm::vec3 pos);
 void DrawBoundingBox(struct AABB& aabb, int restore_object_id);
 
 void ProcessEnemyMeleeHitboxes();

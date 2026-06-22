@@ -208,6 +208,8 @@ struct Enemy {
 	AABB bbox;
 	float speed; // Velocidade de movimento do inimigo
 
+	int type; // 0 = Melee, 1 = Ranged
+
 	// Attack state
 	bool is_attacking;
 	float attack_timer;
@@ -216,6 +218,9 @@ struct Enemy {
 	float attack_range;
 	bool has_hit_player;     // single-hit per attack
 	bool punch_active;       // hitbox active this frame
+
+	int attack_phase; // Para o Ranged: 0 = Prepare, 1 = Attack Idle, 2 = Shooting
+	float phase_timer;
 
 	// Health and Damage state
 	float health;
@@ -236,12 +241,13 @@ struct Enemy {
     bool is_frozen;
     float frozen_timer;
 
-	Enemy() : rotate(0.0f), scale(1.0f), visible(false), speed(0.8f), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
+	Enemy() : rotate(0.0f), scale(1.0f), visible(false), speed(0.8f), type(0), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), attack_phase(0), phase_timer(0.0f), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
 
 	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
-		: rotate(rot), scale(sc), visible(vis), speed(0.8f),
+		: rotate(rot), scale(sc), visible(vis), speed(0.8f), type(0),
 		is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f),
 		attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false),
+		attack_phase(0), phase_timer(0.0f),
 		health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16),
 		is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f)
 	{
