@@ -184,6 +184,11 @@ void main()
 
 		// Obtemos a refletância difusa a partir da leitura da imagem TextureImage1
 		Kd0 = texture(TextureImage1, vec2(U,V)).rgb;
+		
+        // Calibração de cor para o aspecto de água/lodo esverdeado escuro (slimy dark green)
+        // Você pode alterar os valores deste vec3(R, G, B) para calibrar a cor!
+        vec3 color_tint = vec3(39 / 255.0, 120 / 255.0, 12 / 255.0); 
+        Kd0 = Kd0 * color_tint;
     }
     else if ( object_id == CHILL )
     {
@@ -548,12 +553,19 @@ void main()
         
         // === ILUMINAÇÃO NOTURNA ===
         
-        // Luz direcional fraca (luar) - bem escura para simular noite
+        // Luz direcional fraca (luar) - ajustado para deixar as texturas mais visíveis
         float lambert = max(0.0, dot(n, l));
-        vec3 moonlight_color = vec3(0.08, 0.08, 0.15); // Tom azulado frio de luar
-        vec3 ambient_night = vec3(0.03, 0.03, 0.05);   // Ambiente mínimo para não ficar 100% preto
-        vec3 global_light = Kd0 * (moonlight_color * lambert + ambient_night);
+        vec3 moonlight_color = vec3(0.08, 0.08, 0.15); // Tom azulado frio de luar (aumentado para clarear as texturas)
+        vec3 ambient_night = vec3(0.03, 0.03, 0.05);   // Ambiente para não ficar 100% preto (aumentado para visibilidade)
         
+
+        if (object_id == PLANE) {
+            moonlight_color *= 4.0; // Deixa a luz direcional 4x mais forte no chão
+            ambient_night *= 5.0;   // Deixa a luz ambiente 5x mais forte no chão
+        }
+
+        vec3 global_light = Kd0 * (moonlight_color * lambert + ambient_night);
+
         // === POINT LIGHT DO ALIEN (glow alienígena) ===
         // Só ativa quando o personagem é um alien (0=BigChill, 1=Swampfire), não Ben (2)
         vec3 point_light = vec3(0.0);
@@ -617,6 +629,17 @@ void main()
         // Ice Breath Freeze Tint
         if (is_frozen == 1) {
             color.rgb = mix(color.rgb, vec3(0.4, 0.8, 1.0), 0.25);
+        }
+
+        // Sombra preta (100% preta) do jogador no chão
+        if (object_id == GROUND || object_id == PLANE) {
+            float shadow_radius = 0.3; // Raio não muito grande
+            float dist_xz = distance(position_world.xz, player_position.xz);
+            if (dist_xz < shadow_radius) {
+                // Suaviza a borda bem de leve para não ficar pixelada, mas o centro é 100% preto
+                float antialias = smoothstep(shadow_radius, shadow_radius - 0.05, dist_xz);
+                color.rgb = mix(color.rgb, vec3(0.0), antialias);
+            }
         }
     }
 

@@ -353,6 +353,9 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
 float g_CameraTheta = 1.26f; // Ângulo no plano ZX em relação ao eixo Z
+float g_MovementTheta = 1.26f;
+bool g_UseFixedCameras = true;
+bool g_IsMovementBuffered = false;
 float g_CameraPhi = 0.22f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
@@ -810,7 +813,7 @@ int main(int argc, char* argv[])
     RenderLoadingStep();
     // Carregamos duas imagens para serem utilizadas como textura
     LoadTextureImage("../../data/red_brick_diff_1k.jpg");      // TextureImage0
-    LoadTextureImage("../../data/rocky_terrain_02_diff_1k.jpg"); // TextureImage1
+    LoadTextureImage("../../data/aguinha.jpeg"); // TextureImage1
     LoadTextureImage("../../data/bcck1.png"); // TextureImage2
     LoadTextureImage("../../data/bcck2.png"); // TextureImage3
     LoadTextureImage("../../data/TNT/TNT.png"); // TextureImage4
@@ -1106,23 +1109,59 @@ int main(int argc, char* argv[])
         glUseProgram(g_GpuProgramID);
         glUniform1f(g_current_time_uniform, (float)agora);
 
-        // Computamos a posição da câmera utilizando coordenadas esféricas.  As
-        // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
-        // e ScrollCallback().
-        float r = g_CameraDistance;
-        float y = r*sin(g_CameraPhi);
-        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
-
-        float height_offset = 1.5f;
-
         // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f); // Ponto "c", centro da câmera
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+        glm::vec4 camera_position_c;
+        glm::vec4 camera_lookat_l;
+        glm::vec4 camera_view_vector;
+        glm::vec4 camera_up_vector;
+
+        static std::vector<glm::vec4> fixed_camera_positions = {
+            glm::vec4(6.74, 2.97, -11.33, 1.0f),
+            glm::vec4(7.92, 2.97, -21.48, 1.0f),
+            glm::vec4(0.11, 2.55, -19.39, 1.0f),
+            glm::vec4(1.41, 3.07, -28.31, 1.0f), // new 4th camera
+            glm::vec4(3.18, 3.24, -36.55, 1.0f),
+            glm::vec4(23.86, 3.10, -55.50, 1.0f),
+            glm::vec4(27.43, 4.38, -65.10, 1.0f),
+            glm::vec4(24.51, 5.90, -91.46, 1.0f),
+            glm::vec4(11.74, 3.93, -99.51, 1.0f)
+        };
+        static std::vector<glm::vec4> fixed_camera_lookats = {
+            glm::vec4(3.47, 1.50, -10.54, 1.0f),
+            glm::vec4(4.66, 1.50, -20.68, 1.0f),
+            glm::vec4(2.25, 1.50, -23.42, 1.0f),
+            glm::vec4(3.10, 1.50, -31.19, 1.0f), // new 4th camera lookat
+            glm::vec4(5.94, 1.50, -39.46, 1.0f),
+            glm::vec4(18.73, 1.50, -56.18, 1.0f),
+            glm::vec4(21.17, 1.95, -68.75, 1.0f),
+            glm::vec4(19.74, 1.91, -87.00, 1.0f),
+            glm::vec4(7.91, 1.49, -95.32, 1.0f)
+        };
+        static int current_camera_idx = 0;
+
+        if (g_UseFixedCameras) {
+            camera_position_c = fixed_camera_positions[current_camera_idx];
+            camera_lookat_l   = fixed_camera_lookats[current_camera_idx];
+            camera_up_vector  = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            camera_view_vector = camera_lookat_l - camera_position_c;
+
+            // Atualiza a orientação do controle para a câmera atual se não estiver em buffer
+            if (!g_IsMovementBuffered) {
+                g_CameraTheta = atan2(-camera_view_vector.x, -camera_view_vector.z);
+            }
+        } else {
+            float r = g_CameraDistance;
+            float y = r*sin(g_CameraPhi);
+            float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+            float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+
+            float height_offset = 1.5f;
+
+            camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f); // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+            camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f); // Ponto "c", centro da câmera
+            camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+            camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f); // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+        }
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
@@ -1155,6 +1194,54 @@ int main(int argc, char* argv[])
             float r = t*g_ScreenRatio;
             float l = -r;
             projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+        }
+
+        if (g_UseFixedCameras) {
+            glm::vec4 player_pos = glm::vec4(player.position.x, player.position.y + 1.0f, player.position.z, 1.0f);
+            glm::vec4 ndc_pos = projection * view * player_pos;
+            
+            bool out_of_frustum = false;
+            if (ndc_pos.w > 0.0f) {
+                glm::vec4 n = ndc_pos / ndc_pos.w;
+                // Um pouco de folga (1.2f) antes de considerar fora da tela
+                if (n.x < -1.2f || n.x > 1.2f || n.y < -1.2f || n.y > 1.2f) {
+                    out_of_frustum = true;
+                }
+            } else {
+                out_of_frustum = true;
+            }
+
+            // O foco da câmera (LookAt) representa a verdadeira "zona" que a câmera cobre ao longo do percurso.
+            // Avaliar a posição da câmera gera glitches porque as câmeras podem estar em ângulos estranhos (ex: câmera 3).
+            float dist_current = glm::distance(glm::vec3(player_pos), glm::vec3(fixed_camera_lookats[current_camera_idx]));
+            float dist_next = 999999.0f;
+            float dist_prev = 999999.0f;
+
+            if (current_camera_idx < (int)fixed_camera_positions.size() - 1) {
+                dist_next = glm::distance(glm::vec3(player_pos), glm::vec3(fixed_camera_lookats[current_camera_idx + 1]));
+            }
+            if (current_camera_idx > 0) {
+                dist_prev = glm::distance(glm::vec3(player_pos), glm::vec3(fixed_camera_lookats[current_camera_idx - 1]));
+            }
+
+            if (out_of_frustum) {
+                // Se saiu da tela, muda para a zona adjacente se ela for fisicamente mais próxima do player que a atual.
+                // Usar menor que a atual IMPEDE qualquer glitch de vai-e-vem.
+                if (dist_next < dist_current && dist_next < dist_prev) {
+                    current_camera_idx++;
+                } else if (dist_prev < dist_current && dist_prev < dist_next) {
+                    current_camera_idx--;
+                }
+            } else {
+                // Se ainda está visível na tela, troca de câmera suavemente quando o jogador 
+                // entrar definitivamente no raio de ação (LookAt) da próxima câmera
+                float margin = 3.0f; 
+                if (dist_next < dist_current - margin && dist_next < dist_prev) {
+                    current_camera_idx++;
+                } else if (dist_prev < dist_current - margin && dist_prev < dist_next) {
+                    current_camera_idx--;
+                }
+            }
         }
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
@@ -1291,7 +1378,7 @@ int main(int argc, char* argv[])
         }
         UpdatePosition(can_move, can_rotate);
 
-        UpdateEnemies();
+        // UpdateEnemies();
         UpdateCollectibles();
         UpdateBreakables();
         UpdateFragments();
@@ -2881,6 +2968,25 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
+
+        float r = g_CameraDistance;
+        float y = r*sin(g_CameraPhi);
+        float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
+        float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
+
+        float height_offset = 1.5f;
+
+        glm::vec4 camera_lookat_l    = glm::vec4(player.position.x, player.position.y + height_offset, player.position.z, 1.0f);
+        glm::vec4 camera_position_c  = camera_lookat_l + glm::vec4(x, y + 0.5, z, 0.0f);
+        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
+        glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f);
+        
+        printf("--- Camera Parameters (Click) ---\n");
+        printf("  Position: (%.2f, %.2f, %.2f)\n", camera_position_c.x, camera_position_c.y, camera_position_c.z);
+        printf("  LookAt:   (%.2f, %.2f, %.2f)\n", camera_lookat_l.x, camera_lookat_l.y, camera_lookat_l.z);
+        printf("  View Vec: (%.2f, %.2f, %.2f)\n", camera_view_vector.x, camera_view_vector.y, camera_view_vector.z);
+        printf("  Up Vec:   (%.2f, %.2f, %.2f)\n", camera_up_vector.x, camera_up_vector.y, camera_up_vector.z);
+        printf("---------------------------------\n");
     }
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
     {
@@ -3053,6 +3159,11 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // DEBUG UI TOGGLE
     if (key == GLFW_KEY_U && action == GLFW_PRESS) {
         g_ui_debug_enabled = !g_ui_debug_enabled;
+    }
+
+    if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+        g_UseFixedCameras = !g_UseFixedCameras;
+        printf("Fixed Cameras: %s\n", g_UseFixedCameras ? "ON" : "OFF");
     }
 
     // DEBUG MAP COORDS

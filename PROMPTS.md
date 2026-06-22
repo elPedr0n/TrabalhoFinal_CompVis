@@ -1263,3 +1263,23 @@ PROMPT 4 - 10: Meu ta muito errado isso, n ta girando corretamente, tente ajutar
 PROMPT 11: so, for now we are having a white canvas for the background part os the map, i want to change it to something resembling the nightime of the game, how I do it?
 
 PROMPT 12: i need a redish color, like this tone in rgb 88, 48, 39, But it would be nice if it were a gradient, with some dark spaces in some places, to simulate some clouds
+
+
+### Commit com IA: Camera fixa funcionando e sombra embaixo do jogador
+
+PROMPT 1: quero que tu me monte uma sombra completamente preta embaixo do jogador. Sera um circulo preto, com um raio nao muito grande que acompanha ele em todo mapa, independente da luz. Deve ser 100 preto
+
+PROMPT 2: I need to implement a different kind of camera, a fixed one. for that, i need a callback that, once I click, it tell me all the parameters in the terminal, so I know where to put it. can you do that?
+
+PROMPT 3: nice, in the @temp.txt I have all the info I need. The ideia is, use the cameras in the order they are in the txt file. When the player gets out of the frustum, changes to the next one. the movement should be bound to the orientation of the camera, so it shound not be a issue. Implement this flow
+
+PROMPT 4: can you create a toggle of cameras? one to use the fixed and one to use he third person (that I can drag along)? Also we need a buffer to store the intended direction of the player when we changes the fixed camera, it can cause the movement to change
+
+PROMPT 5: 2 things, i need you to change the third camera in fixed to use this parameters 
+--- Camera Parameters (Click) ---
+    Position: (0.11, 2.55, -19.39)
+    LookAt:   (2.25, 1.50, -23.42)
+    View Vec: (2.14, -1.05, -4.03)
+    Up Vec:   (0.00, 1.00, 0.00)
+  --------------------------------- 
+and using only exitin the frustum of the camera wont work, the third camera has a great view of the map, so you need to add another flag to change to the closest camera based on the player distance

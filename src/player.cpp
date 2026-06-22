@@ -24,6 +24,8 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         if (keys[GLFW_KEY_W]) input_z -= 1.0f;
     }
 
+    g_IsMovementBuffered = (input_x != 0.0f || input_z != 0.0f);
+
     // 2. Variáveis para o movimento final rotacionado
     float move_x = 0.0f;
     float move_z = 0.0f;
