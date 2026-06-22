@@ -22,6 +22,7 @@ set(SOURCES
   src/breakables.cpp
   src/fragments.cpp
   src/screens.cpp
+  src/gamepad.cpp
 )
 
 cmake_minimum_required(VERSION 3.5.0)

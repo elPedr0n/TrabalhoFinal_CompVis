@@ -55,13 +55,33 @@ void Projectiles_Update(float delta_t)
 {
     for (auto &p : s_projectiles) {
         if (!p.active) continue;
-        p.pos += p.vel * delta_t;
-        p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+
+        float move_x = p.vel.x * delta_t;
+        float move_z = p.vel.z * delta_t;
+        float orig_move_x = move_x;
+        float orig_move_z = move_z;
+
+        for (int i = 0; i < MAX_PLATFORMS; i++) {
+            // Ignorar colisões horizontais com o chão (onde max.y costuma ser <= 0.1f)
+            if (map[i].bbox.max.y <= 0.1f) continue;
+
+            move_x = p.bbox.GetClipX(map[i].bbox, move_x);
+            move_z = p.bbox.GetClipZ(map[i].bbox, move_z);
+        }
 
         bool exploded = false;
 
-        // Hit map platforms - Removed to prevent fireball from destroying itself on the ground
-        // The fireball will now travel through terrain and only explode on enemies/breakables or end of life.
+        // Explode if it hits a wall horizontally
+        if (move_x != orig_move_x || move_z != orig_move_z) {
+            p.active = false;
+            exploded = true;
+        }
+
+        p.pos.x += move_x;
+        p.pos.y += p.vel.y * delta_t;
+        p.pos.z += move_z;
+        p.bbox = MakeAABBFromCenterSize(p.pos, glm::vec3(p.scale));
+
         // Hit enemies
         if (p.active) {
             for (int i = 0; i < MAX_ENEMIES; i++) {

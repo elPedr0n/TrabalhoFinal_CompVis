@@ -373,42 +373,74 @@ void ResolvePlayerMapCollisions() {
 
 void ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id) 
 {
-    if (!animRes.punch_active) return;
+    if (!animRes.punch_active && !animRes.big_slap_active) return;
 
     glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
     float reach = 0.35f;
     float height = 0.5f;
 
-    glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-    AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-    DrawBoundingBox(punch_box, restore_object_id);
+    if (animRes.punch_active) {
+        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
+        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
+        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(punch_box, restore_object_id);
 
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!g_enemies[i].visible) continue;
-        if (g_enemies[i].is_dead) continue;
-        if (state.punch_hit_enemies.count(i)) continue;
-        if (punch_box.Intersects(g_enemies[i].bbox)) {
-            printf("Ben punch hit enemy %d!\n", i);
-            state.punch_hit_enemies.insert(i);
-            ApplyDamageToEnemy(i, 5.0f);
-            glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
-            glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
-            glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-            ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=10;
-            Particles_Spawn(contact, popts);
-            state.attack_speed_multiplier *= 2.0f; // Increase speed on hit
-            if (state.attack_speed_multiplier > 6.0f) {
-                state.attack_speed_multiplier = 6.0f;
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible) continue;
+            if (g_enemies[i].is_dead) continue;
+            if (state.punch_hit_enemies.count(i)) continue;
+            if (punch_box.Intersects(g_enemies[i].bbox)) {
+                printf("Ben punch hit enemy %d!\n", i);
+                state.punch_hit_enemies.insert(i);
+                ApplyDamageToEnemy(i, 5.0f);
+                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
+                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=10;
+                Particles_Spawn(contact, popts);
+                state.attack_speed_multiplier *= 2.0f; // Increase speed on hit
+                if (state.attack_speed_multiplier > 6.0f) {
+                    state.attack_speed_multiplier = 6.0f;
+                }
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (state.punch_hit_enemies.count(1000 + i)) continue;
+            if (punch_box.Intersects(g_breakables[i].bbox)) {
+                state.punch_hit_enemies.insert(1000 + i);
+                ApplyDamageToBreakable(i, 5.0f);
             }
         }
     }
-    for (int i = 0; i < MAX_BREAKABLES; i++) {
-        if (!g_breakables[i].active) continue;
-        if (state.punch_hit_enemies.count(1000 + i)) continue;
-        if (punch_box.Intersects(g_breakables[i].bbox)) {
-            state.punch_hit_enemies.insert(1000 + i);
-            ApplyDamageToBreakable(i, 5.0f);
+
+    if (animRes.big_slap_active) {
+        glm::vec3 hitbox_size = glm::vec3(1.2f, 1.0f, 1.2f); // Big slap has a bigger hitbox!
+        glm::vec3 center = player.position + forward * 0.5f + glm::vec3(0.0f, height, 0.0f);
+        AABB slap_box = MakeAABBFromCenterSize(center, hitbox_size);
+        DrawBoundingBox(slap_box, restore_object_id);
+
+        for (int i = 0; i < MAX_ENEMIES; i++) {
+            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
+            if (state.big_slap_hit_enemies.count(i)) continue;
+            if (slap_box.Intersects(g_enemies[i].bbox)) {
+                printf("Big slap applied to enemy %d!\n", i); // History log per the user's request
+                state.big_slap_hit_enemies.insert(i);
+                ApplyDamageToEnemy(i, 10.0f); // More damage than normal punch
+                glm::vec3 overlap_min = glm::max(slap_box.min, g_enemies[i].bbox.min);
+                glm::vec3 overlap_max = glm::min(slap_box.max, g_enemies[i].bbox.max);
+                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
+                ParticleOptions popts; popts.color = HexToRgb("#FFFFFF"); popts.life=0.5f; popts.scale=0.15f; popts.speed=5.0f; popts.count=20;
+                Particles_Spawn(contact, popts);
+            }
+        }
+        for (int i = 0; i < MAX_BREAKABLES; i++) {
+            if (!g_breakables[i].active) continue;
+            if (state.big_slap_hit_enemies.count(1000 + i)) continue;
+            if (slap_box.Intersects(g_breakables[i].bbox)) {
+                state.big_slap_hit_enemies.insert(1000 + i);
+                ApplyDamageToBreakable(i, 10.0f);
+            }
         }
     }
 }
