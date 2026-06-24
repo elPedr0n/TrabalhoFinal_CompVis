@@ -1402,7 +1402,7 @@ Breakable 9:
   Position: (2.780, 1.200, -33.034)
   Rotation: (0.000, 0.459, 0.000)
   Scale: 0.400
-  Health: 25.0 / 25.0
+  Health: 25.0 / 25.0 
   BBox Size: (3.000, 3.000, 3.000)
   Fragments: color=(0.57,0.52,0.47), size=0.40, count=12
 Breakable 10:
@@ -1622,3 +1622,40 @@ Breakable 36:
   BBox Size: (9.000, 10.000, 20.000)
   Fragments: color=(0.32,0.26,0.22), size=0.20, count=15
 =======================================
+
+### Commit com IA: Spawn de inimigos e condição de vitória
+
+PROMPT 1: Excelente! agora vamos determinar posições de spawn de inimigos. O botão "o" determina uma posição de spawn quando ben estiver em cima dela. A cada "O" apertado, o terminal printará uma mensagem com as posições de todos os pontos criados. A partir de agora, os inimigos nascerão nessas posições, dando um fade-in. Lembre-se das porcentagens de chance de eles spawnarem. Agora, como definir quando eles spawnarão, e quantas vezes?
+
+PROMPT 2: vamos fazer o seguinte, os inimigos nascem por proximidade. Cada spawn point criado com "O" vai gerar no máximo 2 inimigos. Porém, ele só pode gerar um novo inimigo (depois da primeira vez) quando um inimigo for morto. Já os spawn points craiados com "I" (especiais) vão gerar no máximo 3 inimigos. Quando todos os inimigos a serem gerados pelos spawn points criados com "I" forem mortos, o jogador ganha o jogo. A proximidade será de 5 unidades. Lembre-se, a cada spawn point gerado (seja com I ou com O), printe no terminal a lista de todos os spanw points definidos até agora.
+
+PROMPT 3: adicione os seguintes pontos de spawn:
+========== ACTIVE SPAWN POINTS ==========
+SpawnPoint(glm::vec3(0.162f, 1.000f, -19.182f), 0, 2);
+SpawnPoint(glm::vec3(4.820f, 1.000f, -20.590f), 0, 2);
+SpawnPoint(glm::vec3(5.149f, 1.000f, -25.142f), 0, 2);
+SpawnPoint(glm::vec3(2.463f, 1.000f, -25.913f), 0, 2);
+SpawnPoint(glm::vec3(2.675f, 1.000f, -31.658f), 0, 2);
+SpawnPoint(glm::vec3(8.278f, 1.000f, -36.553f), 0, 2);
+SpawnPoint(glm::vec3(4.253f, 1.000f, -40.824f), 0, 2);
+SpawnPoint(glm::vec3(5.961f, 1.000f, -47.035f), 0, 2);
+SpawnPoint(glm::vec3(10.160f, 1.000f, -46.688f), 0, 2);
+SpawnPoint(glm::vec3(16.273f, 1.000f, -51.056f), 0, 2);
+SpawnPoint(glm::vec3(20.158f, 1.000f, -51.102f), 0, 2);
+SpawnPoint(glm::vec3(20.177f, 1.000f, -55.054f), 0, 2);
+SpawnPoint(glm::vec3(17.362f, 1.000f, -59.580f), 0, 2);
+SpawnPoint(glm::vec3(11.262f, 1.000f, -60.843f), 0, 2);
+SpawnPoint(glm::vec3(18.921f, 1.000f, -62.191f), 0, 2);
+SpawnPoint(glm::vec3(6.840f, 0.988f, -84.157f), 1, 3);
+SpawnPoint(glm::vec3(4.212f, 0.988f, -90.785f), 1, 3);
+SpawnPoint(glm::vec3(4.775f, 0.988f, -96.124f), 1, 3);
+SpawnPoint(glm::vec3(7.543f, 0.988f, -98.300f), 1, 3);
+SpawnPoint(glm::vec3(10.514f, 0.988f, -97.883f), 1, 3);
+SpawnPoint(glm::vec3(10.520f, 0.988f, -84.577f), 1, 3);
+=========================================
+
+PROMPT 4: Os inimigos estão sendo gerados e caindo no além. Além disso, nem todos precisam usar "knight_laugh" quando nascem.
+
+PROMPT 5: os inimigos gerados caem, ficam presos no chão e logo caem pro abismo e morrem. Conserte isso, cheque a colisão dos inimigos com o chão.
+
+PROMPT 6: modifique o spawn do tipo comum para gerar somente um inimigo, e o spawn do tipo especial para gerar 2.  As contagens de inimigos gerados por spawn devem reiniciar quando o jogador reiniciar também.
