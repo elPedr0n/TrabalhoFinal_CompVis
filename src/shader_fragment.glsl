@@ -81,7 +81,7 @@ uniform int active_alien;
 uniform float bigchill_part_alpha;
 
 // === POSTES DE LUZ ===
-const int MAX_LAMPS = 11;
+const int MAX_LAMPS = 13;
 uniform vec3 lamp_positions[MAX_LAMPS];
 uniform int num_lamps;
 

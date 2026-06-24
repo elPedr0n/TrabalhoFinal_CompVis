@@ -1396,7 +1396,10 @@ int main(int argc, char* argv[])
             {  9.581f, 4.0f, -53.897f },  // Poste 7 
             {  19.522f, 4.0f, -51.211f },   // Poste 8 
             {  21.224f, 4.0f, -59.004f },
-            {  11.633f, 4.0f, -65.781f }
+            {  11.633f, 4.0f, -65.781f },
+            {  13.740f, 4.0f, -59.81f  },
+            {  4.210f,  4.0f, -89.08f  },
+            {  4.210f,  4.0f, -93.07f  }
         };
         static const int num_lamps = sizeof(lamp_positions) / sizeof(lamp_positions[0]);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "num_lamps"), num_lamps);
@@ -3424,7 +3427,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
     if (key == GLFW_KEY_P && action == GLFW_PRESS)
     {
-        g_UsePerspectiveProjection = true;
+        printf("Players position: (%.2f, %.2f, %.2f)\n", player.position.x, player.position.y, player.position.z);
     }
 
     // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
