@@ -24,7 +24,7 @@ void SpawnEnemy(glm::vec3 pos, int spawner_id) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
-            pos.y += 0.5f; // Add positive offset to ensure they fall and don't clip through the ground
+            pos.y += 0.2f; // Add positive offset to ensure they fall and don't clip through the ground
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -65,7 +65,7 @@ void SpawnRangedEnemy(glm::vec3 pos, int spawner_id) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
-            pos.y += 0.5f; // Add positive offset to ensure they fall and don't clip through the ground
+            pos.y += 0.2f; // Add positive offset to ensure they fall and don't clip through the ground
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -151,9 +151,37 @@ void UpdateEnemies() {
         if (g_enemies[i].position.y < -5.0f) {
             if (g_enemies[i].health > 0.0f) {
                 PlaySoundEffect("../../data/sounds/knight_death_water.wav");
+                g_enemies[i].health = 0.0f;
+                g_enemies[i].is_dead = true;
+                g_enemies[i].death_timer = 0.0f;
+                g_enemies[i].death_anim_duration = 2.66f; 
+                g_enemies[i].is_attacking = false;
+                g_enemies[i].punch_active = false;
+
+                if (g_enemies[i].spawner_id != -1) {
+                    int sid = g_enemies[i].spawner_id;
+                    g_spawn_points[sid].enemies_killed++;
+                    g_spawn_points[sid].active_enemy_id = -1;
+
+                    // Check win condition
+                    bool all_i_spawners_dead = true;
+                    bool has_i_spawners = false;
+                    for(int k=0; k<g_num_spawn_points; k++) {
+                        if (g_spawn_points[k].type == 1) { // Special 'i'
+                            has_i_spawners = true;
+                            if (g_spawn_points[k].enemies_killed < g_spawn_points[k].max_enemies) {
+                                all_i_spawners_dead = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (has_i_spawners && all_i_spawners_dead) {
+                        player.has_won = true;
+                        player.final_time = (float)glfwGetTime() - player.start_time;
+                        printf("You won! All special enemies defeated!\n");
+                    }
+                }
             }
-            g_enemies[i].health = 0.0f;
-            g_enemies[i].is_dead = true;
         }
 
         if (!g_enemies[i].is_dead && glm::distance(player.position, g_enemies[i].position) < 8.0f) {

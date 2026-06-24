@@ -999,6 +999,12 @@ int main(int argc, char* argv[])
         for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].visible = false;
         for (int i = 0; i < MAX_COLLECTIBLES; i++) g_collectibles[i].active = false;
         
+        // BUG 2: Resetar o número de inimigos spawnáveis quando o player morrer
+        for (int i = 0; i < g_num_spawn_points; i++) {
+            g_spawn_points[i].enemies_spawned = 0;
+            g_spawn_points[i].active_enemy_id = -1;
+        }
+        
         for (int i = 0; i < MAX_BREAKABLES; i++) g_breakables[i].active = false;
         SpawnBreakable(glm::vec3(4.396f, 0.000f, -4.801f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.572f);
         SpawnBreakable(glm::vec3(4.396f, 1.200f, -4.801f), 0.400f, "the_wooden_box", 25.0f, 3.000f, 3.000f, 3.000f, glm::vec3(0.57f, 0.52f, 0.47f), 0.40f, 12, 3.572f);
@@ -1575,15 +1581,7 @@ int main(int argc, char* argv[])
                     * Matrix_Rotate_Y(player.rotate);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, CHILL);
-            // Draw axes in BigChill model space (origin-centered debug)
-            if (g_AxesVAO != 0) {
-                glUniform1i(g_object_id_uniform, AXES_DEBUG);
-                glBindVertexArray(g_AxesVAO);
-                glLineWidth(2.0f);
-                glDrawArrays(GL_LINES, 0, 6);
-                glBindVertexArray(0);
-                glUniform1i(g_object_id_uniform, CHILL);
-            }
+
             
             static float bigchill_wings_alpha = 0.0f;
             float transition_speed = 4.0f;
@@ -1748,15 +1746,7 @@ int main(int argc, char* argv[])
                     glBindTexture(GL_TEXTURE_2D, g_VirtualScene[name].texture_id);
                     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage5"), 5);
                     glUniform1i(g_object_id_uniform, SWAMPFIRE);
-                    // Draw axes in model space (debug)
-                    if (g_AxesVAO != 0) {
-                        glUniform1i(g_object_id_uniform, AXES_DEBUG); // axes id -> handled in fragment shader
-                        glBindVertexArray(g_AxesVAO);
-                        glLineWidth(2.0f);
-                        glDrawArrays(GL_LINES, 0, 6);
-                        glBindVertexArray(0);
-                        glUniform1i(g_object_id_uniform, SWAMPFIRE);
-                    }
+
                     DrawVirtualObject(name.c_str());
                     DrawBoundingBox(player.characters[1].bbox, SWAMPFIRE);
                 }
@@ -2560,6 +2550,14 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage17"), 17);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage18"), 18);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage19"), 19);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage20"), 20);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage21"), 21);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage22"), 22);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage23"), 23);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage24"), 24);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage25"), 25);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage26"), 26);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage27"), 27);
     glUseProgram(0);
 }
 
@@ -3403,6 +3401,12 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                 Particles_Spawn(glm::vec3(player.position.x, player.position.y, player.position.z), popts);
             }
         }
+    }
+
+    // Toggle entre câmera fixa e câmera livre/look-at
+    if (key == GLFW_KEY_C && action == GLFW_PRESS)
+    {
+        g_UseFixedCameras = !g_UseFixedCameras;
     }
 
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.

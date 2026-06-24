@@ -174,10 +174,10 @@ void DrawBreakables(GLint model_uniform, GLint object_id_uniform, GLint override
         for (const auto& pair : g_VirtualScene) {
             if (pair.first.find(g_breakables[i].model_name + "_") == 0 || pair.first == g_breakables[i].model_name) {
                 if (pair.second.texture_id != 0) {
-                    glActiveTexture(GL_TEXTURE20);
+                    glActiveTexture(GL_TEXTURE29);
                     glBindTexture(GL_TEXTURE_2D, pair.second.texture_id);
                     extern GLuint g_GpuProgramID;
-                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage20"), 20);
+                    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage29"), 29);
                 }
                 DrawVirtualObject(pair.first.c_str());
             }
