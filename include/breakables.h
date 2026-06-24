@@ -25,7 +25,6 @@ struct Breakable {
     
     bool active;
     
-    // Fragment properties
     glm::vec3 fragment_color;
     float fragment_size;
     int fragment_count;
@@ -43,4 +42,4 @@ void UpdateBreakables();
 void ApplyDamageToBreakable(int id, float damage);
 void DrawBreakables(GLint model_uniform, GLint object_id_uniform, GLint override_kd_uniform, GLint use_override_kd_uniform);
 
-#endif // BREAKABLES_H
+#endif

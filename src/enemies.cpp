@@ -24,7 +24,7 @@ void SpawnEnemy(glm::vec3 pos, int spawner_id) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
-            pos.y += 0.2f; // Add positive offset to ensure they fall and don't clip through the ground
+            pos.y -= 0.5f;
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -65,7 +65,7 @@ void SpawnRangedEnemy(glm::vec3 pos, int spawner_id) {
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (!g_enemies[i].visible) {
             g_enemies[i].visible = true;
-            pos.y += 0.2f; // Add positive offset to ensure they fall and don't clip through the ground
+            pos.y -= 0.5f;
             g_enemies[i].position = pos;
             g_enemies[i].rotate = 0.0f;
             g_enemies[i].scale = 1.0f;
@@ -119,7 +119,7 @@ void UpdateEnemies() {
             continue; // Skip movement, attacks, gravity, etc
         }
 
-// ===== TEMPO E CONGELAMENTO =====
+        // ===== TEMPO E CONGELAMENTO =====
         float time_scale = 1.0f;
         if (g_enemies[i].is_frozen) {
             g_enemies[i].frozen_timer -= delta_t;
@@ -131,7 +131,7 @@ void UpdateEnemies() {
             } else {
                 time_scale = 0.3f;
             }
-        } // <-- ESSA É A CHAVE QUE O GIT ENGOLIU!
+        }
 
         // ===== GRAVITY =====
         float fall_y = gravidade * delta_t; 
@@ -307,19 +307,6 @@ void UpdateEnemies() {
                 player.position.z - g_enemies[i].position.z);
             continue;
         }
-
-        // --- OPTION B: AABB intersection trigger (comment A, uncomment this) ---
-        // if (g_enemies[i].bbox.Intersects(player.characters[player.active_character].bbox)
-        //     && g_enemies[i].attack_cooldown <= 0.0f)
-        // {
-        //     g_enemies[i].is_attacking = true;
-        //     g_enemies[i].attack_timer = 0.0f;
-        //     g_enemies[i].has_hit_player = false;
-        //     g_enemies[i].rotate = atan2(
-        //         player.position.x - g_enemies[i].position.x,
-        //         player.position.z - g_enemies[i].position.z);
-        //     continue;
-        // }
 
         // ===== MOVEMENT (only when not attacking) =====
         if (dist_to_player > g_enemies[i].attack_range) {

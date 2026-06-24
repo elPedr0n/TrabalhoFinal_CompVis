@@ -993,16 +993,15 @@ int main(int argc, char* argv[])
 
     bool game_is_running = true;
     while (game_is_running && !glfwWindowShouldClose(window)) {
-        // RESET GAME STATE
         player = Player();
         player.start_time = (float)glfwGetTime();
         for (int i = 0; i < MAX_ENEMIES; i++) g_enemies[i].visible = false;
         for (int i = 0; i < MAX_COLLECTIBLES; i++) g_collectibles[i].active = false;
         
-        // BUG 2: Resetar o número de inimigos spawnáveis quando o player morrer
         for (int i = 0; i < g_num_spawn_points; i++) {
             g_spawn_points[i].enemies_spawned = 0;
             g_spawn_points[i].active_enemy_id = -1;
+            g_spawn_points[i].enemies_killed = 0;
         }
         
         for (int i = 0; i < MAX_BREAKABLES; i++) g_breakables[i].active = false;
