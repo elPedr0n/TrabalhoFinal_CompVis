@@ -11,9 +11,10 @@
 #define AXIS_Z 2
 
 #define MAX_PLATFORMS 150
-#define MAX_ENEMIES 100
+#define MAX_ENEMIES 5
 #define MAX_CHARACTERS 3
 #define MAX_COLLECTIBLES 100
+#define MAX_SPAWN_POINTS 50
 
 extern float bigchill_jump_speed;
 extern float swampfire_jump_speed;
@@ -25,6 +26,9 @@ extern float bentennyson_jump_speed;
 // BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
 
 extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
+
+extern struct SpawnPoint g_spawn_points[MAX_SPAWN_POINTS];
+extern int g_num_spawn_points;
 
 extern struct MapItem map[MAX_PLATFORMS];
 extern int g_num_platforms;
@@ -57,8 +61,8 @@ extern glm::vec3 bentennyson_size;
 
 void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch = true);
 void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos);
-void SpawnEnemy(glm::vec3 pos);
-void SpawnRangedEnemy(glm::vec3 pos);
+void SpawnEnemy(glm::vec3 pos, int spawner_id = -1);
+void SpawnRangedEnemy(glm::vec3 pos, int spawner_id = -1);
 void DrawBoundingBox(struct AABB& aabb, int restore_object_id);
 
 void ProcessEnemyMeleeHitboxes();

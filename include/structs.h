@@ -46,7 +46,8 @@ struct AABB {
 	float GetClipX(AABB against, float deltaX) {
 		//are we overlapping the other axes?
 		//(if we aren't, then an intersection could never actually take place)
-		if(IntersectsY(against) && IntersectsZ(against)) {
+		if((min.y + 0.005f) < against.max.y && (max.y - 0.005f) > against.min.y &&
+		   (min.z + 0.005f) < against.max.z && (max.z - 0.005f) > against.min.z) {
 			//if we are moving right and our right bounds are smaller than
 			//or equal to the other left bounds
 			if(deltaX > 0 && max.x <= against.min.x + 0.002f) {
@@ -70,13 +71,14 @@ struct AABB {
 	}
 
 	float GetClipY(AABB against, float deltaY) {
-		if (IntersectsX(against) && IntersectsZ(against)) {
+		if ((min.x + 0.005f) < against.max.x && (max.x - 0.005f) > against.min.x &&
+		    (min.z + 0.005f) < against.max.z && (max.z - 0.005f) > against.min.z) {
 			if (deltaY > 0 && max.y <= against.min.y + 0.002f) {
 				float clip = against.min.y - max.y;
 				if (deltaY > clip)
 					deltaY = clip;
 			}
-			if (deltaY < 0 && min.y >= against.max.y - 0.002f) {
+			if (deltaY < 0 && min.y >= against.max.y - 0.5f) {
 				float clip = against.max.y - min.y;
 				if (deltaY < clip)
 					deltaY = clip;
@@ -87,7 +89,8 @@ struct AABB {
 	}
 
 	float GetClipZ(AABB against, float deltaZ) {
-		if (IntersectsX(against) && IntersectsY(against)) {
+		if ((min.x + 0.005f) < against.max.x && (max.x - 0.005f) > against.min.x &&
+		    (min.y + 0.005f) < against.max.y && (max.y - 0.005f) > against.min.y) {
 			if (deltaZ > 0 && max.z <= against.min.z + 0.002f) {
 				float clip = against.min.z - max.z;
 				if (deltaZ > clip)
@@ -241,7 +244,13 @@ struct Enemy {
     bool is_frozen;
     float frozen_timer;
 
-	Enemy() : rotate(0.0f), scale(1.0f), visible(false), speed(0.8f), type(0), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), attack_phase(0), phase_timer(0.0f), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f) {}
+    // Spawning state
+    bool is_spawning;
+    float spawn_timer;
+    float spawn_duration;
+    int spawner_id;
+
+	Enemy() : rotate(0.0f), scale(1.0f), visible(false), speed(0.8f), type(0), is_attacking(false), attack_timer(0.0f), attack_cooldown(0.0f), attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false), attack_phase(0), phase_timer(0.0f), health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16), is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f), is_spawning(false), spawn_timer(0.0f), spawn_duration(2.0f), spawner_id(-1) {}
 
 	Enemy(float px, float py, float pz, float rot, float sc, bool vis, float bbox_w, float bbox_h, float bbox_d)
 		: rotate(rot), scale(sc), visible(vis), speed(0.8f), type(0),
@@ -249,7 +258,7 @@ struct Enemy {
 		attack_duration(1.25f), attack_range(1.0f), has_hit_player(false), punch_active(false),
 		attack_phase(0), phase_timer(0.0f),
 		health(100.0f), max_health(100.0f), is_flinching(false), flinch_timer(0.0f), flinch_duration(0.0f), flinch_anim(16),
-		is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f)
+		is_dead(false), death_timer(0.0f), death_anim_duration(2.66f), is_flashing(false), flash_timer(0.0f), is_frozen(false), frozen_timer(0.0f), is_spawning(false), spawn_timer(0.0f), spawn_duration(2.0f), spawner_id(-1)
 	{
 		position.x = px; position.y = py; position.z = pz;
 		bbox = MakeAABBFromCenterSize(position, glm::vec3(bbox_w, bbox_h, bbox_d));
@@ -261,6 +270,18 @@ struct MapItem {
 	AABB bbox;
 	glm::vec3 position;
 	glm::vec3 scale;
+};
+
+struct SpawnPoint {
+    glm::vec3 position;
+    int type; // 0 = Normal ('o'), 1 = Special ('i')
+    int max_enemies;
+    int enemies_spawned;
+    int enemies_killed;
+    int active_enemy_id;
+
+    SpawnPoint() : position(0.0f), type(0), max_enemies(2), enemies_spawned(0), enemies_killed(0), active_enemy_id(-1) {}
+    SpawnPoint(glm::vec3 p, int t, int max_e) : position(p), type(t), max_enemies(max_e), enemies_spawned(0), enemies_killed(0), active_enemy_id(-1) {}
 };
 
 struct Collectible {

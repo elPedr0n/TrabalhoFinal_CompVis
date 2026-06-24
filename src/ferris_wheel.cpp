@@ -1,5 +1,6 @@
 #include "ferris_wheel.h"
 #include "sceneobject.h"
+#include "matrices.h"
 
 #include <glad/glad.h>
 #include <glm/glm.hpp>
@@ -25,8 +26,7 @@ static glm::mat4 nodeLocalTransform(const tinygltf::Node& n)
     glm::mat4 T(1.0f), R(1.0f), S(1.0f);
 
     if (n.translation.size() == 3)
-        T = glm::translate(glm::mat4(1.0f),
-            glm::vec3((float)n.translation[0], (float)n.translation[1], (float)n.translation[2]));
+        T = Matrix_Translate((float)n.translation[0], (float)n.translation[1], (float)n.translation[2]);
 
     if (n.rotation.size() == 4) {
         glm::quat q((float)n.rotation[3], (float)n.rotation[0],
@@ -35,8 +35,7 @@ static glm::mat4 nodeLocalTransform(const tinygltf::Node& n)
     }
 
     if (n.scale.size() == 3)
-        S = glm::scale(glm::mat4(1.0f),
-            glm::vec3((float)n.scale[0], (float)n.scale[1], (float)n.scale[2]));
+        S = Matrix_Scale((float)n.scale[0], (float)n.scale[1], (float)n.scale[2]);
 
     return T * R * S;
 }
@@ -133,7 +132,7 @@ void DrawFerrisWheel(
     }
 
     // --- 4. Matrizes de spin ---
-    glm::mat4 spin_z = glm::rotate(glm::mat4(1.0f), time * spin_speed, glm::vec3(0.0f, 0.0f, 1.0f));
+    glm::mat4 spin_z = Matrix_Rotate_Z(time * spin_speed);
 
     // --- 5. Shader ---
     glUniform1i(obj_id_uniform, FERRIS_WHEEL_ID);
@@ -162,7 +161,7 @@ void DrawFerrisWheel(
             glm::mat4 root_correction = nodeWorldTransformExclusive(model, parent, wheel_node_idx);
 
             // Translação do hub e rotação base do nó wheel (R já embutida no nodeLocal sem T)
-            glm::mat4 to_hub   = glm::translate(glm::mat4(1.0f),  wheel_hub);
+            glm::mat4 to_hub   = Matrix_Translate(wheel_hub.x, wheel_hub.y, wheel_hub.z);
 
             // Extrai só a rotação base do wheel (sem translação)
             glm::mat4 wheel_rot_only(1.0f);
@@ -223,8 +222,8 @@ void DrawFerrisWheel(
                 // A malha se move por Delta, mantendo a orientação inalterada (rotação original da modelagem)
                 glm::mat4 mesh_local = nodeLocalTransform(model.nodes[ni]);
                 final_model = world * above_cabin
-                              * glm::translate(glm::mat4(1.0f), delta)
-                              * glm::translate(glm::mat4(1.0f), orbit_offset)
+                              * Matrix_Translate(delta.x, delta.y, delta.z)
+                              * Matrix_Translate(orbit_offset.x, orbit_offset.y, orbit_offset.z)
                               * mesh_local;
             }
             // ----------------------------------------------------------------

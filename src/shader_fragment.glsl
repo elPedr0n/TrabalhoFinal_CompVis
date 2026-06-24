@@ -60,7 +60,6 @@ uniform sampler2D TextureImage17;
 uniform sampler2D TextureImage18;
 uniform sampler2D TextureImage19;
 uniform sampler2D TextureImage20;
-
 uniform sampler2D TextureImage21;
 uniform sampler2D TextureImage22;
 uniform sampler2D TextureImage23;
@@ -68,6 +67,7 @@ uniform sampler2D TextureImage24;
 uniform sampler2D TextureImage25;
 uniform sampler2D TextureImage26;
 uniform sampler2D TextureImage27;
+uniform sampler2D TextureImage29; // BREAKABLE
 
 uniform float hud_omnitrix_frame;
     // Optional override color for procedural particles
@@ -81,7 +81,7 @@ uniform int active_alien;
 uniform float bigchill_part_alpha;
 
 // === POSTES DE LUZ ===
-const int MAX_LAMPS = 11;
+const int MAX_LAMPS = 13;
 uniform vec3 lamp_positions[MAX_LAMPS];
 uniform int num_lamps;
 
@@ -253,7 +253,7 @@ void main()
     {
         U = texcoords.x;
         V = 1.0 - texcoords.y; // gltf V flip
-        Kd0 = texture(TextureImage20, vec2(U,V)).rgb;
+        Kd0 = texture(TextureImage29, vec2(U,V)).rgb;
     } else if (object_id == BLOCO) 
     {
         U = texcoords.x;
