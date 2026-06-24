@@ -1,4 +1,5 @@
 #include "screens.h"
+#include "matrices.h"
 
 static GLuint g_ScreenVAO = 0;
 static GLuint g_ScreenVBO = 0;
@@ -61,13 +62,13 @@ void DrawLoadingSpinner(GLint model_uniform, GLint view_uniform, GLint proj_unif
 
     // Position at bottom right corner, scale down, and rotate
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(0.8f, -0.8f, 0.0f));
+    model = model * Matrix_Translate(0.8f, -0.8f, 0.0f);
     
     // Adjust aspect ratio if needed, but since it's an icon, we'll keep it square-ish.
     // Screen is 800x600 (ratio 4/3) so scale X by 3/4 to keep it square.
-    model = glm::scale(model, glm::vec3(0.15f * 0.75f, 0.15f, 1.0f)); 
+    model = model * Matrix_Scale(0.15f * 0.75f, 0.15f, 1.0f); 
     
-    model = glm::rotate(model, -current_time * 5.0f, glm::vec3(0.0f, 0.0f, 1.0f));
+    model = model * Matrix_Rotate_Z(-current_time * 5.0f);
 
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(object_id_uniform, 31); // LOADING_SPINNER
@@ -98,13 +99,13 @@ void DrawTextWindowBox(GLint model_uniform, GLint view_uniform, GLint proj_unifo
     glBindVertexArray(g_ScreenVAO);
 
     // Draw border (slightly larger, opaque)
-    glm::mat4 border_model = glm::scale(glm::mat4(1.0f), glm::vec3(0.55f, 0.40f, 1.0f));
+    glm::mat4 border_model = Matrix_Scale(0.55f, 0.40f, 1.0f);
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(border_model));
     glUniform1i(object_id_uniform, 41); // UI_WINDOW_BORDER
     glDrawArrays(GL_TRIANGLES, 0, 6);
 
     // Draw background (semi-transparent)
-    glm::mat4 bg_model = glm::scale(glm::mat4(1.0f), glm::vec3(0.54f, 0.39f, 1.0f));
+    glm::mat4 bg_model = Matrix_Scale(0.54f, 0.39f, 1.0f);
     glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(bg_model));
     glUniform1i(object_id_uniform, 40); // UI_WINDOW_BG
     glDrawArrays(GL_TRIANGLES, 0, 6);

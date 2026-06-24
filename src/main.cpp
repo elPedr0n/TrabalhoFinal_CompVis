@@ -1398,8 +1398,8 @@ int main(int argc, char* argv[])
             {  21.224f, 4.0f, -59.004f },
             {  11.633f, 4.0f, -65.781f },
             {  13.740f, 4.0f, -59.81f  },
-            {  4.210f,  4.0f, -89.08f  },
-            {  4.210f,  4.0f, -93.07f  }
+            {  4.010f,  4.0f, -89.08f  },
+            {  4.010f,  4.0f, -93.07f  }
         };
         static const int num_lamps = sizeof(lamp_positions) / sizeof(lamp_positions[0]);
         glUniform1i(glGetUniformLocation(g_GpuProgramID, "num_lamps"), num_lamps);

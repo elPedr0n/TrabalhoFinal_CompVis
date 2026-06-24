@@ -1,4 +1,5 @@
 #include "animation.h"
+#include "matrices.h"
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 // Need GLFW key definitions for the Swampfire state machine
@@ -551,9 +552,9 @@ void GltfAnimator::update(const tinygltf::Model& model, int anim_index, float cu
 
     for (size_t ni = 0; ni < model.nodes.size(); ++ni) {
         if (!node_has_matrix[ni]) {
-            local_matrix[ni] = glm::translate(glm::mat4(1.0f), node_T[ni]) 
+            local_matrix[ni] = Matrix_Translate(node_T[ni].x, node_T[ni].y, node_T[ni].z) 
                              * glm::mat4_cast(node_R[ni]) 
-                             * glm::scale(glm::mat4(1.0f), node_S[ni]);
+                             * Matrix_Scale(node_S[ni].x, node_S[ni].y, node_S[ni].z);
         }
     }
 
