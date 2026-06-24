@@ -11,7 +11,7 @@
 #define AXIS_Z 2
 
 #define MAX_PLATFORMS 150
-#define MAX_ENEMIES 5
+#define MAX_ENEMIES 50
 #define MAX_CHARACTERS 3
 #define MAX_COLLECTIBLES 100
 #define MAX_SPAWN_POINTS 50
@@ -23,9 +23,7 @@ extern float bentennyson_jump_speed;
 #include "structs.h"
 #include "animation.h"
 
-// BIGCHILL Dimensoes -> Largura(X): 0.695, Altura(Y): 0.985, Profund(Z): 0.225
-
-extern struct Enemy g_enemies[MAX_ENEMIES]; // Array with the current enemies
+extern struct Enemy g_enemies[MAX_ENEMIES]; 
 
 extern struct SpawnPoint g_spawn_points[MAX_SPAWN_POINTS];
 extern int g_num_spawn_points;
