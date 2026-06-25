@@ -14,3 +14,7 @@ O *Ben 10 Alien Force* é um jogo de Playstation 2 em que podemos controlar o Be
 ### Utilização de IA no desenvolvimento
 
 ### Imagens da aplicação
+![Ben Tennyson dançando](data/relatorio_imagens/ben_dancando.png)
+![Big Chill dando um pulo](data/relatorio_imagens/big_chill.png)
+![Swampfire mandando ataque especial](data/relatorio_imagens/swampfire.png)
+
