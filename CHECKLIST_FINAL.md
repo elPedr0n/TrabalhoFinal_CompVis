@@ -8,7 +8,7 @@
   - [X] Calibragem de velocidade de pulo
   - [X] Lógica câmera fixa para segunda parte do mapa 
   - [X] Mapa
-    - [ ] Mapeamento da posição de spawn do jogador e inimigos
+    - [X] Mapeamento da posição de spawn do jogador e inimigos
     - [X] Calibragem da distância e angulo da câmera no mapa final
   - [X] Iluminação 
   - [X] UI do game

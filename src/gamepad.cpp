@@ -154,7 +154,9 @@ void ProcessGamepadInput(GLFWwindow* window) {
         simulateKey(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER, GLFW_KEY_Z);
         simulateKey(GLFW_GAMEPAD_BUTTON_START, GLFW_KEY_ENTER);
         simulateKey(GLFW_GAMEPAD_BUTTON_RIGHT_THUMB, GLFW_KEY_G);
-        simulateKey(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, GLFW_KEY_X); // Mapped alien swap to right d-pad
+        simulateKey(GLFW_GAMEPAD_BUTTON_BACK, GLFW_KEY_C);
+        simulateKey(GLFW_GAMEPAD_BUTTON_DPAD_LEFT, GLFW_KEY_X);
+        simulateKey(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT, GLFW_KEY_X);
 
         bool triggers_pressed = state.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.0f || state.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.0f;
         bool last_triggers_pressed = lastState.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > 0.0f || lastState.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > 0.0f;
