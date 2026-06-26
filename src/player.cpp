@@ -111,9 +111,7 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     float move_vector_z = move_z * player.speed.z * delta_t;
 
     // Guarda os valores originais para verificar se houve colisão depois (Equivalente ao originalVector)
-    float original_x = move_vector_x;
     float original_y = move_vector_y;
-    float original_z = move_vector_z;
 
     // Referência rápida para a BBox do personagem ativo
     auto& player_bbox = player.characters[player.active_character].bbox;

@@ -925,7 +925,7 @@ int main(int argc, char* argv[])
     std::vector<AABB> colliders = parseColliders("../../data/map_ground/colliders.txt");                                                                                                                                                      
                                                                                                                                                                                            
     // Loop through all shapes in the OBJ                                                                                                                                                  
-    for (int i = 0; i < colliders.size(); i++) {                
+    for (long unsigned int i = 0; i < colliders.size(); i++) {                
         if (i < MAX_PLATFORMS) {                                                                                                                                  
             map[i].bbox = colliders[i]; 
             g_num_platforms++;
@@ -1098,8 +1098,8 @@ int main(int argc, char* argv[])
     BigChillAnimState bigchill_cloaked_state;
     BigChillAnimState bigchill_ben10_state;
 
-    int current_enemy_anim = 36;
-    bool t_key_was_down = false;
+    // int current_enemy_anim = 36;
+    // bool t_key_was_down = false;
 
     GltfAnimator swampfireAnimator(gltfmodel);
     // Animator placeholder for projectiles (no GLTF for projectiles)
@@ -1108,7 +1108,7 @@ int main(int argc, char* argv[])
     GltfAnimator foreverknightAnimator(foreverknight_model);
     GltfAnimator bigchillBen10Animator(bigchill_model);
     GltfAnimator bigchillCloakedAnimator(bigchill_cloaked_model);
-    bool bigchill_was_jumping = false;
+    // bool bigchill_was_jumping = false;
     // keep swampfire_state alive for the main loop (defined above)
 
     bool inner_loop_running = true;
@@ -1833,7 +1833,7 @@ int main(int argc, char* argv[])
             }
 
 
-        bool t_is_down = keys[GLFW_KEY_T];
+        // bool t_is_down = keys[GLFW_KEY_T];
 
 
         // 1. Matriz de Modelo (Posição, Escala e Rotação do mapa)
@@ -1889,7 +1889,7 @@ int main(int argc, char* argv[])
         DrawVirtualObject("the_plane");
 
 
-        for (int i = 0; i < barracas_positions.size(); i++) {
+        for (long unsigned int i = 0; i < barracas_positions.size(); i++) {
 
             // Frustum Culling: Testamos se a barraca (assumindo um raio de 4.5 para cobrir o modelo) está na visão da câmera
             if (!IsSphereInFrustum(barracas_positions[i] + glm::vec3(0.0f, 1.0f, 0.0f), 4.5f, frustum_planes)) {
@@ -1925,7 +1925,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        for (int i = 0; i < wall_positions.size(); i++) {
+        for (long unsigned int i = 0; i < wall_positions.size(); i++) {
 
             if (i <= 1) {
                 model = Matrix_Identity();
@@ -1946,7 +1946,7 @@ int main(int argc, char* argv[])
             }
         }
 
-        for (int i = 0; i < tower_positions.size(); i++) {
+        for (long unsigned int i = 0; i < tower_positions.size(); i++) {
             model = Matrix_Translate(tower_positions[i].x, tower_positions[i].y, tower_positions[i].z);
             glUniformMatrix4fv(g_model_uniform, 1 , GL_FALSE , glm::value_ptr(model));
             glUniform1i(g_object_id_uniform, 11); 
@@ -1988,7 +1988,7 @@ int main(int argc, char* argv[])
                            fw_world, (float)agora, 0.4f);
         }
 
-        // for (int i = 0; i < MAX_PLATFORMS; i++) {
+        // for (long unsigned int i = 0; i < MAX_PLATFORMS; i++) {
         //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
         // }
 
@@ -2755,7 +2755,7 @@ void BuildTrianglesAndAddToVirtualScene(ObjModel* model)
     std::vector<float>  texture_coefficients;
     std::vector<float>  texture_selector_coefficients;
     std::map<int, float> fallback_texture_unit_by_material_id;
-    float next_fallback_texture_unit = 2.0f;
+    // float next_fallback_texture_unit = 2.0f;
 
     for (size_t shape = 0; shape < model->shapes.size(); ++shape)
     {
@@ -3549,7 +3549,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window)
 
     float pad = TextRendering_LineHeight(window);
 
-    char buffer[80];
+    // char buffer[80];
     // snprintf(buffer, 80, "Player Pos = X(%.2f) Y(%.2f) Z(%.2f)\n", player.position.x, player.position.y, player.position.z);
     // TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
 

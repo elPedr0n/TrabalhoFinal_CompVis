@@ -89,7 +89,6 @@ SwampfireAnimResult computeSwampfireAnimation(const tinygltf::Model& model,
             // If jumping, we skip attack handling and keep pending fireball
         } else {
         bool e_is_down = key_down(GLFW_KEY_E);
-        bool e_just_pressed = e_is_down && !state.e_key_was_down;
         state.e_key_was_down = e_is_down;
 
         // Allow continuous punching if E is held down
@@ -300,7 +299,6 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
         state.is_attacking = false;
     } else {
     bool e_is_down = key_down(GLFW_KEY_E);
-    bool e_just_pressed = e_is_down && !state.e_key_was_down;
     state.e_key_was_down = e_is_down;
 
     if (!e_is_down) {
@@ -309,7 +307,6 @@ BenAnimResult computeBenAnimation(const tinygltf::Model& model,
     }
 
     bool q_is_down = key_down(GLFW_KEY_Q);
-    bool q_just_pressed = q_is_down && !state.q_key_was_down;
     state.q_key_was_down = q_is_down;
 
     // Allow continuous punching if E is held down
@@ -641,7 +638,7 @@ BigChillAnimResult computeBigChillCloakedAnimation(const tinygltf::Model& model,
             current_anim_index = 0; // Special attack
             state.q_attack_timer += delta_t * 3.0f; // sped up
             float max_attack_time = 0.0f;
-            if (current_anim_index < model.animations.size()) {
+            if (current_anim_index < (int) model.animations.size()) {
                 const auto& anim = model.animations[current_anim_index];
                 float max_t = 0.0f;
                 for (const auto& samp : anim.samplers) {
@@ -660,7 +657,7 @@ BigChillAnimResult computeBigChillCloakedAnimation(const tinygltf::Model& model,
             current_anim_index = 5; // Punch Combo
             state.attack_timer += delta_t * 2.0f; // Sped up punch
             float max_attack_time = 0.0f;
-            if (current_anim_index < model.animations.size()) {
+            if (current_anim_index < (int) model.animations.size()) {
                 const auto& anim = model.animations[current_anim_index];
                 float max_t = 0.0f;
                 for (const auto& samp : anim.samplers) {
@@ -802,7 +799,7 @@ BigChillAnimResult computeBigChillBen10Animation(const tinygltf::Model& model,
             current_anim_index = 9; // Levitate Entrance (Special attack)
             state.q_attack_timer += delta_t * 1.5f;
             float max_attack_time = 0.0f;
-            if (current_anim_index < model.animations.size()) {
+            if (current_anim_index < (int) model.animations.size()) {
                 const auto& anim = model.animations[current_anim_index];
                 float max_t = 0.0f;
                 for (const auto& samp : anim.samplers) {
@@ -821,7 +818,7 @@ BigChillAnimResult computeBigChillBen10Animation(const tinygltf::Model& model,
             current_anim_index = 2; // Fighting Left Jab
             state.attack_timer += delta_t * 1.5f;
             float max_attack_time = 0.0f;
-            if (current_anim_index < model.animations.size()) {
+            if (current_anim_index < (int) model.animations.size()) {
                 const auto& anim = model.animations[current_anim_index];
                 float max_t = 0.0f;
                 for (const auto& samp : anim.samplers) {
