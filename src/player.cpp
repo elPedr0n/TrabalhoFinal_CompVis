@@ -146,7 +146,7 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         player.speed.y = 0.0f;
         colidiu_com_chao = true;
         
-        if (!player.is_dead) {
+        if (!player.is_dead && !player.has_won) {
             player.health = 0.0f;
             player.is_dead = true;
             player.death_timer = 0.0f;
@@ -198,7 +198,7 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
 }
 
 void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos) {
-    if (player.is_dead) return;
+    if (player.is_dead || player.has_won) return;
 
     glm::vec3 knockback_dir = player.position - damage_source_pos;
     knockback_dir.y = 0.0f;

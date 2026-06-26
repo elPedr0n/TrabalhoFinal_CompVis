@@ -1674,3 +1674,7 @@ PROMPT: Quero que me identifique onde estao sendo calculadas as colisões dentro
 ### Commit com IA: Arrumei mais warnings assim como corrigi as sombras e troca de câmera para ser baseada na posição do jogador 
 
 PROMPT: mais uma coisa, consegue me ajustar algo sobre a troca dos modos de camera, quando estou ao final do jogo, na ultima camera fixa, se estiver na livre e trocar, ele itera por todas, n consegue fazer um calculo abseado na posição do jogador?
+
+### Commit com IA: Commit final oficial ultra mega blaster, condição de vitória e timer corrigido
+
+PROMPT: A condição de vitória apresenta alguns problemas. Após ganhar e respawnar, o contador exibido quando o jogador ganha fica bugado (tanto de tempo, quanto de inimigos e etc.) Além disso, após ganhar, deixe o jogador invulnerável e espere 10 segundos (ele não deve morrer se cair no mar tóxico também). após esse tempo, force um respawn (não mude a tela de vitória, ela não deve mostrar "respawning in..." ou algo parecido. ainda mantenha o texto de Press ENTER to respawn e sua funcionalidade

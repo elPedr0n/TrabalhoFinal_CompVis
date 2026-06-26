@@ -171,7 +171,7 @@ void UpdateEnemies() {
                     }
                     if (has_i_spawners && all_i_spawners_dead) {
                         player.has_won = true;
-                        player.final_time = (float)glfwGetTime() - player.start_time;
+                        player.final_time = (float)glfwGetTime();
                         printf("You won! All special enemies defeated!\n");
                     }
                 }
@@ -369,7 +369,7 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
             }
             if (has_i_spawners && all_i_spawners_dead) {
                 player.has_won = true;
-                player.final_time = (float)glfwGetTime() - player.start_time;
+                player.final_time = (float)glfwGetTime();
                 printf("You won! All special enemies defeated!\n");
             }
         }

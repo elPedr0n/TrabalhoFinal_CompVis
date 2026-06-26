@@ -1113,6 +1113,8 @@ int main(int argc, char* argv[])
     // keep swampfire_state alive for the main loop (defined above)
 
     bool inner_loop_running = true;
+    bool was_dead = false;
+    bool was_won = false;
     PlayMusic("../../data/sounds/song1.mp3", true);
     while (inner_loop_running && !glfwWindowShouldClose(window))
     {
@@ -1126,8 +1128,6 @@ int main(int argc, char* argv[])
             }
         }
 
-        static bool was_dead = false;
-        static bool was_won = false;
         
         if (player.is_dead && !was_dead) {
             was_dead = true;
@@ -2301,6 +2301,10 @@ int main(int argc, char* argv[])
             player.death_timer += delta_t;
             if (player.final_time == 0.0f) {
                 player.final_time = (float)glfwGetTime();
+            }
+
+            if (player.has_won && player.death_timer > 10.0f) {
+                inner_loop_running = false;
             }
 
             if (player.death_timer > 2.5f) {
