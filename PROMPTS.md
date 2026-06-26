@@ -1665,3 +1665,8 @@ PROMPT 6: modifique o spawn do tipo comum para gerar somente um inimigo, e o spa
 PROMPT 1: adicione os comentário FONTE onde necessário (código externo)
 
 PROMPT 2: ao acertar um quebrável com o ataque especial do big chill, o som toca muito alto, pois está sendo colidido várias vezes por instante. como corrigir isso?
+
+
+### Commit com IA: Refatoração final da colisão para um arquivo separado
+
+PROMPT: Quero que me identifique onde estao sendo calculadas as colisões dentro de cada arquivo. Depois, coloque a implementação dessas funções em um arquivo collisions.cpp . Mantenha a declaração dos métodos de AABB dentro de structs.h, para deixar organizado.
