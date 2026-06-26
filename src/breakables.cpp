@@ -100,7 +100,10 @@ void ApplyDamageToBreakable(int id, float damage) {
         
         player.objects_destroyed++;
     } else {
-        PlaySoundEffect("../../data/sounds/break_hit.wav");
+        if (g_breakables[id].sound_cooldown <= 0.0f) {
+            PlaySoundEffect("../../data/sounds/break_hit.wav");
+            g_breakables[id].sound_cooldown = 0.25f; // toca no máximo uma vez a cada 0.25s
+        }
     }
 }
 
@@ -110,10 +113,13 @@ void UpdateBreakables() {
         
         if (g_breakables[i].is_flinching) {
             g_breakables[i].flinch_timer += delta_t;
-            if (g_breakables[i].flinch_timer > 0.2f) { // Flinch duration
+            if (g_breakables[i].flinch_timer > 0.2f) {
                 g_breakables[i].is_flinching = false;
             }
         }
+
+        if (g_breakables[i].sound_cooldown > 0.0f)
+            g_breakables[i].sound_cooldown -= delta_t;
         
         // Gravity
         g_breakables[i].velocity_y += gravidade * delta_t;

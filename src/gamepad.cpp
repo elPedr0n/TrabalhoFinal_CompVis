@@ -11,6 +11,9 @@ extern float g_CameraTheta;
 extern float g_CameraPhi;
 
 void InitGamepadMappings() {
+    // FONTE: Arquivo gamecontrollerdb.txt com mapeamentos de gamepads para uso com GLFW.
+    // Repositório: https://github.com/gabomdq/SDL_GameControllerDB
+    // Licença: MIT License
     std::ifstream file("../../data/gamecontrollerdb.txt");
     if (!file.is_open()) {
         std::cerr << "[Gamepad] Aviso: Nao foi possivel abrir ../../data/gamecontrollerdb.txt" << std::endl;

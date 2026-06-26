@@ -31,6 +31,10 @@
  * policies, either expressed or implied, of Nicolas P. Rougier.
  * ============================================================================
  */
+// FONTE: Bitmap de fonte DejaVu Sans gerado pelo projeto freetype-gl de Nicolas P. Rougier.
+// Repositório: https://github.com/rougier/freetype-gl
+// Fonte original DejaVu: https://dejavu-fonts.github.io/
+// Licença: BSD 2-Clause (ver bloco de copyright acima)
 #include <stddef.h>
 #include <stdint.h>
 #ifdef __cplusplus

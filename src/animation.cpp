@@ -1,8 +1,11 @@
 #include "animation.h"
 #include "matrices.h"
 #include <algorithm>
+
+// FONTE: Biblioteca GLM (OpenGL Mathematics)
+// Repositório: https://github.com/g-truc/glm
+// Licença: MIT License
 #include <glm/gtc/matrix_transform.hpp>
-// Need GLFW key definitions for the Swampfire state machine
 #include <GLFW/glfw3.h>
 
 #include "globals.h"

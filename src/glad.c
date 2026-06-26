@@ -18,6 +18,13 @@
         http://glad.dav1d.de/#profile=compatibility&language=c&specification=gl&loader=on&api=gl%3D3.3
 */
 
+// FONTE: Arquivo gerado automaticamente pela ferramenta GLAD (OpenGL Loader Generator).
+// Repositório: https://github.com/Dav1dde/glad
+// Gerador online: https://glad.dav1d.de/
+// Licença: MIT License
+// Este arquivo carrega os ponteiros de função OpenGL 3.3 em tempo de execução.
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

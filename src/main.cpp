@@ -31,22 +31,40 @@
 #include <stdexcept>
 #include <algorithm>
 
-// Headers das bibliotecas OpenGL
+// FONTE: Biblioteca GLAD (OpenGL Loader) para carregamento de funções OpenGL 3.3.
+// Repositório: https://glad.dav1d.de / https://github.com/Dav1dde/glad
+// Licença: MIT License
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
+
+// FONTE: Biblioteca GLFW para criação de janelas e captura de input (teclado, mouse, gamepad).
+// Repositório: https://github.com/glfw/glfw
+// Licença: zlib/libpng License
 #include <GLFW/glfw3.h>  // Criação de janelas do sistema operacional
 
-// Headers da biblioteca GLM: criação de matrizes e vetores.
+// FONTE: Biblioteca GLM (OpenGL Mathematics) para tipos matemáticos (vetores, matrizes, quaternions).
+// Repositório: https://github.com/g-truc/glm
+// Licença: MIT License
+// Apenas os tipos de dados são utilizados.
+// todas as transformações são implementadas manualmente em matrices.h.
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtc/type_ptr.hpp>
 // Quaternion helpers for slerp
 #include <glm/gtc/quaternion.hpp>
 
-// Headers da biblioteca para carregar modelos obj
+// FONTE: Biblioteca tinyobjloader para carregamento de modelos OBJ/MTL.
+// Repositório: https://github.com/tinyobjloader/tinyobjloader
+// Licença: MIT License
 #include <tiny_obj_loader.h>
+
+// FONTE: Biblioteca stb_image para carregamento de texturas (PNG, JPG, BMP, etc.).
+// Repositório: https://github.com/nothings/stb
+// Licença: MIT License / Public Domain
 #include <stb_image.h>
 
-// Headers da biblioteca para carregar modelos glTF
+// FONTE: Biblioteca tinygltf para carregamento de modelos glTF 2.0.
+// Repositório: https://github.com/syoyo/tinygltf
+// Licença: MIT License
 #include <tiny_gltf.h>
 #include <gltf_utils.h>
 
@@ -83,7 +101,7 @@ struct ObjModel
     std::map<std::string, std::vector<float>> face_texture_selector_by_shape;
 
     // Este construtor lê o modelo de um arquivo utilizando a biblioteca tinyobjloader.
-    // Veja: https://github.com/syoyo/tinyobjloader
+    // FONTE: https://github.com/syoyo/tinyobjloader
     ObjModel(const char* filename, const char* basepath = NULL, bool triangulate = true)
     {
         printf("Carregando objetos do arquivo \"%s\"...\n", filename);

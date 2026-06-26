@@ -31,8 +31,10 @@ struct Breakable {
     
     bool is_flinching;
     float flinch_timer;
-    
-    Breakable() : active(false), is_flinching(false), flinch_timer(0.0f) {}
+
+    float sound_cooldown;
+
+    Breakable() : active(false), is_flinching(false), flinch_timer(0.0f), sound_cooldown(0.0f) {}
 };
 
 extern Breakable g_breakables[MAX_BREAKABLES];

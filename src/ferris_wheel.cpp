@@ -3,6 +3,9 @@
 #include "matrices.h"
 
 #include <glad/glad.h>
+
+// FONTE: Biblioteca GLM (OpenGL Mathematics) — usada para tipos matemáticos e quaternions.
+// Repositório: https://github.com/g-truc/glm — Licença: MIT License
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>

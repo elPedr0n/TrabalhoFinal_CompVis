@@ -1,4 +1,7 @@
 #include "sound.h"
+// FONTE: Biblioteca miniaudio para reprodução de áudio (WAV, MP3, FLAC, etc.).
+// Repositório: https://github.com/mackron/miniaudio
+// Licença: MIT-0 / Public Domain
 #define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio.h"
 #include <iostream>

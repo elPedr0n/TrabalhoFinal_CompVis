@@ -1,5 +1,3 @@
-// Based on http://hamelot.io/visualization/opengl-text-without-any-external-libraries/
-//   and on https://github.com/rougier/freetype-gl
 #include <string>
 
 #include <glad/glad.h>
@@ -9,6 +7,10 @@
 #include <glm/vec4.hpp>
 
 #include "utils.h"
+
+// Fonte do bitmap de caracteres: DejaVu Fonts (include/dejavufont.h)
+//   https://dejavu-fonts.github.io/
+//   Licença: DejaVu Fonts License (sem restrições de uso/redistribuição)
 #include "dejavufont.h"
 
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Função definida em main.cpp

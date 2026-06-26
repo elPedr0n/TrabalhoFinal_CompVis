@@ -4,6 +4,9 @@
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
+
+// FONTE: Biblioteca GLM (OpenGL Mathematics) — usada para tipos matemáticos (glm::vec3, glm::mat4)
+// e funções utilitárias. Repositório: https://github.com/g-truc/glm — Licença: MIT License
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "matrices.h"

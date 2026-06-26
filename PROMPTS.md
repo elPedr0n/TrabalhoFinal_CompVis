@@ -1659,3 +1659,9 @@ PROMPT 4: Os inimigos estão sendo gerados e caindo no além. Além disso, nem t
 PROMPT 5: os inimigos gerados caem, ficam presos no chão e logo caem pro abismo e morrem. Conserte isso, cheque a colisão dos inimigos com o chão.
 
 PROMPT 6: modifique o spawn do tipo comum para gerar somente um inimigo, e o spawn do tipo especial para gerar 2.  As contagens de inimigos gerados por spawn devem reiniciar quando o jogador reiniciar também.
+
+### Commit com IA: Adicionadas comentários de FONTE para código externo e corrigido bug de áudio em quebráveis
+
+PROMPT 1: adicione os comentário FONTE onde necessário (código externo)
+
+PROMPT 2: ao acertar um quebrável com o ataque especial do big chill, o som toca muito alto, pois está sendo colidido várias vezes por instante. como corrigir isso?
