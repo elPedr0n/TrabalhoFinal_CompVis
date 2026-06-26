@@ -79,4 +79,7 @@ Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve
 
 ## Utilização de IA no desenvolvimento
 
-## Imagens da aplicação
+### Imagens da aplicação
+![Ben Tennyson dançando](data/relatorio_imagens/ben_dancando.png)
+![Big Chill pulando](data/relatorio_imagens/big_chill.png)
+![Swampfire usando ataque especial](data/relatorio_imagens/swampfire.png)
