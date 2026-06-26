@@ -47,23 +47,17 @@ Por padrão, o jogo apresenta várias câmeras fixas, entre as quais o jogador a
 Para compilar e executar o projeto, siga os passos abaixo:
 1. Certifique-se de ter o **CMake** instalado em seu sistema. Caso não tenha, você pode baixá-lo em: https://cmake.org/download/
 2. Abra um terminal e navegue até o diretório raiz do projeto.
-3. Crie um diretório de compilação e navegue até ele:
+3. Crie um diretório de compilação:
    ```bash
-   mkdir build
-   cd build
+   cmake -B build -S .
    ```
-4. Execute o comando CMake para gerar os arquivos de compilação:
+4. Execute o jogo com o seguinte comando:
    ```bash
-   cmake ..
+   cmake --build build -- run
    ```
-5. Compile o projeto usando o comando:
-   ```bash
-    cmake --build .
-    ```
-6. Após a compilação, execute o jogo com o comando:
-   ```bash
-   ./TrabalhoFinal_CompVis
-   ```
+
+## Sobre a colisão
+A colisão de todos os objetos do jogo estão sendo feitas tomando base uma estrutura AABB (Axis-Aligned Bounding Box). Em `include/struct.h` temos a definição de sua estrutura, sendo ela resumida em 2 vetores de posição, um para coordenadas máximas e outro para as mínimas. Quando criamos os objetos do mundo, sempre deixamos atrelados a eles uma *bbox* usando dessa estrutura, assim podendo ser usados os métodos de intersecção e *clipping*. A lógica de colisão entre os objetos são feitas por funções dentro do arquivo `src/collisions.cpp`. Temos definidas funções de colisões com o mapa (utilizadas pelo player, inimigos e projéteis), colisões com inimigos (utilizada pelo player) e dos ataques de cada modelos dos aliens. 
 
 ## Contribuição de cada desenvolvedor no projeto
 Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve uma função mais destacada em algumas partes do desenvolvimento. Segue abaixo as principais contribuições de cada desenvolvedor:
@@ -71,7 +65,10 @@ Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve
 #### Pedro Henrique Moreira de Andrade Jacinto:
 - Implementação do sistema de colisão e física do jogo;
 - Implementação do sistema de câmeras, incluindo o posicionamento das câmeras fixas e a transição entre elas;
-- Implementação do sistema de iluminação, incluindo a iluminação global e a iluminação local dependente do alien selecionado;
+- Implementação do sistema de iluminação
+  - Iluminação global modificada da original a fim de parecer mais a noite; 
+  - Iluminação local dependente do alien selecionado;
+  - Iluminação por point lights em lguns pontos do mapa a fim de parecerem postes com luz amarela;
 - Design e implementação do mapa do jogo, incluindo:
   - Colisões com os elementos do mapa e design de fase;
   - Implementação dos modelos fixos como a roda gigante, o castelo, o barco, as barracas, os troncos e as cercas;
@@ -103,7 +100,7 @@ Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve
 Utilizamos a ferramenta Antigravity, equipado com Gemini 3.1 Pro, Claude Sonnet 4.6 e Claude Opus 4.6 para auxiliar no desenvolvimento do projeto. A IA foi utilizada para gerar código, revisar e refatorar código existente e sugerir implementações e soluções para problemas encontrados. Outras, como o ChatGPT, foram usadas para a geração de prompts para serem executados no Antigravity. Grande parte das funcionalidades tiveram a base construída com auxílio de IA, com refinamento e ajustes feitos manualmente pelos desenvolvedores, ou tiveram a estrutura original criada manualmente e a IA foi utilizada para corrigir e refatorar. A IA foi extremamente útil para acelerar o desenvolvimento, dando o pontapé inicial para funções que não havíamos experiência, e teve alta taxa de sucesso para converter ideias e correções em código funcional. Ao mesmo tempo, muitos detalhes finos relacionados a manipulação de modelos (que tiveram que ser manipulados usando ferramentas externas, como o Blender) e ajustes relacionados a posicionamento de objetos, balanceamento e jogabilidade precisaram ser feitos manualmente, para garantir que a experiência real do jogador fizesse sentido e fosse satisfatória.
 
 ## Vídeo de demonstração
-[![Vídeo de demonstração](data/relatorio_imagens/video_demo.jpg)](https://youtu.be/d9BaX9D_a-s)
+[Link para vídeo de demonstração](https://youtu.be/d9BaX9D_a-s?si=8L24X82tkZRLtqNa)
 
 ## Imagens da aplicação
 ![Ben Tennyson dançando](data/relatorio_imagens/ben_dancando.png)
