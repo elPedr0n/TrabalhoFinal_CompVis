@@ -86,7 +86,7 @@ void UpdateCollectibles() {
         if (g_collectibles[i].timer > 0.5f) {
             bool can_collect = false;
             if (g_collectibles[i].type == 0 && player.health < player.max_health) can_collect = true;
-            if (g_collectibles[i].type == 1 && player.transform_energy < player.max_transform_energy) can_collect = true;
+            if (g_collectibles[i].type == 1 && player.transform_energy < player.max_transform_energy && !g_is_detransforming) can_collect = true;
             if (g_collectibles[i].type == 2 && player.special_energy < player.max_special_energy) can_collect = true;
 
             // Magnetic effect

@@ -21,8 +21,8 @@ Por padrão, o jogo apresenta várias câmeras fixas, entre as quais o jogador a
 |              Pulo              |  Espaço |                  A (Xbox) / X (PlayStation)                 |
 |          Ataque básico         |    E    |                  X (Xbox) / □ (PlayStation)                 |
 |         Ataque especial        |    Q    |                  Y (Xbox) / △ (PlayStation)                 |
-|  Transformar / Destransformar  |    Z    |                 RB (Xbox) / R1 (PlayStation)                |
-|  Trocar alienígena selecionado |    X    | D-Pad esquerdo/direito / LB-RB (Xbox) / L1-R1 (PlayStation) |
+|  Transformar / Destransformar  |    Z    |            RB e B (Xbox) / R1 e O (PlayStation)             |
+|  Trocar alienígena selecionado |    X    |         D-Pad / LB-RB (Xbox) / L1-R1 (PlayStation)          |
 |           Emote (Ben)          |    G    |                 RS (Xbox) / R3 (PlayStation)                |
 |          Trocar câmera         |    C    |             Select (Xbox) / Share (PlayStation)             |
 |            Confirmar           |  Enter  |                            Start                            |

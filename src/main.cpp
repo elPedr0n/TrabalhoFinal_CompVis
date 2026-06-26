@@ -514,6 +514,8 @@ std::vector<GLuint> g_LoadedSamplerIDs;
 
 // Vetor global para movimentação
 bool keys[1024] = {false};
+bool g_is_in_game = false;
+bool g_is_detransforming = false;
 
 Player player;
 
@@ -1116,6 +1118,7 @@ int main(int argc, char* argv[])
     bool was_dead = false;
     bool was_won = false;
     PlayMusic("../../data/sounds/song1.mp3", true);
+    g_is_in_game = true;
     while (inner_loop_running && !glfwWindowShouldClose(window))
     {
         UpdateSoundSystem();
@@ -1170,21 +1173,20 @@ int main(int argc, char* argv[])
                     player.transform_energy = player.max_transform_energy;
                 }
             } else {
-                static bool is_waiting_oops = false;
-                if (!is_waiting_oops) {
+                if (!g_is_detransforming) {
                     player.transform_energy -= (100.0f / 40.0f) * delta_t; // Dura 40s
                 }
                 
                 if (player.transform_energy <= 0.0f) {
                     player.transform_energy = 0.0f;
                     
-                    if (!is_waiting_oops) {
-                        is_waiting_oops = true;
+                    if (!g_is_detransforming) {
+                        g_is_detransforming = true;
                         PlayOopsSound();
                     }
                     
-                    if (is_waiting_oops && IsOopsSoundFinished()) {
-                        is_waiting_oops = false;
+                    if (g_is_detransforming && IsOopsSoundFinished()) {
+                        g_is_detransforming = false;
                         
                         // Force revert to Ben
                         PlayDetransformSound("../../data/sounds/omnitrix_detransform.wav");
@@ -2420,6 +2422,7 @@ int main(int argc, char* argv[])
         ProcessGamepadInput(window);
 
     } // end of inner loop
+    g_is_in_game = false;
     } // end of outer loop
 
     // Finalizamos o uso dos recursos do sistema operacional
@@ -3350,6 +3353,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     // laboratórios. Deve ser sempre o primeiro comando desta função KeyCallback().
     Correcao_KeyCallback(key, action, mod);
     // =======================
+
+    if (!g_is_in_game && key != GLFW_KEY_ENTER && key != GLFW_KEY_ESCAPE) {
+        return;
+    }
 
     // Keep keys[] mapping for continuous input handling (was in KeyMapping)
     if (action == GLFW_PRESS)

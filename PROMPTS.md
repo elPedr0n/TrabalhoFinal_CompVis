@@ -1678,3 +1678,9 @@ PROMPT: mais uma coisa, consegue me ajustar algo sobre a troca dos modos de came
 ### Commit com IA: Commit final oficial ultra mega blaster, condição de vitória e timer corrigido
 
 PROMPT: A condição de vitória apresenta alguns problemas. Após ganhar e respawnar, o contador exibido quando o jogador ganha fica bugado (tanto de tempo, quanto de inimigos e etc.) Além disso, após ganhar, deixe o jogador invulnerável e espere 10 segundos (ele não deve morrer se cair no mar tóxico também). após esse tempo, force um respawn (não mude a tela de vitória, ela não deve mostrar "respawning in..." ou algo parecido. ainda mantenha o texto de Press ENTER to respawn e sua funcionalidade
+
+### Commit com IA: Na real agora é o commit final oficial, bugs mínimos corrigidos e controles atualizados!
+
+PROMPT 1: Todos os inputs além do start só devem funcionar quando o jogo em si estiver rodando não tendo nenhum efeito na tela inicial ou de carregamento
+
+PROMPT 2: Existe um bug. Se o jogador pegar um orbe verde enquanto estiver se destransformando (som de destransformação tocando), ele para de se destransformar e nunca mais perde energia de transformação. Quando o jogador estiver se destransformando, ele não deve ser capaz de ganhar energia de transformação nem absorver orbes de transformação. Foco na tarefa!

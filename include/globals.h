@@ -38,6 +38,8 @@ void UpdateCollectibles();
 #include "map.h"
 
 extern bool keys[1024];
+extern bool g_is_in_game;
+extern bool g_is_detransforming;
 
 extern struct Player player;
 
