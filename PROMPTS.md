@@ -1670,3 +1670,7 @@ PROMPT 2: ao acertar um quebrável com o ataque especial do big chill, o som toc
 ### Commit com IA: Refatoração final da colisão para um arquivo separado
 
 PROMPT: Quero que me identifique onde estao sendo calculadas as colisões dentro de cada arquivo. Depois, coloque a implementação dessas funções em um arquivo collisions.cpp . Mantenha a declaração dos métodos de AABB dentro de structs.h, para deixar organizado.
+
+### Commit com IA: Arrumei mais warnings assim como corrigi as sombras e troca de câmera para ser baseada na posição do jogador 
+
+PROMPT: mais uma coisa, consegue me ajustar algo sobre a troca dos modos de camera, quando estou ao final do jogo, na ultima camera fixa, se estiver na livre e trocar, ele itera por todas, n consegue fazer um calculo abseado na posição do jogador?

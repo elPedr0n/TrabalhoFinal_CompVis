@@ -51,6 +51,7 @@ extern float g_CameraDistance;
 
 extern float g_MovementTheta;
 extern bool g_UseFixedCameras;
+extern bool g_CameraJustSwitched;
 extern bool g_IsMovementBuffered; 
 
 extern glm::vec3 bigchill_size;

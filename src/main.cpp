@@ -377,6 +377,7 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 float g_CameraTheta = 1.26f; // Ângulo no plano ZX em relação ao eixo Z
 float g_MovementTheta = 1.26f;
 bool g_UseFixedCameras = true;
+bool g_CameraJustSwitched = false;
 bool g_IsMovementBuffered = false;
 float g_CameraPhi = 0.22f;   // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
@@ -1274,6 +1275,21 @@ int main(int argc, char* argv[])
             glm::vec4(7.91, 1.49, -95.32, 1.0f)
         };
         static int current_camera_idx = 0;
+
+        if (g_CameraJustSwitched) {
+            g_CameraJustSwitched = false;
+            float min_dist = 999999.0f;
+            int best_idx = 0;
+            glm::vec3 p_pos(player.position.x, player.position.y + 1.0f, player.position.z);
+            for (size_t i = 0; i < fixed_camera_lookats.size(); i++) {
+                float dist = glm::distance(p_pos, glm::vec3(fixed_camera_lookats[i]));
+                if (dist < min_dist) {
+                    min_dist = dist;
+                    best_idx = (int)i;
+                }
+            }
+            current_camera_idx = best_idx;
+        }
 
         if (g_UseFixedCameras) {
             camera_position_c = fixed_camera_positions[current_camera_idx];
@@ -3427,6 +3443,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     if (key == GLFW_KEY_C && action == GLFW_PRESS)
     {
         g_UseFixedCameras = !g_UseFixedCameras;
+        if (g_UseFixedCameras) {
+            g_CameraJustSwitched = true;
+        }
     }
 
     // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.

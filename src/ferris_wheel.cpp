@@ -86,9 +86,12 @@ glm::vec3 get_mesh_center(const tinygltf::Model& model, int mesh_idx) {
     float min_x = 1e9, max_x = -1e9, min_y = 1e9, max_y = -1e9, min_z = 1e9, max_z = -1e9;
     for (size_t i = 0; i < accessor.count; i++) {
         float x = positions[i*3 + 0]; float y = positions[i*3 + 1]; float z = positions[i*3 + 2];
-        if (x < min_x) min_x = x; if (x > max_x) max_x = x;
-        if (y < min_y) min_y = y; if (y > max_y) max_y = y;
-        if (z < min_z) min_z = z; if (z > max_z) max_z = z;
+        if (x < min_x) min_x = x; 
+        if (x > max_x) max_x = x;
+        if (y < min_y) min_y = y; 
+        if (y > max_y) max_y = y;
+        if (z < min_z) min_z = z; 
+        if (z > max_z) max_z = z;
     }
     return glm::vec3((min_x+max_x)/2.0f, (min_y+max_y)/2.0f, (min_z+max_z)/2.0f);
 }

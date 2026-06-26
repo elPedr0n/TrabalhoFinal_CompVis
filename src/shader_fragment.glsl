@@ -644,7 +644,7 @@ void main()
         }
 
         // Sombra do jogador no chão (translúcida e fidedigna à altura)
-        if (object_id == GROUND || object_id == PLANE) {
+        if (object_id == GROUND || object_id == PLANE || object_id == 60) {
             float shadow_radius = 0.35; // Raio fixo
             
             float dist_xz = distance(position_world.xz, player_position.xz);
