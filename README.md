@@ -79,7 +79,7 @@ Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve
 - Resolução de merges em casos de conflitos complexos.
 
 #### João Pedro Simon Figueiró:
-- Refinamento dos modelos e animações do jogador e dos inimigos;
+- Refinamento dos modelos e implementação de animações do jogador e dos inimigos;
 - Refinamento do sistema de ataques e habilidades do jogador, incluindo:
   - Ataques básicos e especiais, com barra dedicada;
   - Sistema de transformação entre os aliens, com barra dedicada;
