@@ -2,31 +2,17 @@
 
 **Nomes:** Pedro Henrique Moreira de Andrade Jacinto e João Pedro Simon Figueiró
 
->Este relatório tem como finalidade descrever o processo de desenvolvimento do nosso jogo, **Ben 10 Ben 10 Força Alienígena Ultra Remaster (OpenGL version)**.
+>Este relatório tem como finalidade descrever o processo de desenvolvimento do nosso jogo, **Ben 10 Força Alienígena Ultra Remaster (OpenGL version)**.
 
 ## Descrição da Aplicação
-O *Ben 10 Alien Force* é um jogo estilo *beat 'em up* de Playstation 2 em que podemos controlar o jovem Ben Tennyson. Graças ao Omnitrix, ele possui a capacidade de se transformar em diferentes aliens, derrotar vários inimigos e proteger a Terra. Nossa aplicação procurou adaptar uma porção da primeira fase do jogo original: *Knight-mare at the Pier*. 
-
-Temos uma ambientação adaptada, mas mantendo a essência da fonte. Elementos como uma roda gigante e barraquinhas são dispostos ao longo da fase, levando a uma seção de plataforma na qual o jogador deve pular entre troncos e um barco para alcançar o castelo. Abaixo do mapa, encontra-se um mar tóxico que mata instantaneamente qualquer um que cair nele.
-
-O jogador possui uma quantidade de pontos de vida representada pela barra vermelha. Se ela acabar, Ben morrerá e o jogador terá que reiniciar a fase. 
-
-Nessa fase, o jogador pode controlar Ben e duas de suas transformações alienígenas: *Swampfire* e *Big Chill*. Para se transformar, o jogador deve estar com sua barra de transformação cheia. Essa barra diminui enquanto Ben está transformado, e pode forçar a destransformação caso se esgote.
-
-Cada uma das formas jogáveis possui um ataque básico e um ataque especial que consome energia especial representada pela barra amarela, além de diferentes habilidades:
-- **Ben**: possui baixa resistência e ataques fracos. Seu ataque básico é um soco e seu ataque especial é um grande tapa, mas pode se transformar em um dos aliens para ter acesso a ataques mais poderosos;
-- **Swampfire**: possui alta resistência. Seu ataque básico consiste em uma sequência de golpes e seu ataque especial permite lançar uma bola de fogo, cujo tamanho e dano aumentam conforme o jogador carrega o ataque;
-- **Big Chill**: possui resistência moderada. Seu ataque básico consiste em uma sequência de socos de curto alcance e seu ataque especial permite liberar um sopro gelado contínuo que dá dano leve a inimigos e os congela, deixando-os mais lentos. Também possui a habilidade de pulo duplo no ar.
-
-Ao longo do trajeto, Ben encontra objetos quebráveis - bancos, caixas e ursinhos de pelúcia - que podem ser destruídos para liberar orbes que regeneram sua barra de vida, transformação ou energia especial. 
-
-Além disso, inimigos serão encontrados pelo caminho: os Cavaleiros Eternos. Ao serem eliminados, derrubam orbes que regeneram o jogador. Eles vêm em duas variedades:
-- **Cavaleiro básico**: inimigo com ataques de curto alcance. É mais resistente;
-- **Cavaleiro *ranged***: inimigo que ataca à distância, lançando projéteis em arco. É mais lento e menos resistente.
-
-O objetivo do jogo é percorrer o mapa, derrotar inimigos e chegar ao final da fase, onde Ben enfrenta um desafio final em frente ao castelo dos Cavaleiros Eternos. Ao derrotar todos os inimigos próximos ao castelo, Ben consegue completar a fase e vencer o jogo.
+O nosso jogo, *Ben 10 Força Alienígena Ultra Remaster (OpenGL version)*, é inspirado em *Ben 10 Alien Force*, um jogo estilo *beat 'em up* de Playstation 2 em que controlamos o jovem Ben Tennyson. Graças ao Omnitrix, ele possui a capacidade de se transformar em diferentes aliens, derrotar vários inimigos e proteger a Terra. Nossa aplicação procurou adaptar uma porção da primeira fase do jogo original: *Knight-mare at the Pier*. Temos uma ambientação adaptada, mas mantendo a essência da fonte. Elementos como uma roda gigante e barraquinhas são dispostos ao longo da fase, levando a uma seção de plataforma na qual o jogador deve pular entre troncos e um barco para alcançar o castelo. O objetivo do jogo é percorrer o mapa, derrotar inimigos e chegar ao final da fase usando as transformações alienígenas, onde Ben enfrenta um desafio final em frente ao castelo dos Cavaleiros Eternos. Após derrotar todos os inimigos próximos ao castelo, Ben consegue completar a fase e vencer o jogo.
 
 ## Manual do usuário
+
+### Câmeras
+Por padrão, o jogo apresenta várias câmeras fixas, entre as quais o jogador alterna conforme avança na fase. Também existe uma câmera em terceira pessoa que acompanha o jogador, que é controlável. É possível trocar entre o modo de câmeras fixas e a câmera em terceira pessoa a qualquer momento.
+
+### Controles
 
 |              Ação              | Teclado |                           Gamepad                           |
 | :----------------------------: | :-----: | :---------------------------------------------------------: |
@@ -41,7 +27,43 @@ O objetivo do jogo é percorrer o mapa, derrotar inimigos e chegar ao final da f
 |          Trocar câmera         |    C    |             Select (Xbox) / Share (PlayStation)             |
 |            Confirmar           |  Enter  |                            Start                            |
 
+### Mecânicas do jogo
+#### Barras
+- A **barra vermelha** representa a vida de Ben. Se ela acabar, Ben morrerá e o jogador terá que reiniciar a fase. Além disso, abaixo do mapa, encontra-se um mar tóxico que mata instantaneamente qualquer um que cair nele;
+- A **barra verde** representa a  energia de transformação de Ben. O jogador pode controlar Ben e duas de suas transformações alienígenas: *Swampfire* e *Big Chill*. Para se transformar, o jogador deve estar com sua barra de transformação cheia. Essa barra diminui enquanto Ben está transformado, e pode forçar a destransformação caso se esgote;
+- A **barra amarela** representa a energia especial de Ben e de suas transformações. Cada ataque especial consome energia especial, e a barra se regenera com o tempo.
+#### Ataques e habilidades
+- Cada uma das formas jogáveis possui um ataque básico e um ataque especial, além de diferentes habilidades:
+  - **Ben**: possui baixa resistência e ataques fracos. Seu ataque básico é um soco e seu ataque especial é um grande tapa. Ele pode se transformar em um dos aliens para ter acesso a ataques mais poderosos;
+  - **Swampfire**: possui alta resistência. Seu ataque básico consiste em uma sequência de golpes e seu ataque especial permite lançar uma bola de fogo, cujo tamanho e dano aumentam conforme o jogador carrega o ataque;
+  - **Big Chill**: possui resistência moderada. Seu ataque básico consiste em uma sequência de socos de curto alcance e seu ataque especial permite liberar um sopro gelado contínuo que dá dano leve a inimigos e os congela, deixando-os mais lentos. Também possui a habilidade de pulo duplo no ar.
+#### Inimigos e obstáculos
+- Inimigos serão encontrados pelo caminho: os Cavaleiros Eternos. Ao serem eliminados, derrubam orbes que regeneram o jogador. Eles vêm em duas variedades:
+  - **Cavaleiro básico**: inimigo com ataques de curto alcance. É mais resistente;
+  - **Cavaleiro *ranged***: inimigo que ataca à distância, lançando projéteis em arco. É mais lento e menos resistente.
+- Ao longo do trajeto, Ben encontra objetos quebráveis: bancos, caixas e ursinhos de pelúcia. Eles podem ser destruídos para liberar orbes que regeneram sua barra de vida (vermelhos), transformação (verdes) ou energia especial (amarelos). 
 
+## Compilação e execução
+Para compilar e executar o projeto, siga os passos abaixo:
+1. Certifique-se de ter o **CMake** instalado em seu sistema. Caso não tenha, você pode baixá-lo em: https://cmake.org/download/
+2. Abra um terminal e navegue até o diretório raiz do projeto.
+3. Crie um diretório de compilação e navegue até ele:
+   ```bash
+   mkdir build
+   cd build
+   ```
+4. Execute o comando CMake para gerar os arquivos de compilação:
+   ```bash
+   cmake ..
+   ```
+5. Compile o projeto usando o comando:
+   ```bash
+    cmake --build .
+    ```
+6. Após a compilação, execute o jogo com o comando:
+   ```bash
+   ./TrabalhoFinal_CompVis
+   ```
 
 ## Contribuição de cada desenvolvedor no projeto
 Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve uma função mais destacada em algumas partes do desenvolvimento. Segue abaixo as principais contribuições de cada desenvolvedor:
@@ -78,8 +100,12 @@ Embora ambos os desenvolvedores tenham contribuído para o projeto, cada um teve
 - Implementação do botão de *emote* para o jogador.
 
 ## Utilização de IA no desenvolvimento
+Utilizamos a ferramenta Antigravity, equipado com Gemini 3.1 Pro, Claude Sonnet 4.6 e Claude Opus 4.6 para auxiliar no desenvolvimento do projeto. A IA foi utilizada para gerar código, revisar e refatorar código existente e sugerir implementações e soluções para problemas encontrados. Outras, como o ChatGPT, foram usadas para a geração de prompts para serem executados no Antigravity. Grande parte das funcionalidades tiveram a base construída com auxílio de IA, com refinamento e ajustes feitos manualmente pelos desenvolvedores, ou tiveram a estrutura original criada manualmente e a IA foi utilizada para corrigir e refatorar. A IA foi extremamente útil para acelerar o desenvolvimento, dando o pontapé inicial para funções que não havíamos experiência, e teve alta taxa de sucesso para converter ideias e correções em código funcional. Ao mesmo tempo, muitos detalhes finos relacionados a manipulação de modelos (que tiveram que ser manipulados usando ferramentas externas, como o Blender) e ajustes relacionados a posicionamento de objetos, balanceamento e jogabilidade precisaram ser feitos manualmente, para garantir que a experiência real do jogador fizesse sentido e fosse satisfatória.
 
-### Imagens da aplicação
+## Vídeo de demonstração
+[![Vídeo de demonstração](data/relatorio_imagens/video_demo.jpg)](https://youtu.be/d9BaX9D_a-s)
+
+## Imagens da aplicação
 ![Ben Tennyson dançando](data/relatorio_imagens/ben_dancando.png)
 ![Big Chill pulando](data/relatorio_imagens/big_chill.png)
 ![Swampfire usando ataque especial](data/relatorio_imagens/swampfire.png)
