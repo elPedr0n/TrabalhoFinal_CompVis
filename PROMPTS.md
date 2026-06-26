@@ -1684,3 +1684,9 @@ PROMPT: A condição de vitória apresenta alguns problemas. Após ganhar e resp
 PROMPT 1: Todos os inputs além do start só devem funcionar quando o jogo em si estiver rodando não tendo nenhum efeito na tela inicial ou de carregamento
 
 PROMPT 2: Existe um bug. Se o jogador pegar um orbe verde enquanto estiver se destransformando (som de destransformação tocando), ele para de se destransformar e nunca mais perde energia de transformação. Quando o jogador estiver se destransformando, ele não deve ser capaz de ganhar energia de transformação nem absorver orbes de transformação. Foco na tarefa!
+
+### Commit com IA: AGORA SIM O FINAL, LAST DEBUGS DE BEN 10 ALIEN FORCE ULTRA REMASTER OPENGL EDITION
+
+PROMPT 1: So, theres one thing thats bugging me in the game. For the most part, mostly during the spawning of an enemy, the models are beeing draw behing the breakables, can you fix that?
+
+PROMPT 2: Another bug I found, whenever I change the type of camera, by pressing C, it seems to travel from the last point of fixed camera. Can you look into that?

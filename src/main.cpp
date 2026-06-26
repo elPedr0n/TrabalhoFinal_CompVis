@@ -2010,6 +2010,11 @@ int main(int argc, char* argv[])
         //     DrawBoundingBox(map[i].bbox, BBOX_DEBUG);
         // }
 
+        GLint override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "OverrideKd");
+        GLint use_override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "UseOverrideKd");
+        DrawBreakables(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
+        DrawFragments(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
+
         // Draw particles (after opaque geometry)
         Particles_Draw(g_VirtualScene, g_GpuProgramID, g_model_uniform, g_object_id_uniform, 1.0f);
 
@@ -2123,11 +2128,6 @@ int main(int argc, char* argv[])
             DrawBoundingBox(g_enemies[i].bbox, BUNNY);
         }
         glUniform1f(glGetUniformLocation(g_GpuProgramID, "enemy_alpha"), 1.0f);
-
-        GLint override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "OverrideKd");
-        GLint use_override_kd_uniform = glGetUniformLocation(g_GpuProgramID, "UseOverrideKd");
-        DrawBreakables(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
-        DrawFragments(g_model_uniform, g_object_id_uniform, override_kd_uniform, use_override_kd_uniform);
 
         // Draw Collectibles
         for (int i = 0; i < MAX_COLLECTIBLES; i++) {
@@ -3456,6 +3456,8 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_UseFixedCameras = !g_UseFixedCameras;
         if (g_UseFixedCameras) {
             g_CameraJustSwitched = true;
+        } else {
+            g_CameraTheta = player.rotate + 3.141592f;
         }
     }
 
