@@ -135,14 +135,8 @@ void UpdateEnemies() {
 
         // ===== GRAVITY =====
         float fall_y = gravidade * delta_t; 
-        for (int j = 0; j < g_num_platforms; j++) {
-            fall_y = g_enemies[i].bbox.GetClipY(map[j].bbox, fall_y);
-        }
-        for (int j = 0; j < MAX_BREAKABLES; j++) {
-            if (g_breakables[j].active) {
-                fall_y = g_enemies[i].bbox.GetClipY(g_breakables[j].bbox, fall_y);
-            }
-        }
+        fall_y = CheckMapCollisionY(g_enemies[i].bbox, fall_y);
+        fall_y = CheckBreakablesCollisionY(g_enemies[i].bbox, fall_y);
         g_enemies[i].position.y += fall_y;
         g_enemies[i].bbox = MakeAABBFromCenterSize(
             g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
@@ -324,26 +318,14 @@ void UpdateEnemies() {
             float move_z = direction_to_player.z * g_enemies[i].speed * (delta_t * time_scale);
 
             // Clip against map platforms (same pattern as player.cpp)
-            for (int j = 0; j < g_num_platforms; j++) {
-                move_x = g_enemies[i].bbox.GetClipX(map[j].bbox, move_x);
-            }
-            for (int j = 0; j < MAX_BREAKABLES; j++) {
-                if (g_breakables[j].active) {
-                    move_x = g_enemies[i].bbox.GetClipX(g_breakables[j].bbox, move_x);
-                }
-            }
+            move_x = CheckMapCollisionX(g_enemies[i].bbox, move_x);
+            move_x = CheckBreakablesCollisionX(g_enemies[i].bbox, move_x);
             g_enemies[i].position.x += move_x;
             g_enemies[i].bbox = MakeAABBFromCenterSize(
                 g_enemies[i].position + glm::vec3(0.0f, -0.1f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f));
 
-            for (int j = 0; j < g_num_platforms; j++) {
-                move_z = g_enemies[i].bbox.GetClipZ(map[j].bbox, move_z);
-            }
-            for (int j = 0; j < MAX_BREAKABLES; j++) {
-                if (g_breakables[j].active) {
-                    move_z = g_enemies[i].bbox.GetClipZ(g_breakables[j].bbox, move_z);
-                }
-            }
+            move_z = CheckMapCollisionZ(g_enemies[i].bbox, move_z);
+            move_z = CheckBreakablesCollisionZ(g_enemies[i].bbox, move_z);
             g_enemies[i].position.z += move_z;
         }
 
@@ -414,51 +396,3 @@ void ApplyDamageToEnemy(int enemy_id, float damage, bool cause_flinch) {
     }
 }
 
-void ProcessEnemyMeleeHitboxes()
-{
-    auto& player_bbox = player.characters[player.active_character].bbox;
-
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-        if (!g_enemies[i].visible) continue;
-        if (!g_enemies[i].punch_active) continue;
-        glm::vec3 forward = glm::vec3(
-            sin(g_enemies[i].rotate), 0.0f, cos(g_enemies[i].rotate));
-        
-        // Ajustando tamanho e alcance para casar com o ataque
-        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.6f, 0.8f);
-        float reach = 0.8f;
-        float height = 0.3f;
-
-        glm::vec3 center = g_enemies[i].position 
-                         + forward * reach 
-                         + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        
-        // Desenhamos a hitbox SEMPRE que punch_active for true
-        DrawBoundingBox(punch_box, BUNNY);
-
-        // Somente depois de desenhar, verificamos se já bateu no player para não contar dano duplo
-        if (g_enemies[i].has_hit_player) continue;
-
-        if (punch_box.Intersects(player_bbox)) {
-            printf("Enemy %d hit the player!\n", i);
-            g_enemies[i].has_hit_player = true;
-            if (rand() % 2 == 0) PlaySoundEffect("../../data/sounds/knight_slice1.wav");
-            else PlaySoundEffect("../../data/sounds/knight_slice2.wav");
-            if (!player.is_dead) {
-                glm::vec3 overlap_min = glm::max(punch_box.min, player_bbox.min);
-                glm::vec3 overlap_max = glm::min(punch_box.max, player_bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts;
-                popts.color = HexToRgb("#ffffff");
-                popts.life = 0.3f;
-                popts.scale = 0.15f;
-                popts.speed = 2.0f;
-                popts.count = 15;
-                Particles_Spawn(contact, popts);
-                
-                ApplyDamageToPlayer(50.0f, g_enemies[i].position);
-            }
-        }
-    }
-}

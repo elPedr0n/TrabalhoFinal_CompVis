@@ -68,4 +68,12 @@ bool ProcessSwampfireMeleeHitboxes(const SwampfireAnimResult& animRes, Swampfire
 bool ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id, bool just_triggered);
 bool ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id, bool just_triggered);
 
+void ResolvePlayerMapCollisions();
+float CheckMapCollisionX(AABB bbox, float move_x);
+float CheckMapCollisionY(AABB bbox, float move_y);
+float CheckMapCollisionZ(AABB bbox, float move_z);
+float CheckBreakablesCollisionX(AABB bbox, float move_x, int ignore_id = -1);
+float CheckBreakablesCollisionY(AABB bbox, float move_y, int ignore_id = -1);
+float CheckBreakablesCollisionZ(AABB bbox, float move_z, int ignore_id = -1);
+
 #endif

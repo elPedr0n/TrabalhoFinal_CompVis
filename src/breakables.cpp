@@ -126,16 +126,10 @@ void UpdateBreakables() {
         float move_y = g_breakables[i].velocity_y * delta_t;
         
         // Map collision
-        for (int j = 0; j < g_num_platforms; ++j) {
-            move_y = g_breakables[i].bbox.GetClipY(map[j].bbox, move_y);
-        }
+        move_y = CheckMapCollisionY(g_breakables[i].bbox, move_y);
 
         // Breakables collision
-        for (int j = 0; j < MAX_BREAKABLES; ++j) {
-            if (i != j && g_breakables[j].active) {
-                move_y = g_breakables[i].bbox.GetClipY(g_breakables[j].bbox, move_y);
-            }
-        }
+        move_y = CheckBreakablesCollisionY(g_breakables[i].bbox, move_y, i);
         
         g_breakables[i].position.y += move_y;
         

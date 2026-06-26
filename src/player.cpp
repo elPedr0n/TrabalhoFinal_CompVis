@@ -119,47 +119,21 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     auto& player_bbox = player.characters[player.active_character].bbox;
 
     // === EIXO Y ===
-    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
-        const auto& item = map[p_i];
-        // Reduz o move_vector_y se colidir com algo
-        move_vector_y = player_bbox.GetClipY(item.bbox, move_vector_y);
-        // printf("DeltaY: %f\n", move_vector_y);
-        
-    }
-    for (int i = 0; i < MAX_BREAKABLES; ++i) {
-        if (g_breakables[i].active) {
-            move_vector_y = player_bbox.GetClipY(g_breakables[i].bbox, move_vector_y);
-        }
-    }
+    move_vector_y = CheckMapCollisionY(player_bbox, move_vector_y);
+    move_vector_y = CheckBreakablesCollisionY(player_bbox, move_vector_y);
     // Move o jogador APENAS no Y antes de checar os outros eixos
     player.position.y += move_vector_y;
     // player_bbox.Move(0.0f, move_vector_y, 0.0f); 
 
     // === EIXO X ===
-    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
-        const auto& item = map[p_i];
-        move_vector_x = player_bbox.GetClipX(item.bbox, move_vector_x);
-        // printf("DeltaX: %f\n", move_vector_x);
-    }
-    for (int i = 0; i < MAX_BREAKABLES; ++i) {
-        if (g_breakables[i].active) {
-            move_vector_x = player_bbox.GetClipX(g_breakables[i].bbox, move_vector_x);
-        }
-    }
+    move_vector_x = CheckMapCollisionX(player_bbox, move_vector_x);
+    move_vector_x = CheckBreakablesCollisionX(player_bbox, move_vector_x);
     player.position.x += move_vector_x;
     // player_bbox.Move(move_vector_x, 0.0f, 0.0f);
 
     // === EIXO Z ===
-    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
-        const auto& item = map[p_i];
-        move_vector_z = player_bbox.GetClipZ(item.bbox, move_vector_z);
-        // printf("DeltaZ: %f\n", move_vector_z);
-    }
-    for (int i = 0; i < MAX_BREAKABLES; ++i) {
-        if (g_breakables[i].active) {
-            move_vector_z = player_bbox.GetClipZ(g_breakables[i].bbox, move_vector_z);
-        }
-    }
+    move_vector_z = CheckMapCollisionZ(player_bbox, move_vector_z);
+    move_vector_z = CheckBreakablesCollisionZ(player_bbox, move_vector_z);
     player.position.z += move_vector_z;
     // player_bbox.Move(0.0f, 0.0f, move_vector_z);
 
@@ -195,12 +169,6 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         }
     }
 
-    // 2. Zerar velocidades em caso de colisão (física real)
-    if (move_vector_x != original_x) {
-        // Bateu numa parede no eixo X
-        // player.position.x -= (original_x - move_vector_x); // Reverte o movimento que não aconteceu
-    }
-
     if (move_vector_y != original_y) {
         // Bateu no teto ou no chão
         player.speed.y = 0.0f; 
@@ -209,11 +177,6 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
         if (original_y < 0.0f) {
             colidiu_com_chao = true;
         }
-    }
-
-    if (move_vector_z != original_z) {
-        // Bateu numa parede no eixo Z
-        // player.position.z -= (original_z - move_vector_z); // Reverte o movimento que não aconteceu
     }
 
     // 3. Atualiza as variáveis de estado baseadas na colisão final
@@ -234,276 +197,6 @@ void UpdatePosition(bool can_move, bool can_rotate = false) {
     glm::vec3 size = player.active_character == 0 ? bigchill_size 
                : (player.active_character == 1 ? swampfire_size : bentennyson_size);
     player_bbox = makeAABBFromGround(player.position, size);
-}
-
-bool ProcessSwampfireMeleeHitboxes(const SwampfireAnimResult& animRes, SwampfireAnimState& state, int restore_object_id, bool just_triggered) 
-{
-    bool hit_something = false;
-    if (!animRes.punch1_active && !animRes.punch2_active) return hit_something;
-
-    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-    glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
-    float reach = 0.35f;
-    float height = 0.5f;
-
-    if (animRes.punch1_active) {
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
-            if (g_enemies[i].is_dead) continue;
-            if (state.punch1_hit_enemies.count(i)) continue;
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                printf("Punch 1 hit enemy %d!\n", i);
-                hit_something = true;
-                state.punch1_hit_enemies.insert(i);
-                ApplyDamageToEnemy(i, 20.0f);
-                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
-                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
-                Particles_Spawn(contact, popts);
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (state.punch1_hit_enemies.count(1000 + i)) continue; // offset to reuse set
-            if (punch_box.Intersects(g_breakables[i].bbox)) {
-                hit_something = true;
-                state.punch1_hit_enemies.insert(1000 + i);
-                ApplyDamageToBreakable(i, 20.0f);
-            }
-        }
-    }
-
-    if (animRes.punch2_active) {
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
-            if (g_enemies[i].is_dead) continue;
-            if (state.punch2_hit_enemies.count(i)) continue;
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                printf("Punch 2 hit enemy %d!\n", i);
-                hit_something = true;
-                state.punch2_hit_enemies.insert(i);
-                ApplyDamageToEnemy(i, 20.0f);
-                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
-                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
-                Particles_Spawn(contact, popts);
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (state.punch2_hit_enemies.count(1000 + i)) continue;
-            if (punch_box.Intersects(g_breakables[i].bbox)) {
-                hit_something = true;
-                state.punch2_hit_enemies.insert(1000 + i);
-                ApplyDamageToBreakable(i, 20.0f);
-            }
-        }
-    }
-    
-    return hit_something;
-}
-
-bool ProcessBigChillMeleeHitboxes(const BigChillAnimResult& animRes, BigChillAnimState& state, int restore_object_id, bool just_triggered) {
-    bool hit_something = false;
-    if (!animRes.punch_active && !animRes.magic_active) return hit_something;
-
-    glm::vec3 forward(sin(player.rotate), 0.0f, cos(player.rotate));
-    float reach = 0.4f;
-    float height = 0.5f;
-
-    if (animRes.punch_active) {
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < 20; i++) {
-            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
-            if (state.punch_hit_enemies.count(i)) continue;
-
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                hit_something = true;
-                state.punch_hit_enemies.insert(i);
-                ApplyDamageToEnemy(i, 20.0f);
-                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
-                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=15;
-                Particles_Spawn(contact, popts);
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (state.punch_hit_enemies.count(1000 + i)) continue;
-            if (punch_box.Intersects(g_breakables[i].bbox)) {
-                hit_something = true;
-                state.punch_hit_enemies.insert(1000 + i);
-                ApplyDamageToBreakable(i, 20.0f);
-            }
-        }
-    }
-
-    if (animRes.magic_active) {
-        // Lower the center
-        glm::vec3 center = player.position + forward * 0.8f + glm::vec3(0.0f, 0.5f, 0.0f);
-        
-        // Calculate dynamic AABB extents based on rotation
-        float local_x = 0.4f; // Half of 0.8 width
-        float local_y = 0.5f; // Half of 1.0 height
-        float local_z = 0.75f; // Half of 1.5 length
-        
-        float abs_sin = std::abs(sin(player.rotate));
-        float abs_cos = std::abs(cos(player.rotate));
-        
-        float world_x = local_x * abs_cos + local_z * abs_sin;
-        float world_z = local_x * abs_sin + local_z * abs_cos;
-        
-        glm::vec3 dynamic_hitbox_size(world_x * 2.0f, local_y * 2.0f, world_z * 2.0f);
-        
-        AABB magic_box = MakeAABBFromCenterSize(center, dynamic_hitbox_size);
-        DrawBoundingBox(magic_box, restore_object_id);
-
-        for (int i = 0; i < 20; i++) {
-            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
-            if (magic_box.Intersects(g_enemies[i].bbox)) {
-                hit_something = true;
-                g_enemies[i].is_frozen = true;
-                g_enemies[i].frozen_timer = 3.0f;
-                // continuous low damage without triggering flinch
-                ApplyDamageToEnemy(i, 15.0f * delta_t, false); 
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (magic_box.Intersects(g_breakables[i].bbox)) {
-                hit_something = true;
-                ApplyDamageToBreakable(i, 15.0f * delta_t); 
-            }
-        }
-    }
-    
-    return hit_something;
-}
-
-void ResolvePlayerMapCollisions() {
-    auto& bbox = player.characters[player.active_character].bbox;
-    for (int p_i = 0; p_i < g_num_platforms; p_i++) {
-        const auto& item = map[p_i];
-        if (bbox.Intersects(item.bbox)) {
-            glm::vec3 centerP = (bbox.min + bbox.max) * 0.5f;
-            glm::vec3 centerM = (item.bbox.min + item.bbox.max) * 0.5f;
-            glm::vec3 extP = (bbox.max - bbox.min) * 0.5f;
-            glm::vec3 extM = (item.bbox.max - item.bbox.min) * 0.5f;
-            
-            float dx = centerP.x - centerM.x;
-            float dz = centerP.z - centerM.z;
-            
-            float px = (extP.x + extM.x) - std::abs(dx);
-            float pz = (extP.z + extM.z) - std::abs(dz);
-            
-            if (px < pz) {
-                if (dx > 0) player.position.x += px + 0.001f;
-                else        player.position.x -= px + 0.001f;
-            } else {
-                if (dz > 0) player.position.z += pz + 0.001f;
-                else        player.position.z -= pz + 0.001f;
-            }
-            
-            glm::vec3 size = player.active_character == 0 ? bigchill_size : (player.active_character == 1 ? swampfire_size : bentennyson_size);
-            bbox = makeAABBFromGround(player.position, size);
-        }
-    }
-}
-
-bool ProcessBenMeleeHitboxes(const BenAnimResult& animRes, BenAnimState& state, int restore_object_id, bool just_triggered) 
-{
-    bool hit_something = false;
-    if (!animRes.punch_active && !animRes.big_slap_active) return hit_something;
-
-    glm::vec3 forward = glm::vec3(sin(player.rotate), 0.0f, cos(player.rotate));
-    float reach = 0.35f;
-    float height = 0.5f;
-
-    if (animRes.punch_active) {
-        glm::vec3 hitbox_size = glm::vec3(0.8f, 0.5f, 0.8f);  // tune these
-        glm::vec3 center = player.position + forward * reach + glm::vec3(0.0f, height, 0.0f);
-        AABB punch_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(punch_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible) continue;
-            if (g_enemies[i].is_dead) continue;
-            if (state.punch_hit_enemies.count(i)) continue;
-            if (punch_box.Intersects(g_enemies[i].bbox)) {
-                printf("Ben punch hit enemy %d!\n", i);
-                state.punch_hit_enemies.insert(i);
-                hit_something = true;
-                ApplyDamageToEnemy(i, 5.0f);
-                glm::vec3 overlap_min = glm::max(punch_box.min, g_enemies[i].bbox.min);
-                glm::vec3 overlap_max = glm::min(punch_box.max, g_enemies[i].bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts; popts.color = HexToRgb("#ffffff"); popts.life=0.3f; popts.scale=0.1f; popts.speed=3.0f; popts.count=10;
-                Particles_Spawn(contact, popts);
-                state.attack_speed_multiplier *= 2.0f; // Increase speed on hit
-                if (state.attack_speed_multiplier > 6.0f) {
-                    state.attack_speed_multiplier = 6.0f;
-                }
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (state.punch_hit_enemies.count(1000 + i)) continue;
-            if (punch_box.Intersects(g_breakables[i].bbox)) {
-                state.punch_hit_enemies.insert(1000 + i);
-                hit_something = true;
-                ApplyDamageToBreakable(i, 5.0f);
-            }
-        }
-    }
-
-    if (animRes.big_slap_active) {
-        glm::vec3 hitbox_size = glm::vec3(1.2f, 1.0f, 1.2f); // Big slap has a bigger hitbox!
-        glm::vec3 center = player.position + forward * 0.5f + glm::vec3(0.0f, height, 0.0f);
-        AABB slap_box = MakeAABBFromCenterSize(center, hitbox_size);
-        DrawBoundingBox(slap_box, restore_object_id);
-
-        for (int i = 0; i < MAX_ENEMIES; i++) {
-            if (!g_enemies[i].visible || g_enemies[i].is_dead) continue;
-            if (state.big_slap_hit_enemies.count(i)) continue;
-            if (slap_box.Intersects(g_enemies[i].bbox)) {
-                printf("Big slap applied to enemy %d!\n", i); // History log per the user's request
-                state.big_slap_hit_enemies.insert(i);
-                hit_something = true;
-                ApplyDamageToEnemy(i, 10.0f); // More damage than normal punch
-                glm::vec3 overlap_min = glm::max(slap_box.min, g_enemies[i].bbox.min);
-                glm::vec3 overlap_max = glm::min(slap_box.max, g_enemies[i].bbox.max);
-                glm::vec3 contact = (overlap_min + overlap_max) * 0.5f;
-                ParticleOptions popts; popts.color = HexToRgb("#FFFFFF"); popts.life=0.5f; popts.scale=0.15f; popts.speed=5.0f; popts.count=20;
-                Particles_Spawn(contact, popts);
-            }
-        }
-        for (int i = 0; i < MAX_BREAKABLES; i++) {
-            if (!g_breakables[i].active) continue;
-            if (state.big_slap_hit_enemies.count(1000 + i)) continue;
-            if (slap_box.Intersects(g_breakables[i].bbox)) {
-                state.big_slap_hit_enemies.insert(1000 + i);
-                hit_something = true;
-                ApplyDamageToBreakable(i, 10.0f);
-            }
-        }
-    }
-
-    return hit_something;
 }
 
 void ApplyDamageToPlayer(float base_damage, glm::vec3 damage_source_pos) {
